@@ -8,13 +8,25 @@ App mobile (iOS + Android) de matemática gamificada para crianças (6–12 anos
 
 ## ⚡ Retomar sessão (lê isto primeiro)
 
-Se estás a começar uma nova sessão, faz isto em ordem:
+Se estás a começar uma nova sessão, faz isto **em ordem, sem saltar passos**:
 
+### Passo 1 — Pedir todas as permissões (PRIMEIRO, antes de tudo)
+```
+request_access(
+  apps: ["Simulator", "Google Chrome", "Terminal"],
+  clipboardRead: true,
+  clipboardWrite: true,
+  reason: "Trabalho no MathHeroKids: testar no Simulator, Supabase dashboard no Chrome."
+)
+```
+
+### Passo 2 — Setup do ambiente
 ```bash
-# 1. Correr setup (autentica Supabase, configura git, verifica deps)
 bash /sessions/wonderful-trusting-lamport/mnt/MathHeroKids-UI/.scripts/session-setup.sh
+```
 
-# 2. Ler o handoff para saber o que fazer a seguir
+### Passo 3 — Ler o handoff
+```bash
 cat /sessions/wonderful-trusting-lamport/mnt/MathHeroKids-UI/.ai/session-handoff.md
 ```
 
