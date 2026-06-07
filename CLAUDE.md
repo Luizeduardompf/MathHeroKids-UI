@@ -20,6 +20,32 @@ cat /sessions/wonderful-trusting-lamport/mnt/MathHeroKids-UI/.ai/session-handoff
 
 Depois lê `.ai/project-mathhero.md` para contexto completo e continua.
 
+**Se "Em curso" no handoff não estiver LIVRE:** há trabalho incompleto da sessão anterior.
+Verificar o último commit (`git log --oneline -5`) e os ficheiros modificados (`git status`) para perceber o que ficou a meio.
+
+---
+
+## 📌 Protocolo obrigatório durante o trabalho
+
+**ANTES de iniciar qualquer tarefa de implementação:**
+```bash
+# Actualizar "Em curso" no handoff + commit imediato
+git fix-locks
+git add .ai/session-handoff.md && git commit -m "chore: handoff — iniciando [tarefa]" && git push origin main
+```
+
+**Durante implementações longas** — commit a cada ficheiro concluído:
+```bash
+git add -A && git commit -m "wip: [o que foi feito]" && git push origin main
+```
+
+**Ao concluir** — marcar como LIVRE + commit final:
+```bash
+git add -A && git commit -m "feat: [descrição]" && git push origin main
+```
+
+Isto garante que se o contexto acabar a meio, o próximo chat sabe exactamente onde parou.
+
 ---
 
 ## Stack

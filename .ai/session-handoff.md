@@ -1,49 +1,82 @@
 # Session Handoff
 
-> Actualizar este ficheiro no final de cada sessão (ou quando o contexto estiver a acabar).
-> Um novo Claude lê isto e retoma sem explicação do utilizador.
+> **REGRA DO AGENTE:** Actualizar a secção "Em curso" ANTES de começar qualquer tarefa.
+> Fazer `git add .ai/session-handoff.md && git commit -m "chore: update handoff"` a cada checkpoint.
+> Assim, se o contexto acabar a meio, o próximo chat sabe exactamente onde parou.
 
 ---
 
-## Última sessão: 2026-06-07
+## Estado actual — 2026-06-07 23:30
 
-### O que foi feito nesta sessão
-- Phase 0 + Phase 1 completas (foundation + auth)
-- `src/services/auth.service.ts` e `child.service.ts` criados
-- Navigation guard em `app/(app)/_layout.tsx` e `app/index.tsx`
-- Telas wired: login, register/parent (com checkbox terms), register/child, forgot-password, profile-select
-- `backend/` scaffolded: Edge Functions (Deno), migrations SQL completas (001 + 002), seeds
-- Supabase CLI instalada em `.bin/supabase`, autenticada, projecto linkado
-- Git configurado (HTTPS + PAT, sem lock conflicts)
-- Expo Go testado no Simulator — precisa actualizar para SDK 56 (pressionar `i` no expo start)
-- `enable_confirmations` desactivado no Supabase dashboard
-- `.scripts/` criada (gitignored) para automações do agente
-- Commit: `fa7dc18` — "Phase 0+1: foundation, auth, services, backend scaffold, project structure"
+### 🔴 Em curso (actualizar ANTES de começar cada tarefa)
+```
+ESTADO: LIVRE — nenhuma tarefa em curso
+ÚLTIMA ACÇÃO: fix definitivo do git lock (mv em vez de rm no virtiofs)
+```
 
-### Estado actual
-- **Phase 1: COMPLETA** ✅
-- **Phase 2: NÃO INICIADA** — Challenge Engine é o próximo passo
+### ✅ Concluído nesta sessão
+- Phase 0 + Phase 1 completas (foundation + auth + navigation guard)
+- `src/services/auth.service.ts` + `child.service.ts` criados e wired
+- Telas: login, register/parent, register/child, forgot-password, profile-select (dados reais)
+- `backend/` scaffolded: Edge Functions (Deno), migrations SQL 001+002, seeds
+- Supabase CLI em `.bin/supabase`, autenticada, `enable_confirmations` desactivado
+- Git: fix definitivo virtiofs — `mv` em vez de `rm`, alias `git fix-locks`, `session-setup.sh`
+- Sistema de handoff criado: `.ai/session-handoff.md`, `.scripts/session-setup.sh`, CLAUDE.md com instruções de retoma
+- Commits: `fa7dc18`, `6eb987f`, `a622074`
 
-### Próximo passo imediato
+### ⏭️ Próximo passo imediato
 Iniciar **Phase 2 — Challenge Engine**. Ver `docs/implementation-phases.md` §Phase 2.
 
-Entregáveis principais:
-1. `src/stores/challenge.store.ts` — estado da sessão de desafio
-2. `src/lib/question-generator.ts` — gerador de questões client-side (seed determinístico)
-3. `app/(app)/challenge/[date].tsx` — tela de gameplay completa
-4. `backend/functions/complete_challenge/index.ts` — Edge Function (Deno) com lógica completa
-5. `backend/functions/start_challenge/index.ts` — Edge Function
+Entregáveis:
+1. `src/stores/challenge.store.ts` — estado da sessão (questão actual, respostas, timer)
+2. `src/lib/question-generator.ts` — gerador client-side com seed `${child_id}:${date}:${module_id}`
+3. `app/(app)/challenge/[date].tsx` — gameplay completo (20 questões, 4 blocos, overlays)
+4. `backend/functions/complete_challenge/index.ts` — Edge Function Deno (XP, streak, trophies)
+5. `backend/functions/start_challenge/index.ts` — Edge Function Deno
 
-### Issues/decisões pendentes
-- Expo Go no Simulator desactualizado — utilizador precisa pressionar `i` no terminal do expo start
-- `node_modules/.bin/` não sobrevive entre sessões do sandbox — correr `npm install --legacy-peer-deps` no início se necessário
-- `enable_confirmations = false` já configurado no Supabase (não exige email de confirmação)
+### ⚠️ Issues conhecidos
+- Expo Go no Simulator precisa de actualização para SDK 56 — pressionar `i` no `expo start`
+- `node_modules/.bin/` pode não existir ao início — `session-setup.sh` trata disso
+- Git warnings `unable to unlink tmp_obj_*` são normais no virtiofs — não bloqueiam
 
 ---
 
 ## Como retomar numa nova sessão
 
-1. Ler este ficheiro + `CLAUDE.md` + `.ai/project-mathhero.md`
-2. Correr o script de setup: `.scripts/session-setup.sh` (via Bash tool)
-3. Verificar git status: `git status --short`
-4. Continuar com o próximo passo acima
+```bash
+bash /sessions/wonderful-trusting-lamport/mnt/MathHeroKids-UI/.scripts/session-setup.sh
+```
+
+Depois ler a secção "Em curso" acima — se não estiver LIVRE, há trabalho incompleto.
+
+---
+
+## Protocolo do agente (OBRIGATÓRIO)
+
+### Antes de iniciar qualquer tarefa:
+```bash
+# 1. Actualizar "Em curso" neste ficheiro com o que vai fazer
+# 2. Commit imediato do handoff
+cd /sessions/wonderful-trusting-lamport/mnt/MathHeroKids-UI
+git fix-locks
+git add .ai/session-handoff.md
+git commit -m "chore: handoff — iniciando [nome da tarefa]"
+git push origin main
+```
+
+### Durante implementação longa (a cada ficheiro concluído):
+```bash
+git add -A
+git commit -m "wip: [descrição do que foi feito até agora]"
+git push origin main
+# Actualizar "Em curso" com progresso
+```
+
+### Ao concluir:
+```bash
+# Actualizar "Em curso" → LIVRE
+# Mover tarefa para "Concluído"
+git add -A
+git commit -m "feat/fix/chore: [descrição completa]"
+git push origin main
+```
