@@ -48,5 +48,5 @@ Quando o Claude precisar de criar scripts para clicar/executar tarefas no Mac, g
 
 ---
 
-**Todo o git é feito via Bash tool (command line) — nunca via GitHub Desktop.**
-GitHub Desktop a correr em simultâneo com o Bash tool causa git lock conflicts no mount virtiofs (sandbox Linux + macOS partilham o mesmo `.git/`). Já configurado: `gc.auto=0`, `maintenance.auto=false`, `core.lockTimeout=600`. Se lock ficar preso: `git fix-locks`.
+**Git via Bash tool apenas. Locks: usar `mv` nunca `rm`.**
+O mount virtiofs (macOS→Linux sandbox) não suporta `unlink` — `rm -f` falha com "Operation not permitted" mesmo em ficheiros do próprio sandbox. `mv` (rename) funciona. Fix definitivo: alias `git fix-locks` usa `mv *.lock *.lock.bak`. Setup de sessão (`.scripts/session-setup.sh`) faz isso automaticamente. Git configurado: `gc.auto=0`, `maintenance.auto=false`, `core.lockTimeout=600`, `core.fsmonitor=false`. NUNCA usar GitHub Desktop em paralelo.
