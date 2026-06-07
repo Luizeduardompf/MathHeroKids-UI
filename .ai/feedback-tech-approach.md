@@ -30,3 +30,23 @@ Ao implementar qualquer feature: escrita de progressão → Edge Function; leitu
 
 **Telas não chamam `supabase` directamente.** Usar `src/services/` + TanStack Query.
 Separação de concerns, testabilidade, loading/error handling consistente.
+
+---
+
+**Workflow do Simulator iOS:**
+- O utilizador corre `npx expo start` no Terminal do Mac (projecto em `~/Documents/Claude/Projects/MathHeroKids-UI`)
+- Metro URL: `exp://192.168.1.247:8081` (IP pode mudar, porta 8081 é fixa)
+- Expo Go está instalado no Simulator (iPhone 17, iOS 26.5)
+- **Atenção:** Expo Go no Simulator precisa de estar actualizado para SDK 56 — se der erro "incompatible", pressionar `i` no terminal do `expo start` para reinstalar automaticamente
+- Depois de arrancado, o Claude navega a app autonomamente via computer-use (Simulator tem acesso full ✅)
+- O Bash sandbox não consegue manter o processo Expo vivo entre chamadas — o utilizador tem de iniciar o servidor
+
+---
+
+**Scripts de automação do agente ficam em `.scripts/` (gitignored).**
+Quando o Claude precisar de criar scripts para clicar/executar tarefas no Mac, guarda em `.scripts/`. A pasta está no `.gitignore` — não entra no repositório. Manter organizado com nomes descritivos (ex: `open-simulator.sh`, `run-migrations.sh`).
+
+---
+
+**Todo o git é feito via Bash tool (command line) — nunca via GitHub Desktop.**
+GitHub Desktop a correr em simultâneo com o Bash tool causa git lock conflicts no mount virtiofs (sandbox Linux + macOS partilham o mesmo `.git/`). Já configurado: `gc.auto=0`, `maintenance.auto=false`, `core.lockTimeout=600`. Se lock ficar preso: `git fix-locks`.

@@ -49,6 +49,9 @@ yarn-error.log*
 # ─── AI context (commitado, mas credenciais ficam apenas localmente) ────────────
 .ai/credentials.md
 
+# ─── Scripts locais do agente (fora do git — automações temporárias) ────────────
+.scripts/
+
 # ─── Misc ──────────────────────────────────────────────────────────────────────
 .cache/
 tmp/

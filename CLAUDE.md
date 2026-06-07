@@ -6,6 +6,22 @@ App mobile (iOS + Android) de matemática gamificada para crianças (6–12 anos
 
 ---
 
+## ⚡ Retomar sessão (lê isto primeiro)
+
+Se estás a começar uma nova sessão, faz isto em ordem:
+
+```bash
+# 1. Correr setup (autentica Supabase, configura git, verifica deps)
+bash /sessions/wonderful-trusting-lamport/mnt/MathHeroKids-UI/.scripts/session-setup.sh
+
+# 2. Ler o handoff para saber o que fazer a seguir
+cat /sessions/wonderful-trusting-lamport/mnt/MathHeroKids-UI/.ai/session-handoff.md
+```
+
+Depois lê `.ai/project-mathhero.md` para contexto completo e continua.
+
+---
+
 ## Stack
 
 | Camada | Tecnologia |
