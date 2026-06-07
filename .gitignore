@@ -1,5 +1,54 @@
+# ─── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+node_modules_broken/
+
+# ─── Expo ──────────────────────────────────────────────────────────────────────
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# ─── Native build artifacts ────────────────────────────────────────────────────
+android/
+ios/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# ─── Environment & Secrets ─────────────────────────────────────────────────────
+# .env tracked durante development — remover do git antes de ir a produção
+.env.local
+.env.staging
+.env.production
+# .env.example is intentionally tracked — documents required variables
+
+# ─── TypeScript ────────────────────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ─── Editor ────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
 .DS_Store
-node_modules
-.env
-dist
-.expo
+Thumbs.db
+
+# ─── Testing ───────────────────────────────────────────────────────────────────
+coverage/
+.jest-cache/
+
+# ─── Logs ──────────────────────────────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# ─── AI context (commitado, mas credenciais ficam apenas localmente) ────────────
+.ai/credentials.md
+
+# ─── Misc ──────────────────────────────────────────────────────────────────────
+.cache/
+tmp/

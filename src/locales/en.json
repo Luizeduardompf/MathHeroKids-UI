@@ -1,0 +1,326 @@
+{
+  "common": {
+    "back": "Back",
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "save": "Save",
+    "next": "Next",
+    "done": "Done",
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Try again",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "seeAll": "See all",
+    "level": "Level {{level}}"
+  },
+  "auth": {
+    "welcome": {
+      "title": "Math Hero Kids",
+      "subtitle": "Learn math with fun!",
+      "getStarted": "Get started",
+      "signIn": "I already have an account"
+    },
+    "login": {
+      "title": "Sign In",
+      "emailLabel": "Parent email",
+      "emailPlaceholder": "parent@email.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Your password",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign In",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create account"
+    },
+    "forgotPassword": {
+      "title": "Recover password",
+      "miloMessage": "No problem! I'll help you get back to the challenges.",
+      "description": "Enter the registered parent email. We'll send a link to create a new password.",
+      "emailLabel": "Parent email",
+      "submit": "Send instructions",
+      "rememberPassword": "Remember your password?",
+      "backToLogin": "Sign in"
+    },
+    "register": {
+      "parent": {
+        "title": "Parent account",
+        "stepIndicator": "Step 1 of 2",
+        "miloMessage": "Hi! I'm Milo. First the parent creates the account, then we set up the child's profile!",
+        "nameLabel": "Parent name",
+        "namePlaceholder": "Your full name",
+        "emailLabel": "Email",
+        "emailPlaceholder": "parent@email.com",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Create a strong password",
+        "passwordHint": "Use at least 8 characters.",
+        "termsAccept": "I am the legal guardian of the child and accept the terms of use and privacy policy.",
+        "submit": "Continue",
+        "hasAccount": "Already have an account?",
+        "signIn": "Sign in"
+      },
+      "child": {
+        "title": "Child profile",
+        "stepIndicator": "Step 2 of 2",
+        "miloMessage": "Now let's create the math hero! Choose an avatar and fill in the details.",
+        "avatarLabel": "Choose avatar",
+        "nameLabel": "Child's name",
+        "namePlaceholder": "e.g. Sofia",
+        "usernameLabel": "Username",
+        "usernamePlaceholder": "sofia_hero",
+        "usernameHint": "The child uses this name to enter the app.",
+        "birthDateLabel": "Date of birth",
+        "birthDateHint": "We use this to adjust challenge difficulty.",
+        "submit": "Create profile",
+        "addMoreLater": "You can add more children later in the parent area."
+      }
+    }
+  },
+  "profileSelect": {
+    "title": "Who's playing?",
+    "subtitle": "Tap a profile to switch player.",
+    "addChild": "Add child"
+  },
+  "home": {
+    "challenge": {
+      "inProgress": "IN PROGRESS",
+      "completed": "COMPLETED",
+      "notStarted": "TODAY",
+      "continue": "Continue Challenge",
+      "start": "Start Challenge",
+      "questions": "{{current}} / {{total}} questions"
+    },
+    "recentTrophies": "Recent trophies",
+    "friendsTitle": "Friends",
+    "friendsSubtitle": "Top players you follow",
+    "requests": "Requests",
+    "viewFullRanking": "View full ranking",
+    "statistics": "Your Statistics",
+    "perfectDays": "Perfect Days",
+    "perfectWeeks": "Perfect Weeks",
+    "perfectMonths": "Perfect Months",
+    "challengesDone": "Challenges Done",
+    "dayStreak": "Day Streak",
+    "bestStreak": "Best Streak"
+  },
+  "challenge": {
+    "question": "Question {{current}} of {{total}}",
+    "timerLabel": "{{seconds}}s",
+    "timerUnlimited": "∞",
+    "category": "Multiplication Table",
+    "exitTitle": "Leave challenge?",
+    "exitMessage": "Your progress on this question won't be saved.",
+    "exitConfirm": "Continue",
+    "exitLeave": "Leave",
+    "correct": "Correct!",
+    "xpEarned": "+{{xp}} XP",
+    "wrong": {
+      "title": "Almost there!",
+      "subtitle": "See the correct answer below.",
+      "yourAnswer": "Your answer:",
+      "continue": "Continue →",
+      "retry": "Retry this block"
+    },
+    "timeout": {
+      "title": "Time's up!",
+      "message": "No problem. You've got this! Let's try again calmly.",
+      "retry": "Retry this block",
+      "goHome": "Go home"
+    },
+    "blockIncomplete": {
+      "title": "So close!",
+      "subtitle": "To complete the block, you need a perfect score.",
+      "correctOf": "{{correct}}/{{total}} correct answers",
+      "accuracy": "{{pct}}% accuracy",
+      "target": "Target: 100%",
+      "retry": "Retry this block",
+      "continueAnyway": "Continue anyway",
+      "goHome": "Go home"
+    },
+    "milestone": {
+      "q5": { "title": "Well done!", "subtitle": "You've completed 5 questions. Keep it up!" },
+      "q10": { "title": "Halfway there!", "subtitle": "10 questions done. Almost at the star!" },
+      "q15": { "title": "Almost done!", "subtitle": "15 questions! You're a true math hero." },
+      "continue": "Continue"
+    },
+    "completed": {
+      "title": "Challenge complete!",
+      "subtitle": "Amazing! You finished today's challenge. Milo is proud!",
+      "continue": "Continue"
+    }
+  },
+  "calendar": {
+    "title": "Calendar",
+    "today": "TODAY",
+    "legend": {
+      "perfect": "Perfect",
+      "completed": "Completed",
+      "failed": "Failed",
+      "locked": "Locked"
+    },
+    "progress": {
+      "title": "Your progress",
+      "monthProgress": "Month progress",
+      "monthDescription": "You've completed your challenges on almost every day. Keep it up!",
+      "thisWeek": "This week",
+      "weekDays": "{{done}}/7 days",
+      "monthlyTrophy": "Monthly trophy",
+      "monthlyTrophyProgress": "{{done}} of {{total}} days",
+      "xpThisMonth": "+{{xp}} XP this month"
+    }
+  },
+  "friends": {
+    "title": "Friends",
+    "searchPlaceholder": "Search by username",
+    "pendingRequests": "Pending requests",
+    "mutualFriends_one": "{{count}} mutual friend",
+    "mutualFriends_other": "{{count}} mutual friends",
+    "accept": "Accept",
+    "reject": "Reject",
+    "add": {
+      "title": "Add friend",
+      "searchPlaceholder": "Enter username",
+      "suggestions": "Suggestions for you",
+      "addButton": "Add",
+      "requestSent": "Request sent",
+      "noResults": "No results found"
+    },
+    "ranking": {
+      "title": "Friends ranking",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "you": "You"
+    }
+  },
+  "trophies": {
+    "title": "Trophy Room",
+    "earned": "Earned",
+    "streak": "Streak",
+    "nextTrophy": "Next Trophy",
+    "sections": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "streak": "Streak",
+      "special": "Special"
+    },
+    "tiers": {
+      "bronze": "Bronze",
+      "silver": "Silver",
+      "gold": "Gold",
+      "diamond": "Diamond"
+    },
+    "earnedOn": "EARNED",
+    "howToEarn": "How to earn"
+  },
+  "achievements": {
+    "title": "Achievements",
+    "miloMessage": "Every achievement is a victory! Keep collecting.",
+    "collection": "Complete collection",
+    "unlocked_one": "{{count}} of {{total}} achievement unlocked",
+    "unlocked_other": "{{count}} of {{total}} achievements unlocked",
+    "categories": {
+      "primeiros_passos": "First Steps",
+      "sequencias": "Streaks",
+      "habilidades": "Skills",
+      "especiais": "Special"
+    }
+  },
+  "progression": {
+    "title": "Progression",
+    "currentLevel": "CURRENT LEVEL",
+    "xpToNext": "{{xp}} XP until level {{level}}",
+    "milestonesTitle": "Milestones & rewards",
+    "rewards": {
+      "title": "Rewards",
+      "miloMessage": "Level up to unlock outfits, frames and more!",
+      "unlocked": "Unlocked",
+      "upcoming": "Upcoming rewards",
+      "levelsLeft_one": "{{count}} level left",
+      "levelsLeft_other": "{{count}} levels left",
+      "types": {
+        "frame": "Frame",
+        "outfit": "Milo's Outfit",
+        "medal": "Medal",
+        "trophy_variant": "Trophy Variant",
+        "celebration": "Celebration"
+      }
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "timerTitle": "Time per question",
+    "timerDescription": "Time limit for each question",
+    "timerUnlimited": "Unlimited",
+    "multiplicationTitle": "Multiplication table",
+    "multiplicationLabel": "Multiply up to",
+    "parentArea": "Parent area",
+    "parentAreaSubtitle": "Parental controls"
+  },
+  "parentArea": {
+    "pin": {
+      "title": "Parent area",
+      "subtitle": "Enter PIN to continue"
+    },
+    "controls": { "title": "Parental controls" },
+    "child": {
+      "newTitle": "New child",
+      "editTitle": "Edit profile",
+      "miloNewMessage": "Another hero arriving! Fill in the details to create the new profile.",
+      "save": "Save profile",
+      "create": "Create profile"
+    }
+  },
+  "levelUp": {
+    "title": "YOU LEVELED UP!",
+    "reached": "Level {{level}} reached",
+    "reward": "REWARD UNLOCKED",
+    "continue": "Continue"
+  },
+  "milo": {
+    "great_job": "Great job today!",
+    "keep_going": "Keep it up!",
+    "streak_active": "Your streak is amazing! {{days}} days in a row!",
+    "streak_broken": "How about starting again today? Every day is a new chance!",
+    "challenge_waiting": "Your challenge is waiting! Let's go?",
+    "level_up": "Incredible! You're amazing at math! Keep it up, hero!",
+    "close_to_next": "You're so close to the next level! Let's go!",
+    "wrong_answer": "Making mistakes is part of learning! Now you know this one. Let's keep going!",
+    "timeout": "No pressure! Take a deep breath and try again. I believe in you!",
+    "block_almost": "So close! One more try and that perfect star is yours!",
+    "welcome": "Hi! I'm Milo. First the parent creates the account, then we set up the child's profile!",
+    "achievements": "Every achievement is a victory! Keep collecting."
+  },
+  "levels": {
+    "explorador": "Explorer",
+    "aventureiro": "Adventurer",
+    "explorador_mestre": "Master Explorer",
+    "aventureiro_mestre": "Master Adventurer",
+    "heroi": "Math Hero",
+    "mago_aprendiz": "Apprentice Wizard",
+    "mago": "Wizard",
+    "mestre_numeros": "Number Master",
+    "lenda": "Math Legend",
+    "lenda_matematica": "Math Legend"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "No internet connection. Check your network.",
+    "auth": {
+      "invalidCredentials": "Incorrect email or password.",
+      "emailInUse": "This email is already registered.",
+      "weakPassword": "Password must be at least 8 characters.",
+      "userNotFound": "No account found with this email.",
+      "sessionExpired": "Your session expired. Please sign in again."
+    },
+    "validation": {
+      "required": "This field is required.",
+      "invalidEmail": "Enter a valid email.",
+      "usernameTaken": "This username is already taken.",
+      "usernameFormat": "Use only letters, numbers and _",
+      "termsRequired": "You must accept the terms to continue."
+    }
+  }
+}

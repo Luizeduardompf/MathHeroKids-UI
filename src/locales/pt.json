@@ -1,0 +1,337 @@
+{
+  "common": {
+    "back": "Voltar",
+    "continue": "Continuar",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "next": "Próximo",
+    "done": "Concluído",
+    "loading": "Carregando...",
+    "error": "Erro",
+    "retry": "Tentar novamente",
+    "close": "Fechar",
+    "yes": "Sim",
+    "no": "Não",
+    "ok": "OK",
+    "seeAll": "Ver tudo",
+    "level": "Nível {{level}}"
+  },
+  "auth": {
+    "welcome": {
+      "title": "Math Hero Kids",
+      "subtitle": "Aprenda matemática com diversão!",
+      "getStarted": "Começar agora",
+      "signIn": "Já tenho uma conta"
+    },
+    "login": {
+      "title": "Entrar",
+      "emailLabel": "E-mail do responsável",
+      "emailPlaceholder": "responsavel@email.com",
+      "passwordLabel": "Senha",
+      "passwordPlaceholder": "Sua senha",
+      "forgotPassword": "Esqueceu a senha?",
+      "submit": "Entrar",
+      "noAccount": "Ainda não tem conta?",
+      "createAccount": "Criar conta"
+    },
+    "forgotPassword": {
+      "title": "Recuperar senha",
+      "miloMessage": "Sem problemas! Vou te ajudar a voltar para os desafios.",
+      "description": "Digite o e-mail do responsável cadastrado. Enviaremos um link para criar uma nova senha.",
+      "emailLabel": "E-mail do responsável",
+      "submit": "Enviar instruções",
+      "rememberPassword": "Lembrou a senha?",
+      "backToLogin": "Entrar"
+    },
+    "register": {
+      "parent": {
+        "title": "Conta do responsável",
+        "stepIndicator": "Passo 1 de 2",
+        "miloMessage": "Oi! Sou o Milo. Primeiro o responsável cria a conta, depois montamos o perfil da criança!",
+        "nameLabel": "Nome do responsável",
+        "namePlaceholder": "Seu nome completo",
+        "emailLabel": "E-mail",
+        "emailPlaceholder": "responsavel@email.com",
+        "passwordLabel": "Senha",
+        "passwordPlaceholder": "Crie uma senha forte",
+        "passwordHint": "Use ao menos 8 caracteres.",
+        "termsAccept": "Sou responsável legal pela criança e aceito os termos de uso e a política de privacidade.",
+        "submit": "Continuar",
+        "hasAccount": "Já tem conta?",
+        "signIn": "Entrar"
+      },
+      "child": {
+        "title": "Perfil da criança",
+        "stepIndicator": "Passo 2 de 2",
+        "miloMessage": "Agora vamos criar o herói da matemática! Escolha um avatar e preencha os dados.",
+        "avatarLabel": "Escolha o avatar",
+        "nameLabel": "Nome da criança",
+        "namePlaceholder": "ex: Sofia",
+        "usernameLabel": "Nome de usuário",
+        "usernamePlaceholder": "sofia_hero",
+        "usernameHint": "A criança usa este nome para entrar no app.",
+        "birthDateLabel": "Data de nascimento",
+        "birthDateHint": "Usamos para ajustar a dificuldade dos desafios.",
+        "submit": "Criar perfil",
+        "addMoreLater": "Você poderá adicionar mais crianças depois, na área dos pais."
+      }
+    }
+  },
+  "profileSelect": {
+    "title": "Quem está jogando?",
+    "subtitle": "Toque em um perfil para trocar de jogador.",
+    "addChild": "Adicionar criança"
+  },
+  "home": {
+    "challenge": {
+      "inProgress": "EM ANDAMENTO",
+      "completed": "CONCLUÍDO",
+      "notStarted": "HOJE",
+      "continue": "Continuar Desafio",
+      "start": "Iniciar Desafio",
+      "questions": "{{current}} / {{total}} questões"
+    },
+    "recentTrophies": "Troféus recentes",
+    "friendsTitle": "Amigos",
+    "friendsSubtitle": "Top jogadores que você segue",
+    "requests": "Pedidos",
+    "viewFullRanking": "Ver ranking completo",
+    "statistics": "Suas Estatísticas",
+    "perfectDays": "Dias Perfeitos",
+    "perfectWeeks": "Semanas Perfeitas",
+    "perfectMonths": "Meses Perfeitos",
+    "challengesDone": "Desafios Feitos",
+    "dayStreak": "Sequência de Dias",
+    "bestStreak": "Melhor Sequência"
+  },
+  "challenge": {
+    "question": "Questão {{current}} de {{total}}",
+    "timerLabel": "{{seconds}}s",
+    "timerUnlimited": "∞",
+    "category": "Tabuada da Multiplicação",
+    "exitTitle": "Sair do desafio?",
+    "exitMessage": "Seu progresso desta questão não será salvo.",
+    "exitConfirm": "Continuar",
+    "exitLeave": "Sair",
+    "correct": "Acertou!",
+    "xpEarned": "+{{xp}} XP",
+    "wrong": {
+      "title": "Quase lá!",
+      "subtitle": "Veja a resposta certa abaixo.",
+      "yourAnswer": "Sua resposta:",
+      "continue": "Continuar →",
+      "retry": "Tentar o bloco de novo"
+    },
+    "timeout": {
+      "title": "Acabou o tempo!",
+      "message": "Não tem problema. Você consegue! Vamos tentar de novo com calma.",
+      "retry": "Tentar o bloco de novo",
+      "goHome": "Voltar ao início"
+    },
+    "blockIncomplete": {
+      "title": "Você chegou bem perto!",
+      "subtitle": "Para concluir o bloco, você precisa de uma pontuação perfeita.",
+      "correctOf": "{{correct}}/{{total}} respostas corretas",
+      "accuracy": "{{pct}}% acertos",
+      "target": "Meta: 100%",
+      "retry": "Tentar o bloco de novo",
+      "continueAnyway": "Continuar mesmo assim",
+      "goHome": "Voltar ao início"
+    },
+    "milestone": {
+      "q5": {
+        "title": "Mandou bem!",
+        "subtitle": "Você já completou 5 questões. Continue assim!"
+      },
+      "q10": {
+        "title": "Você está na metade!",
+        "subtitle": "10 questões concluídas. Falta pouco para a estrela!"
+      },
+      "q15": {
+        "title": "Faltam só algumas!",
+        "subtitle": "15 questões! Você é um verdadeiro herói da matemática."
+      },
+      "continue": "Continuar"
+    },
+    "completed": {
+      "title": "Desafio concluído!",
+      "subtitle": "Incrível! Você terminou o desafio de hoje. Milo está orgulhoso!",
+      "continue": "Continuar"
+    }
+  },
+  "calendar": {
+    "title": "Calendário",
+    "today": "HOJE",
+    "legend": {
+      "perfect": "Perfeito",
+      "completed": "Concluído",
+      "failed": "Perdido",
+      "locked": "Bloqueado"
+    },
+    "progress": {
+      "title": "Seu progresso",
+      "monthProgress": "Progresso do mês",
+      "monthDescription": "Você completou seus desafios em quase todos os dias. Continue assim!",
+      "thisWeek": "Esta semana",
+      "weekDays": "{{done}}/7 dias",
+      "monthlyTrophy": "Troféu mensal",
+      "monthlyTrophyProgress": "{{done}} de {{total}} dias",
+      "xpThisMonth": "+{{xp}} XP no mês"
+    }
+  },
+  "friends": {
+    "title": "Amigos",
+    "searchPlaceholder": "Buscar por nome de usuário",
+    "pendingRequests": "Pedidos pendentes",
+    "mutualFriends_one": "{{count}} amigo em comum",
+    "mutualFriends_other": "{{count}} amigos em comum",
+    "accept": "Aceitar",
+    "reject": "Rejeitar",
+    "add": {
+      "title": "Adicionar amigo",
+      "searchPlaceholder": "Digite o nome de usuário",
+      "suggestions": "Sugestões para você",
+      "addButton": "Adicionar",
+      "requestSent": "Pedido enviado",
+      "noResults": "Nenhum resultado encontrado"
+    },
+    "ranking": {
+      "title": "Ranking de amigos",
+      "weekly": "Semanal",
+      "monthly": "Mensal",
+      "you": "Você"
+    }
+  },
+  "trophies": {
+    "title": "Sala de Troféus",
+    "earned": "Conquistados",
+    "streak": "Sequência",
+    "nextTrophy": "Próximo Troféu",
+    "sections": {
+      "daily": "Diários",
+      "weekly": "Semanais",
+      "monthly": "Mensais",
+      "streak": "Sequência",
+      "special": "Especiais"
+    },
+    "tiers": {
+      "bronze": "Bronze",
+      "silver": "Prata",
+      "gold": "Ouro",
+      "diamond": "Diamante"
+    },
+    "earnedOn": "CONQUISTADO",
+    "howToEarn": "Como conquistar"
+  },
+  "achievements": {
+    "title": "Conquistas",
+    "miloMessage": "Cada conquista é uma vitória sua! Continue colecionando.",
+    "collection": "Coleção completa",
+    "unlocked_one": "{{count}} de {{total}} conquista desbloqueada",
+    "unlocked_other": "{{count}} de {{total}} conquistas desbloqueadas",
+    "categories": {
+      "primeiros_passos": "Primeiros Passos",
+      "sequencias": "Sequências",
+      "habilidades": "Habilidades",
+      "especiais": "Especiais"
+    }
+  },
+  "progression": {
+    "title": "Progressão",
+    "currentLevel": "NÍVEL ATUAL",
+    "xpToNext": "Faltam {{xp}} XP para o nível {{level}}",
+    "milestonesTitle": "Marcos e recompensas",
+    "rewards": {
+      "title": "Recompensas",
+      "miloMessage": "Suba de nível para liberar roupas, molduras e muito mais!",
+      "unlocked": "Desbloqueadas",
+      "upcoming": "Próximas recompensas",
+      "levelsLeft_one": "falta {{count}}",
+      "levelsLeft_other": "faltam {{count}}",
+      "types": {
+        "frame": "Moldura",
+        "outfit": "Roupa do Milo",
+        "medal": "Medalha",
+        "trophy_variant": "Variante de Troféu",
+        "celebration": "Comemoração"
+      }
+    }
+  },
+  "settings": {
+    "title": "Ajustes",
+    "language": "Idioma",
+    "timerTitle": "Tempo por questão",
+    "timerDescription": "Tempo limite para cada pergunta",
+    "timerUnlimited": "Sem limite",
+    "multiplicationTitle": "Tabuada",
+    "multiplicationLabel": "Multiplicar até",
+    "parentArea": "Área dos pais",
+    "parentAreaSubtitle": "Controle parental"
+  },
+  "parentArea": {
+    "pin": {
+      "title": "Área dos pais",
+      "subtitle": "Digite o PIN para continuar"
+    },
+    "controls": {
+      "title": "Controle dos pais"
+    },
+    "child": {
+      "newTitle": "Nova criança",
+      "editTitle": "Editar perfil",
+      "miloNewMessage": "Mais um herói chegando! Preencha os dados para criar o novo perfil.",
+      "save": "Salvar perfil",
+      "create": "Criar perfil"
+    }
+  },
+  "levelUp": {
+    "title": "VOCÊ SUBIU DE NÍVEL!",
+    "reached": "Nível {{level}} alcançado",
+    "reward": "RECOMPENSA DESBLOQUEADA",
+    "continue": "Continuar"
+  },
+  "milo": {
+    "great_job": "Ótimo trabalho hoje!",
+    "keep_going": "Continue assim!",
+    "streak_active": "Sua sequência está incrível! {{days}} dias seguidos!",
+    "streak_broken": "Que tal recomeçar hoje? Cada dia é uma nova chance!",
+    "challenge_waiting": "Seu desafio de hoje está esperando! Vamos lá?",
+    "level_up": "Incrível! Você é demais na matemática! Continue assim, herói!",
+    "close_to_next": "Você está super perto do próximo nível! Bora lá?",
+    "wrong_answer": "Errar faz parte de aprender! Agora você já sabe esta. Bora continuar!",
+    "timeout": "Sem pressão! Respire fundo e tente outra vez. Eu acredito em você!",
+    "block_almost": "Faltou pouquinho! Mais uma tentativa e essa estrela perfeita é sua!",
+    "welcome": "Oi! Sou o Milo. Primeiro o responsável cria a conta, depois montamos o perfil da criança!",
+    "achievements": "Cada conquista é uma vitória sua! Continue colecionando."
+  },
+  "levels": {
+    "explorador": "Explorador",
+    "aventureiro": "Aventureiro",
+    "explorador_mestre": "Explorador Mestre",
+    "aventureiro_mestre": "Aventureiro Mestre",
+    "heroi": "Herói da Matemática",
+    "mago_aprendiz": "Mago Aprendiz",
+    "mago": "Mago",
+    "mestre_numeros": "Mestre dos Números",
+    "lenda": "Lenda Matemática",
+    "lenda_matematica": "Lenda Matemática"
+  },
+  "errors": {
+    "generic": "Algo deu errado. Por favor, tente novamente.",
+    "network": "Sem conexão com a internet. Verifique sua rede.",
+    "auth": {
+      "invalidCredentials": "E-mail ou senha incorretos.",
+      "emailInUse": "Este e-mail já está cadastrado.",
+      "weakPassword": "A senha deve ter pelo menos 8 caracteres.",
+      "userNotFound": "Nenhuma conta encontrada com este e-mail.",
+      "sessionExpired": "Sua sessão expirou. Por favor, faça login novamente."
+    },
+    "validation": {
+      "required": "Este campo é obrigatório.",
+      "invalidEmail": "Digite um e-mail válido.",
+      "usernameTaken": "Este nome de usuário já está em uso.",
+      "usernameFormat": "Use apenas letras, números e _",
+      "termsRequired": "Você deve aceitar os termos para continuar."
+    }
+  }
+}

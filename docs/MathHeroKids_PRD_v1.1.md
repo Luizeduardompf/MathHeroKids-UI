@@ -152,20 +152,23 @@ Requirements:
 
 Parent:
 
-- Registration
-- Login
-- Forgot Password
+- Registration (email + password)
+- Login (email + password)
+- Forgot Password (email link)
 
 Child:
 
 - Created under parent account
-- Username-based identity
+- No independent login — always accessed via parent session + profile switcher
+- No child password required; child identity is the profile selection, not an auth credential
 
 Guest Mode:
 
 - Local-only progress
 - No cloud synchronization
 - No social features
+
+> **v1.1 decision**: Children do not log in independently. A parent logs in once per device (email + password via Supabase Auth); the family then uses the profile switcher to select which child is playing. Child does not need a password. Recovery of child profile data is always done through the parent account.
 
 ---
 
@@ -232,16 +235,17 @@ Configurable by parent.
 
 Options:
 
-- 5 seconds
-- 10 seconds
-- 15 seconds
-- 20 seconds
-- 30 seconds
-- Unlimited
+- 10 seconds (advanced / older children)
+- 15 seconds (default)
+- 20 seconds (beginner)
+- 30 seconds (very young, ages 6–7)
+- Unlimited (learning mode / first week)
 
 Default:
 
 15 seconds
+
+> **v1.1 change**: Removed 5-second option (too short for children aged 6–7). Removed 45s and 60s options (too slow to have challenge value). Implemented as discrete pill/chip selector, not a slider.
 
 ---
 
@@ -255,7 +259,8 @@ Ranges:
 - 1–12
 - 1–15
 - 1–20
-- Custom
+
+> **v1.1 change**: "Custom" range deferred to Phase 2. Not in MVP scope.
 
 ---
 
@@ -329,9 +334,15 @@ Past days may be replayed.
 
 Rules:
 
-- XP may be granted
-- Historical completion is recorded
-- Lost streaks are not restored
+- Full XP awarded (same as a regular daily challenge)
+- Available for the past 7 days only; older days are locked
+- Historical completion is recorded in the calendar
+- Lost streaks are NOT restored
+- Counts toward cumulative trophy progress (e.g. monthly trophy "days completed")
+- Does NOT unlock "perfect week" or "perfect month" trophies for windows that have already closed
+- Does NOT count for friend ranking of past weeks
+
+> **v1.1 decision**: 7-day retroactive window balances generosity (illness, travel) with preventing abuse (mass-completing months of challenges in one session).
 
 ---
 
