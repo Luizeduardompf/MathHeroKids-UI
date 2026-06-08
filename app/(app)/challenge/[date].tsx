@@ -542,14 +542,14 @@ export default function ChallengeScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentQuestionIndex, phase]);
 
-  // Auto-advance correct overlay after 900ms
+  // Auto-advance correct overlay after 3000ms (temporariamente aumentado para screenshot)
   useEffect(() => {
     if (phase !== 'correct') return;
     const timer = setTimeout(() => {
       if (useChallengeStore.getState().phase === 'correct') {
         useChallengeStore.getState().setPhase('playing');
       }
-    }, 900);
+    }, 3000);
     return () => clearTimeout(timer);
   }, [phase]);
 
