@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/ui';
+import { Icons } from '@/constants/icons';
 import { colors, radius, shadows, space } from '@/theme';
 
 function TabIcon({ icon, focused }: { icon: string; focused: boolean }) {
@@ -11,7 +12,7 @@ function TabIcon({ icon, focused }: { icon: string; focused: boolean }) {
 function ChallengeFAB({ focused }: { focused: boolean }) {
   return (
     <View style={[styles.fab, focused ? styles.fabActive : null] as import("react-native").StyleProp<import("react-native").ViewStyle>}>
-      <Text style={{ fontSize: 24, color: colors.text.inverse }}>✖</Text>
+      <Text style={{ fontSize: 24, color: colors.text.inverse }}>{Icons.challengeTab}</Text>
     </View>
   );
 }
@@ -32,14 +33,14 @@ export default function TabsLayout() {
         name="index"
         options={{
           tabBarLabel: 'Início',
-          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon icon="🏠" focused={focused} />,
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon icon={Icons.home} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
           tabBarLabel: 'Calendário',
-          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon icon="📅" focused={focused} />,
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon icon={Icons.calendar} focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -54,7 +55,7 @@ export default function TabsLayout() {
         name="friends"
         options={{
           tabBarLabel: 'Amigos',
-          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon icon="👥" focused={focused} />,
+          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon icon={Icons.friends} focused={focused} />,
         }}
       />
       <Tabs.Screen

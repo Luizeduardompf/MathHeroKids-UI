@@ -1,25 +1,5 @@
-import { StyleSheet, View } from 'react-native';
-import { Text } from '@/components/ui';
-import { colors, space } from '@/theme';
+import { PlaceholderScreen } from '@/components/layout/PlaceholderScreen';
 
-// TODO: Implement in Phase 2+
-export default function AdicionarAmigoScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={{ fontSize: 48 }}>👤</Text>
-      <Text variant="h2">Adicionar Amigo</Text>
-      <Text variant="body" color={colors.text.secondary}>Em breve</Text>
-    </View>
-  );
+export default function AddFriendScreen() {
+  return <PlaceholderScreen emoji="👤" title="Adicionar Amigo" />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.md,
-    padding: space.md,
-    backgroundColor: colors.background.primary,
-  },
-});

@@ -1,25 +1,5 @@
-import { StyleSheet, View } from 'react-native';
-import { Text } from '@/components/ui';
-import { colors, space } from '@/theme';
+import { PlaceholderScreen } from '@/components/layout/PlaceholderScreen';
 
-// TODO: Implement in Phase 2+
 export default function RankingScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={{ fontSize: 48 }}>🥇</Text>
-      <Text variant="h2">Ranking</Text>
-      <Text variant="body" color={colors.text.secondary}>Em breve</Text>
-    </View>
-  );
+  return <PlaceholderScreen emoji="🥇" title="Ranking" />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.md,
-    padding: space.md,
-    backgroundColor: colors.background.primary,
-  },
-});
