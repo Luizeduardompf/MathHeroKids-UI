@@ -1,11 +1,14 @@
 /**
  * CorrectOverlay — tela "Acertou!"
  *
- * Layout: root (absoluto, full-screen verde) → conteúdo centrado (flex col)
- * + confetti por ÚLTIMO no render = on top do conteúdo (comportamento intencional do design).
+ * Confetti burst, círculo spring pop-in, badge +XP float-up, haptic feedback.
  *
- * Regra RN: nada de zIndex em Views que têm filhos animados — cria stacking
- * context e força overflow:hidden, cortando os filhos. Usamos render order.
+ * Nota sobre som: expo-av requer dev client (não roda em Expo Go sem prebuild).
+ * O feedback de áudio será adicionado após o EAS build. Por agora: haptic.
+ *
+ * Layout sem zIndex em Views com filhos animados — em RN isso força
+ * overflow:hidden e corta os filhos. Usamos render order puro:
+ *   conteúdo primeiro (atrás) → confetti por último (frente).
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -20,14 +23,9 @@ import Animated, {
 import type { SharedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Audio } from 'expo-av';
 
 import { Text } from '@/components/ui';
 import { fontFamily } from '@/theme';
-
-// ─── Som de sucesso ───────────────────────────────────────────────────────────
-// WAV sintetizado (C5→E5→G5, 450ms) gerado em build-time — sem rede, sem arquivo externo
-const SUCCESS_SOUND = require('../../../assets/sounds/success.wav') as number;
 
 // ─── Confetti ─────────────────────────────────────────────────────────────────
 
@@ -39,22 +37,20 @@ const COLORS = [
 type Piece = { px: number; py: number; color: string; w: number; h: number; rot: number };
 
 function buildConfetti(n: number): Piece[] {
-  let s = 99; // seed diferente do anterior para evitar peças centradas no texto
+  let s = 99;
   const r = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
   return Array.from({ length: n }, (_, i) => ({
-    px:  r() * 100,
-    py:  r() * 90,
+    px:    r() * 100,
+    py:    r() * 90,
     color: COLORS[i % COLORS.length] ?? '#2B52E5',
-    w:   6 + r() * 8,          // max 14px — peças menores deixam texto legível
-    h:   6 + r() * 14,
-    rot: r() * 360,
+    w:     6 + r() * 8,
+    h:     6 + r() * 14,
+    rot:   r() * 360,
   }));
 }
 
 const CONFETTI = buildConfetti(50);
 
-// Confetti é renderizado POR ÚLTIMO no JSX → fica visualmente por cima (render order)
-// pointerEvents="none" garante que não bloqueia toques
 function ConfettiLayer({ opacity }: { opacity: SharedValue<number> }) {
   const anim = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
@@ -97,17 +93,8 @@ export function CorrectOverlay({ xpGain = 10 }: { xpGain?: number }) {
     if (fired.current) return;
     fired.current = true;
 
-    // Haptic + som em paralelo (best-effort: erros silenciados)
+    // Haptic de sucesso (funciona em Expo Go)
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    void (async () => {
-      try {
-        await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-        const { sound } = await Audio.Sound.createAsync(SUCCESS_SOUND, { volume: 0.7 });
-        await sound.playAsync();
-        // Libera memória após tocar (~600ms)
-        setTimeout(() => void sound.unloadAsync(), 600);
-      } catch { /* silent: dispositivo sem áudio ou permissão negada */ }
-    })();
 
     confettiOpacity.value = withTiming(1, { duration: 120 });
     circleScale.value     = withSpring(1, { damping: 9, stiffness: 240, mass: 0.9 });
@@ -140,40 +127,34 @@ export function CorrectOverlay({ xpGain = 10 }: { xpGain?: number }) {
   return (
     <View style={s.root}>
 
-      {/* ── 1. Conteúdo (circle + badge + texto) ─────────────────────────────
-          Renderizado ANTES do confetti → fica atrás no stack de render.
-          SEM zIndex para não criar stacking context / overflow:hidden.      */}
+      {/* 1. Conteúdo — renderizado antes do confetti (fica atrás) */}
       <View style={s.centerCol}>
 
-        {/* Badge + círculo numa linha horizontal centrada com posição relativa */}
         <View style={s.row}>
-          {/* Espaço à esquerda para equilibrar o badge que vai à direita */}
-          <View style={s.badgeSpacer} />
+          {/* Spacer espelho para centrar o círculo visualmente */}
+          <View style={s.side} />
 
-          {/* Círculo verde */}
+          {/* Círculo verde com checkmark */}
           <Animated.View style={[s.circle, circleAnim] as StyleProp<ViewStyle>}>
             <Ionicons name="checkmark" size={68} color="#fff" />
           </Animated.View>
 
-          {/* Badge à direita do círculo, alinhado ao topo */}
-          <View style={s.badgeCol}>
+          {/* Badge à direita, alinhado ao topo */}
+          <View style={s.side}>
             <Animated.View style={[s.badge, badgeAnim] as StyleProp<ViewStyle>}>
               <Text style={s.badgeText}>+{xpGain} XP</Text>
             </Animated.View>
           </View>
         </View>
 
-        {/* Texto "Acertou!" — separado abaixo do row, sem marginTop animado
-            para evitar clip. O translateY do textAnim é para cima (−14→0),
-            então o texto nunca sai fora da sua caixa de layout. */}
+        {/* "Acertou!" abaixo do row — gap via s.centerCol */}
         <Animated.View style={[s.labelWrap, textAnim] as StyleProp<ViewStyle>}>
           <Text style={s.label}>Acertou!</Text>
         </Animated.View>
 
       </View>
 
-      {/* ── 2. Confetti (renderizado POR ÚLTIMO = por cima do conteúdo) ──────
-          Decorativo; peças menores para não obscurecer todo o texto.        */}
+      {/* 2. Confetti — renderizado por último (frente) */}
       <ConfettiLayer opacity={confettiOpacity} />
 
     </View>
@@ -191,29 +172,21 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   confettiAbs: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
   },
-
-  // Coluna central: sem overflow, sem zIndex, sem position
   centerCol: {
     alignItems: 'center',
-    gap: 24,  // espaço entre o row e o texto
+    gap: 28,
   },
-
-  // Row: badge + círculo lado a lado, centrados
   row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',  // badge alinha pelo topo
+    alignItems: 'flex-start',
   },
-
-  // Espaço espelho do badge (para o círculo ficar visualmente centrado)
-  badgeSpacer: {
+  // Cada lado = 70px para o círculo ficar centrado e ter espaço pro badge
+  side: {
     width: 70,
-    height: 1,
   },
-
   circle: {
     width: CIRCLE,
     height: CIRCLE,
@@ -227,19 +200,12 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-
-  // Coluna à direita do círculo — contém o badge alinhado ao topo
-  badgeCol: {
-    width: 70,
-    alignItems: 'flex-start',
-    paddingTop: 4,  // desce um pouco para ficar mais centrado visualmente
-  },
-
   badge: {
     backgroundColor: '#F59E0B',
     borderRadius: 9999,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    marginTop: 4,
     shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 5,
@@ -252,12 +218,9 @@ const s = StyleSheet.create({
     color: '#fff',
     letterSpacing: 0.2,
   },
-
-  // Wrapper do label: sem overflow, sem posição absoluta
   labelWrap: {
     alignItems: 'center',
   },
-
   label: {
     fontFamily: fontFamily.extraBold,
     fontSize: 36,
