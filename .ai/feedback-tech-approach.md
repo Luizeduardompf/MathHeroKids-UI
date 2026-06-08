@@ -43,6 +43,11 @@ Separação de concerns, testabilidade, loading/error handling consistente.
 
 ---
 
+**NUNCA correr `npm install` do sandbox Linux — sempre do Mac.**
+O sandbox instala binários Linux incompatíveis com macOS e corrompe sub-packages do react-native (`@react-native/virtualized-lists`, `@react-native/assets-registry`, etc.). Se node_modules corrompido: no Terminal do Mac → `rm -rf node_modules package-lock.json && npm install && npx expo start --clear`. O session-setup.sh avisa mas NÃO instala.
+
+---
+
 **Scripts de automação do agente ficam em `.scripts/` (gitignored).**
 Quando o Claude precisar de criar scripts para clicar/executar tarefas no Mac, guarda em `.scripts/`. A pasta está no `.gitignore` — não entra no repositório. Manter organizado com nomes descritivos (ex: `open-simulator.sh`, `run-migrations.sh`).
 
