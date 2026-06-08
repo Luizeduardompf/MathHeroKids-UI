@@ -64,3 +64,58 @@ Quando o Claude precisar de criar scripts para clicar/executar tarefas no Mac, g
 
 **Git via Bash tool apenas. Locks: usar `mv` nunca `rm`.**
 O mount virtiofs (macOS→Linux sandbox) não suporta `unlink` — `rm -f` falha com "Operation not permitted" mesmo em ficheiros do próprio sandbox. `mv` (rename) funciona. Fix definitivo: alias `git fix-locks` usa `mv *.lock *.lock.bak`. Setup de sessão (`.scripts/session-setup.sh`) faz isso automaticamente. Git configurado: `gc.auto=0`, `maintenance.auto=false`, `core.lockTimeout=600`, `core.fsmonitor=false`. NUNCA usar GitHub Desktop em paralelo.
+
+---
+
+**expo-av NÃO é compatível com o expo-modules-core desta versão do SDK.**
+- Erro ao fazer `npx expo install expo-av` + `pod install`: `EXAV.h: EXEventEmitter.h not found`
+- Causa: `expo-av` espera versão mais antiga de `expo-modules-core` — incompatibilidade de headers nativos
+- **Nunca instalar expo-av** sem primeiro verificar versão compatível com o SDK actual
+- Fix de limpeza: `rm -rf node_modules/expo-av ~/Library/Developer/Xcode/DerivedData && cd ios && pod deintegrate && pod install`
+- Som desactivado por agora — comentado em `CorrectOverlay.tsx` com TODO
+
+---
+
+**expo-av: nunca importar no top-level se existir risco de native module ausente.**
+- `import { Audio } from 'expo-av'` no top-level crasha ao arrancar (Metro avalia na inicialização do bundle)
+- `require('expo-av')` dinâmico dentro de async/try também falha — Metro resolve synchronously
+- Único fix real: native module devidamente linked (EAS build ou `npx expo run:ios` com expo-av instalado)
+- `import('expo-av')` async ESM é a abordagem mais segura mas ainda pode falhar se módulo não linkedado
+
+---
+
+**Rules of Hooks: nunca usar hooks dentro de .map() ou callbacks.**
+- `useAnimatedStyle`, `useSharedValue`, etc. dentro de `.map()` → rules of hooks violation
+- Fix: criar componente filho separado para cada item (ex: `ConfettoPiece`) que usa o hook correctamente
+- Isto foi a causa do bug de confetti no `CorrectOverlay` — componente `ConfettiLayer` com `.map()` + hooks
+
+---
+
+**Alias `@/` aponta para `src/`, não para a raiz do projecto.**
+- `tsconfig.json`: `"@/*": ["./src/*"]`
+- Assets em `assets/` devem usar caminho relativo: `../../assets/images/foo.png`
+- Nunca usar `@/assets/...` — Metro não resolve e dá erro em runtime
+
+---
+
+**`Easing` de react-native-reanimated: importar com `@ts-expect-error`.**
+- Erro: `Module '"react-native-reanimated"' has no exported member 'Easing'`
+- Causa: quirk do tsconfig deste projecto — named export não resolve correctamente
+- Fix: `// @ts-expect-error reanimated Easing named-export quirk` + import separado
+- Funciona correctamente em runtime — é apenas um quirk de tipos
+
+---
+
+**Git virtiofs: locks orphaned frequentemente.**
+- Mount virtiofs (macOS → Linux sandbox) não suporta `unlink` — locks ficam permanentes
+- Usar SEMPRE `mv` em vez de `rm` para locks: `mv file.lock file.lock.gone`
+- Push non-fast-forward: `git push --force-with-lease` após confirmar que remote não tem commits críticos
+- Nunca correr GitHub Desktop em paralelo com git do sandbox
+
+---
+
+**Development build: CocoaPods requer ownership correcto do Homebrew.**
+- Problema: Homebrew instalado por outro utilizador → `/opt/homebrew` com owner errado
+- Fix (requer utilizador admin do Mac): `sudo chown -R claudecode /opt/homebrew`
+- Depois: `brew install cocoapods && cd ios && pod install && npx expo run:ios`
+- O utilizador `claudecode` não tem sudo — operações que requerem sudo devem ser feitas pelo utilizador admin

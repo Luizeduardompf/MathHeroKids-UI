@@ -1,91 +1,72 @@
 # Session Handoff
 
-> **REGRA DO AGENTE:** Actualizar a secção "Em curso" ANTES de começar qualquer tarefa.
-> Fazer `git add .ai/session-handoff.md && git commit -m "chore: update handoff"` a cada checkpoint.
-> Assim, se o contexto acabar a meio, o próximo chat sabe exactamente onde parou.
+> **REGRA DO AGENTE:** Actualizar "Em curso" ANTES de começar qualquer tarefa. Commit imediato.
 
 ---
 
-## Estado actual — 2026-06-08 18:30
+## Estado actual — 2026-06-08 23:20
 
-### 🔴 Em curso (actualizar ANTES de começar cada tarefa)
+### 🟢 Em curso
 ```
-ESTADO: LIVRE — nenhuma tarefa em curso
-ÚLTIMA ACÇÃO: Design fidelidade — challenge screen reimplementada + EFs deployadas + E2E validado
+ESTADO: LIVRE
+ÚLTIMO COMMIT: a11dd5b
 ```
 
-### ✅ Concluído nesta sessão (2026-06-08)
+### ✅ Concluído nesta sessão (2026-06-08 noite)
 
-**Fixes de infraestrutura:**
-- `babel-preset-expo@56.0.14` instalado (estava em falta → Metro crash)
-- `expo-linking@56.0.13` instalado (estava em falta → app não abria)
-- 27 erros TypeScript corrigidos (React 19 + RN 0.85 StyleProp compat, `colors.background.secondary` → `cardAlt`)
-- Alert importado via subpath directo (quirk TS6/RN0.85 export*)
-- withSequence substituído por setTimeout (Reanimated 4.3 + TS6 quirk)
-- Commits: `7f027fb`, `ea48395`
+**Fix login silencioso:**
+- `app/(auth)/_layout.tsx` — `AuthGuard` resolve race condition: após `signIn`, `index.tsx` não
+  está montado (já foi substituído por `<Redirect>`). Guard observa `authStatus` e redireciona.
 
-**Phase 2 — Challenge Engine (commit `f04109e`):**
-- `src/lib/question-generator.ts` — PRNG determinístico (djb2 + Mulberry32), 20 pares únicos por seed
-- `src/stores/challenge.store.ts` — FSM de fases, buffer de respostas, lógica de blocos/retry
-- `src/services/challenge.service.ts` — chamadas EF + fila offline AsyncStorage
-- `app/(app)/challenge/[date].tsx` — gameplay completo (keypad, timer, overlays, milestones, conclusão)
-- `backend/functions/start_challenge/index.ts` — cria/retoma sessão, valida janela retroativa 7d
-- `backend/functions/complete_challenge/index.ts` — valida respostas, XP, level, streak, calendar, ledger
-- `backend/functions/_shared/cors.ts` — CORS headers partilhados
+**ConfirmDialog reutilizável (`src/components/ui/ConfirmDialog.tsx`):**
+- Props: `layout` (stack/row), variantes primary/destructive/neutral para cada botão
+- Substitui `ExitModal` em `challenge/[date].tsx` e `ConfirmModal` em `settings.tsx`
 
-**Fix tab (commit `cb58193`):**
-- `app/(app)/(tabs)/challenge.tsx` — redireciona para `challenge/[hoje]` em vez de placeholder
+**Settings do tutor sem activeChild:**
+- `app/(app)/_layout.tsx` — `useSegments` + `PARENT_ONLY_ROUTES = ['settings']`
+- `app/(profile-select)/index.tsx` — botão engrenagem top-right → settings
 
-### ⏭️ Próximo passo imediato
+**Welcome screen pixel-fiel:**
+- `app/(auth)/welcome.tsx` — card Milo, estrelas, feature pills, botões CTA
+- `assets/images/milo-mascot.png` — extraído do zip de design
+- ATENÇÃO: `@/` aponta para `src/` — assets usam caminho relativo `../../assets/`
 
-**Opção A — Deploy das Edge Functions e teste E2E:**
+**CorrectOverlay:**
+- Confetti: componente `ConfettoPiece` individual (fix rules of hooks — nunca hooks em .map())
+- Badge: `position: absolute` em `circleWrapper` — bordo superior-direito, drop-in animation
+- `Easing`: `@ts-expect-error` (quirk tsconfig — named export não resolve)
+- Som: comentado — `expo-av` incompatível com `expo-modules-core` desta versão do SDK
+
+**Development build funcionando:**
+- `npx expo run:ios` → app compila, ícone "Math Hero Kids" aparece no Simulator
+- CocoaPods instalado após fix ownership: `sudo chown -R claudecode /opt/homebrew` (feito pelo utilizador admin)
+
+### ⚠️ Issues conhecidos
+
+**expo-av incompatível com SDK actual:**
+- Erro: `EXAV.h: 'ExpoModulesCore/EXEventEmitter.h' file not found`
+- Fix: `rm -rf node_modules/expo-av ~/Library/Developer/Xcode/DerivedData && cd ios && pod deintegrate && pod install && cd .. && npx expo run:ios`
+- Após fix: descomentar `void playSuccessSound();` em `CorrectOverlay.tsx`
+- **NUNCA** fazer `npx expo install expo-av` sem primeiro garantir compatibilidade de versão
+
+**Edge Functions não deployadas:**
+- `start_challenge` e `complete_challenge` só em código local
+- Challenge usa fallback local (WARN no log — não é erro crítico)
+
+**Git locks virtiofs:**
+- Fix quando bloqueado: `find .git -name "*.lock" | while read f; do mv "$f" "${f}.gone"; done`
+- Push rejeitado por non-fast-forward: usar `git push --force-with-lease` após verificar remote
+
+### ⏭️ Próximos passos
+
+**A — Fix expo-av (som):**
 ```bash
-.bin/supabase link --project-ref <PROJECT_REF>
-.bin/supabase functions deploy start_challenge
-.bin/supabase functions deploy complete_challenge
+rm -rf node_modules/expo-av ~/Library/Developer/Xcode/DerivedData
+cd ios && pod deintegrate && pod install && cd ..
+npx expo run:ios
 ```
-Depois testar no Simulator: login → criar filho → tab Desafio → completar 20 questões.
+Depois descomentar `void playSuccessSound();` em `CorrectOverlay.tsx`.
 
-**Opção B — Iniciar Phase 3 — Gamification Core:**
+**B — Phase 3 Gamification Core:**
+Level Up modal, Trophy Room, Achievements, Progression.
 Ver `docs/implementation-phases.md` §Phase 3.
-Entregáveis: Level Up modal, Trophy Room, Achievements screen, Progression screen.
-
-### ⚠️ Issues conhecidos / pendentes
-
-- **Tela branca ao tocar no Desafio tab**: erros no Metro log — `No native ExponentConstants module found` e `Cannot find native module 'ExpoAsset'`. Causa: Expo Go não tem os módulos nativos do SDK 56 correctamente — **solução**: forçar update do Expo Go no Simulator (pressionar `i` no terminal do `expo start` e aceitar update) ou usar development build.
-- **WARN: Deep imports from react-native deprecated** (`react-native/Libraries/Alert/Alert`) — funciona em runtime, mas deve ser corrigido antes de produção. Fix: usar `Platform.OS` + `import { Alert } from 'react-native'` com `// @ts-expect-error` quando TS6 corrigir este quirk.
-- **Edge Functions não deployed** — `start_challenge` e `complete_challenge` precisam de deploy manual no Supabase antes de teste E2E.
-- Git warnings `unable to unlink tmp_obj_*` são normais no virtiofs — não bloqueiam.
-
----
-
-## Como retomar numa nova sessão
-
-```bash
-bash /sessions/eager-upbeat-babbage/mnt/MathHeroKids-UI/.scripts/session-setup.sh
-```
-
-Depois ler a secção "Em curso" acima.
-
----
-
-## Protocolo do agente (OBRIGATÓRIO)
-
-### Antes de iniciar qualquer tarefa:
-```bash
-cd /sessions/eager-upbeat-babbage/mnt/MathHeroKids-UI
-git fix-locks
-git add .ai/session-handoff.md
-git commit -m "chore: handoff — iniciando [nome da tarefa]"
-git push origin main
-```
-
-### Durante implementação longa:
-```bash
-git add -A && git commit -m "wip: [descrição]" && git push origin main
-```
-
-### Ao concluir:
-```bash
-git add -A && git commit -m "feat/fix/chore: [descrição]" && git push origin main
-```
