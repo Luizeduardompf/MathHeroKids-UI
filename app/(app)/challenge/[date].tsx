@@ -18,10 +18,11 @@ import {
   Pressable,
   StyleSheet,
   View,
+  // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-// Alert: direct subpath import avoids TypeScript 6 / RN 0.85 export* resolution quirk
-import { Alert } from 'react-native/Libraries/Alert/Alert';
+// @ts-expect-error — TS6/RN0.85 quirk: Alert is present at runtime but TS can't find it via export*
+import { Alert } from 'react-native'; // eslint-disable-line
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import Animated, {
