@@ -67,7 +67,7 @@ export default function RegisterParentScreen() {
           label={t('auth.register.parent.nameLabel')}
           placeholder={t('auth.register.parent.namePlaceholder')}
           value={name}
-          onChangeText={(v) => { setName(v); setError(null); }}
+          onChangeText={(v: string) => { setName(v); setError(null); }}
           autoComplete="name"
           autoCapitalize="words"
         />
@@ -75,7 +75,7 @@ export default function RegisterParentScreen() {
           label={t('auth.register.parent.emailLabel')}
           placeholder={t('auth.register.parent.emailPlaceholder')}
           value={email}
-          onChangeText={(v) => { setEmail(v); setError(null); }}
+          onChangeText={(v: string) => { setEmail(v); setError(null); }}
           keyboardType="email-address"
           autoComplete="email"
           autoCapitalize="none"
@@ -85,7 +85,7 @@ export default function RegisterParentScreen() {
           placeholder={t('auth.register.parent.passwordPlaceholder')}
           hint={t('auth.register.parent.passwordHint')}
           value={password}
-          onChangeText={(v) => { setPassword(v); setError(null); }}
+          onChangeText={(v: string) => { setPassword(v); setError(null); }}
           isPassword
           autoComplete="new-password"
         />
@@ -97,7 +97,7 @@ export default function RegisterParentScreen() {
           accessibilityRole="checkbox"
           accessibilityState={{ checked: termsAccepted }}
         >
-          <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
+          <View style={[styles.checkbox, termsAccepted ? styles.checkboxChecked : null] as import("react-native").StyleProp<import("react-native").ViewStyle>}>
             {termsAccepted && (
               <Text variant="bodySmall" color={colors.text.inverse}>✓</Text>
             )}

@@ -49,9 +49,9 @@ export function Text({
       style={[
         variantStyle as TextStyle,
         { color: color ?? colors.text.primary },
-        align ? { textAlign: align } : undefined,
+        align ? { textAlign: align } : null,
         style as TextStyle,
-      ]}
+      ] as unknown as TextStyle}
       {...(rest as object)}
     >
       {children}

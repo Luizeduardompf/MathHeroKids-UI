@@ -31,11 +31,11 @@ export function Screen({
   scrollViewProps,
   edges = ['top', 'bottom'],
 }: ScreenProps) {
-  const paddingStyle = padded ? styles.padded : undefined;
+  const paddingStyle = padded ? styles.padded : null;
 
   const inner = scrollable ? (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, paddingStyle]}
+      contentContainerStyle={[styles.scrollContent, paddingStyle] as StyleProp<ViewStyle>}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
       {...scrollViewProps}
@@ -43,7 +43,7 @@ export function Screen({
       {children}
     </ScrollView>
   ) : (
-    <View style={[styles.flex, paddingStyle, style]}>{children}</View>
+    <View style={[styles.flex, paddingStyle, style] as StyleProp<ViewStyle>}>{children}</View>
   );
 
   return (

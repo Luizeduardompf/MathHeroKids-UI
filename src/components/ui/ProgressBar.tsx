@@ -44,7 +44,7 @@ export function ProgressBar({
         styles.track,
         { backgroundColor: trackColor, height, borderRadius: radius.full },
         style,
-      ]}
+      ] as StyleProp<ViewStyle>}
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max: 100, now: Math.round(value * 100) }}
     >
@@ -53,7 +53,7 @@ export function ProgressBar({
           styles.fill,
           { backgroundColor: color, height, borderRadius: radius.full },
           fillStyle,
-        ]}
+        ] as StyleProp<ViewStyle>}
       />
     </View>
   );

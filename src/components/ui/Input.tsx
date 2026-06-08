@@ -41,7 +41,7 @@ export function Input({
       : colors.border.default;
 
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View style={[styles.container, containerStyle] as StyleProp<ViewStyle>}>
       {label ? (
         <Text variant="label" color={colors.text.primary} style={styles.label}>
           {label}
@@ -56,8 +56,8 @@ export function Input({
             styles.input,
             textVariants.body,
             { color: colors.text.primary },
-            leftIcon ? { paddingLeft: 0 } : undefined,
-          ]}
+            leftIcon ? { paddingLeft: 0 } : null,
+          ] as import('react-native').StyleProp<import('react-native').TextStyle>}
           placeholderTextColor={colors.text.tertiary}
           secureTextEntry={isSecure}
           autoCapitalize="none"

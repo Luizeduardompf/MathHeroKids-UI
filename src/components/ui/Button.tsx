@@ -16,7 +16,9 @@ import { Text } from './Text';
 import { colors, radius, space } from '@/theme';
 import type { ButtonVariant, ButtonSize } from '@/types';
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+// Reanimated 4 + React 19 type incompatibility — safe at runtime
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable as any) as React.ComponentType<PressableProps & { style?: StyleProp<ViewStyle> }>;
 
 interface ButtonProps extends Omit<PressableProps, 'style'> {
   variant?: ButtonVariant;
@@ -69,8 +71,9 @@ export function Button({
   const isDisabled = disabled ?? loading;
 
   return (
+    // @ts-expect-error — Reanimated 4 + React 19 type incompatibility; safe at runtime
     <AnimatedPressable
-      style={[animatedStyle, fullWidth && styles.fullWidth, style]}
+      style={[animatedStyle, fullWidth ? styles.fullWidth : null, style] as StyleProp<ViewStyle>}
       disabled={isDisabled}
       onPressIn={() => {
         scale.value = withSpring(0.97, { damping: 15 });

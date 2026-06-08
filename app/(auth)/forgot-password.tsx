@@ -68,7 +68,7 @@ export default function ForgotPasswordScreen() {
           label={t('auth.forgotPassword.emailLabel')}
           placeholder="responsavel@email.com"
           value={email}
-          onChangeText={(v) => { setEmail(v); setError(null); }}
+          onChangeText={(v: string) => { setEmail(v); setError(null); }}
           keyboardType="email-address"
           autoCapitalize="none"
           error={error ?? undefined}

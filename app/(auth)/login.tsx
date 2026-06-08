@@ -47,7 +47,7 @@ export default function LoginScreen() {
           label={t('auth.login.emailLabel')}
           placeholder={t('auth.login.emailPlaceholder')}
           value={email}
-          onChangeText={(v) => { setEmail(v); setError(null); }}
+          onChangeText={(v: string) => { setEmail(v); setError(null); }}
           keyboardType="email-address"
           autoComplete="email"
           autoCapitalize="none"
@@ -56,7 +56,7 @@ export default function LoginScreen() {
           label={t('auth.login.passwordLabel')}
           placeholder={t('auth.login.passwordPlaceholder')}
           value={password}
-          onChangeText={(v) => { setPassword(v); setError(null); }}
+          onChangeText={(v: string) => { setPassword(v); setError(null); }}
           isPassword
           autoComplete="current-password"
           error={error ?? undefined}

@@ -63,10 +63,10 @@ export function Avatar({
           borderRadius: s.borderRadius,
           backgroundColor: bgColor,
           borderWidth: ringColor ? 2.5 : 0,
-          borderColor: ringColor,
+          borderColor: ringColor ?? undefined,
         },
         style,
-      ]}
+      ] as StyleProp<ViewStyle>}
       accessibilityLabel={displayName}
     >
       <Text

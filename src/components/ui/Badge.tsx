@@ -28,7 +28,7 @@ interface BadgeProps {
 export function Badge({ label, variant = 'neutral', style }: BadgeProps) {
   const v = variantMap[variant];
   return (
-    <View style={[styles.badge, { backgroundColor: v.bg }, style]}>
+    <View style={[styles.badge, { backgroundColor: v.bg }, style] as StyleProp<ViewStyle>}>
       <Text variant="label" color={v.textColor}>
         {label}
       </Text>

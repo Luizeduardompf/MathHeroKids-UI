@@ -96,7 +96,7 @@ export default function RegisterChildScreen() {
           <Pressable
             key={id}
             onPress={() => setSelectedAvatar(id)}
-            style={[styles.avatarItem, selectedAvatar === id && styles.avatarSelected]}
+            style={[styles.avatarItem, selectedAvatar === id ? styles.avatarSelected : null] as import("react-native").StyleProp<import("react-native").ViewStyle>}
           >
             <Text style={styles.avatarEmoji}>{AVATAR_EMOJI[id]}</Text>
           </Pressable>
@@ -108,7 +108,7 @@ export default function RegisterChildScreen() {
           label={t('auth.register.child.nameLabel')}
           placeholder={t('auth.register.child.namePlaceholder')}
           value={name}
-          onChangeText={(v) => { setName(v); setError(null); }}
+          onChangeText={(v: string) => { setName(v); setError(null); }}
           autoCapitalize="words"
         />
         <Input
@@ -116,7 +116,7 @@ export default function RegisterChildScreen() {
           placeholder={t('auth.register.child.usernamePlaceholder')}
           hint={t('auth.register.child.usernameHint')}
           value={username}
-          onChangeText={(v) => { setUsername(v); setError(null); }}
+          onChangeText={(v: string) => { setUsername(v); setError(null); }}
           autoCapitalize="none"
           autoCorrect={false}
         />
@@ -125,7 +125,7 @@ export default function RegisterChildScreen() {
           placeholder="dd/mm/yyyy"
           hint={t('auth.register.child.birthDateHint')}
           value={birthDate}
-          onChangeText={(v) => { setBirthDate(v); setError(null); }}
+          onChangeText={(v: string) => { setBirthDate(v); setError(null); }}
           keyboardType="numeric"
         />
 
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
-    backgroundColor: colors.background.secondary,
+    backgroundColor: colors.background.cardAlt,
   },
   avatarSelected: {
     borderColor: colors.primary,

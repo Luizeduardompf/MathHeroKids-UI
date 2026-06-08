@@ -33,7 +33,7 @@ export function Card({
     return (
       <Pressable
         onPress={onPress}
-        style={({ pressed }: { pressed: boolean }) => [baseStyle, pressed && styles.pressed, style]}
+        style={({ pressed }: { pressed: boolean }) => [baseStyle, pressed ? styles.pressed : null, style] as StyleProp<ViewStyle>}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
       >
@@ -42,7 +42,7 @@ export function Card({
     );
   }
 
-  return <View style={[baseStyle, style]}>{children}</View>;
+  return <View style={[baseStyle, style] as StyleProp<ViewStyle>}>{children}</View>;
 }
 
 const styles = StyleSheet.create({

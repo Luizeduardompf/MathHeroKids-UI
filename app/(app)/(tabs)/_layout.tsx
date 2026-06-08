@@ -10,7 +10,7 @@ function TabIcon({ icon, focused }: { icon: string; focused: boolean }) {
 
 function ChallengeFAB({ focused }: { focused: boolean }) {
   return (
-    <View style={[styles.fab, focused && styles.fabActive]}>
+    <View style={[styles.fab, focused ? styles.fabActive : null] as import("react-native").StyleProp<import("react-native").ViewStyle>}>
       <Text style={{ fontSize: 24, color: colors.text.inverse }}>✖</Text>
     </View>
   );

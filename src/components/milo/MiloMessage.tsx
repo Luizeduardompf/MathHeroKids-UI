@@ -29,7 +29,7 @@ export function MiloMessage({ message, variant = 'blue', style }: MiloMessagePro
   const v = variantStyles[variant];
 
   return (
-    <View style={[styles.container, { backgroundColor: v.bg }, style]}>
+    <View style={[styles.container, { backgroundColor: v.bg }, style] as StyleProp<ViewStyle>}>
       {/* TODO Phase 2: Replace with <Image source={miloAsset} /> */}
       <View style={styles.avatar}>
         <Text style={styles.emoji}>🧙</Text>
