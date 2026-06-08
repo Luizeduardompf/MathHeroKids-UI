@@ -9,3 +9,5 @@ export { Avatar } from './Avatar';
 export { ProgressBar } from './ProgressBar';
 
 export type { TextVariant } from './Text';
+export { ConfirmDialog } from './ConfirmDialog';
+export type { ConfirmDialogProps } from './ConfirmDialog';

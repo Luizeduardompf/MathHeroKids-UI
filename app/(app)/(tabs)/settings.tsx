@@ -2,20 +2,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-// @ts-expect-error RN 0.85 quirk
-import { Alert } from 'react-native'; // eslint-disable-line
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 
-import { Avatar, Button, Card, Text } from '@/components/ui';
+import { Avatar, Button, Card, ConfirmDialog, Text } from '@/components/ui';
 import { childService } from '@/services/child.service';
 import { authService } from '@/services/auth.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
@@ -43,7 +42,8 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
+  const [loggingOut, setLoggingOut]       = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const hasPinSet = !!parentProfile?.pin_hash;
 
@@ -70,24 +70,29 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
     }
   }
 
-  function handleLogout() {
-    Alert.alert('Sair da conta', 'Tem certeza que deseja sair?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: async () => {
-          setLoggingOut(true);
-          await authService.signOut();
-          setLoggingOut(false);
-          router.replace('/(auth)/welcome');
-        },
-      },
-    ]);
+  async function confirmLogout() {
+    setShowLogoutModal(false);
+    setLoggingOut(true);
+    await authService.signOut();
+    setLoggingOut(false);
+    router.replace('/(auth)/welcome');
   }
 
   return (
     <View style={styles.root}>
+      <ConfirmDialog
+        visible={showLogoutModal}
+        title="Sair da conta?"
+        message="Você precisará fazer login novamente para acessar o app."
+        primaryLabel="Continuar"
+        primaryVariant="primary"
+        onPrimary={() => setShowLogoutModal(false)}
+        confirmLabel="Sair"
+        confirmVariant="destructive"
+        onConfirm={() => { void confirmLogout(); }}
+        layout="stack"
+      />
+
       <SafeAreaView edges={['top']} style={styles.safeHeader}>
         <View style={styles.header}>
           <Text variant="caption" color="rgba(255,255,255,0.8)" style={styles.appName}>
@@ -113,7 +118,6 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
           </View>
         </Card>
 
-        {/* Separador */}
         <View style={styles.divider} />
 
         {/* PIN gate */}
@@ -155,7 +159,7 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
           variant="destructive"
           label={loggingOut ? 'Saindo...' : 'Sair da conta'}
           loading={loggingOut}
-          onPress={handleLogout}
+          onPress={() => setShowLogoutModal(true)}
           style={styles.logoutBtnGate}
         />
       </ScrollView>
@@ -328,28 +332,7 @@ export default function SettingsScreen() {
   const router      = useRouter();
   const parentId    = useAuthStore(selectParentId);
   const [pinVerified, setPinVerified] = useState(false);
-  const [loggingOut, setLoggingOut]   = useState(false);
-
-  async function handleLogout() {
-    Alert.alert(
-      'Sair da conta',
-      'Tem certeza que deseja sair?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Sair',
-          style: 'destructive',
-          onPress: async () => {
-            setLoggingOut(true);
-            await authService.signOut();
-            setLoggingOut(false);
-            // useAuthListener detecta signOut e redireciona para welcome
-            router.replace('/(auth)/welcome');
-          },
-        },
-      ],
-    );
-  }
+  const [loggingOut, setLoggingOut] = useState(false);
 
   // Reset PIN gate every time the tab comes into focus
   useFocusEffect(useCallback(() => {
@@ -420,14 +403,7 @@ export default function SettingsScreen() {
           <ChildSettingsCard key={child.id} child={child} />
         ))}
 
-        {/* ── Logout ───────────────────────────────────────────── */}
-        <Button
-          variant="destructive"
-          label={loggingOut ? 'Saindo...' : 'Sair da conta'}
-          loading={loggingOut}
-          onPress={handleLogout}
-          style={styles.logoutBtn}
-        />
+        {/* Logout removido da tela principal — fica só no PinGate */}
 
       </ScrollView>
     </View>

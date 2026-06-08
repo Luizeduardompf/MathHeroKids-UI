@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 
+import { Ionicons } from '@expo/vector-icons';
 import { Avatar, Card, Text } from '@/components/ui';
 import { childService } from '@/services/child.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
@@ -34,7 +35,17 @@ export default function ProfileSelectScreen() {
     <View style={styles.safe}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.header}>
-          <Text variant="caption" color="rgba(255,255,255,0.7)">Math Hero Kids</Text>
+          <View style={styles.headerTop}>
+            <Text variant="caption" color="rgba(255,255,255,0.7)">Math Hero Kids</Text>
+            <TouchableOpacity
+              onPress={() => router.push('/(app)/(tabs)/settings')}
+              style={styles.settingsBtn}
+              accessibilityLabel="Ajustes do responsável"
+              accessibilityRole="button"
+            >
+              <Ionicons name="settings" size={22} color={colors.text.inverse} />
+            </TouchableOpacity>
+          </View>
           <Text variant="h1" color={colors.text.inverse}>{t('profileSelect.title')}</Text>
           <Text variant="body" color="rgba(255,255,255,0.8)">{t('profileSelect.subtitle')}</Text>
         </View>
@@ -105,6 +116,15 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.primary },
   safeArea: { flex: 1 },
   header: { paddingTop: space.lg, paddingHorizontal: space.md, paddingBottom: space.lg, gap: space.xs },
+  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  settingsBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingHorizontal: space.md, paddingBottom: space['2xl'], gap: space.sm },
   childCard: { flexDirection: 'row', alignItems: 'center', gap: space.md, borderRadius: radius.xl },

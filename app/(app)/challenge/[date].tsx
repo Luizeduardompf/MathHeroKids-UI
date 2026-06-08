@@ -13,8 +13,8 @@ import {
   View,
 } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-// @ts-expect-error TS6/RN0.85 quirk — Image, Modal, Alert present at runtime
-import { Alert, Image, Modal } from 'react-native'; // eslint-disable-line
+// @ts-expect-error TS6/RN0.85 quirk — Image, Alert present at runtime
+import { Alert, Image } from 'react-native'; // eslint-disable-line
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import Animated, {
@@ -26,7 +26,7 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { useShallow } from 'zustand/react/shallow';
 
-import { Text } from '@/components/ui';
+import { ConfirmDialog, Text } from '@/components/ui';
 import { colors, fontFamily, radius, space, shadows } from '@/theme';
 import { CorrectOverlay } from '@/components/challenge/CorrectOverlay';
 import {
@@ -317,95 +317,6 @@ const kpStyles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 34,               // linha explícita evita clipping
     color: '#1A1F36',
-  },
-});
-
-// ─── Exit Modal ───────────────────────────────────────────────────────────────
-
-function ExitModal({
-  visible,
-  onContinue,
-  onLeave,
-}: {
-  visible: boolean;
-  onContinue: () => void;
-  onLeave: () => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <Modal transparent visible={visible} animationType="fade">
-      <View style={exitStyles.backdrop}>
-        <View style={exitStyles.card}>
-          <Text style={exitStyles.title}>{t('challenge.exitTitle')}</Text>
-          <Text style={exitStyles.subtitle}>{t('challenge.exitMessage')}</Text>
-          <Pressable style={exitStyles.continueBtn} onPress={onContinue}>
-            <Text style={exitStyles.continueBtnText}>{t('challenge.exitConfirm')}</Text>
-          </Pressable>
-          <Pressable style={exitStyles.leaveBtn} onPress={onLeave}>
-            <Text style={exitStyles.leaveBtnText}>{t('challenge.exitLeave')}</Text>
-          </Pressable>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-const exitStyles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 28,
-    width: '100%',
-    alignItems: 'center',
-    gap: 12,
-    ...shadows.lg,
-  },
-  title: {
-    fontFamily: fontFamily.extraBold,
-    fontSize: 22,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontFamily: fontFamily.regular,
-    fontSize: 15,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  continueBtn: {
-    backgroundColor: colors.success,
-    borderRadius: 32,
-    height: 56,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  continueBtnText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 16,
-    color: '#fff',
-  },
-  leaveBtn: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 32,
-    height: 56,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  leaveBtnText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 16,
-    color: colors.text.secondary,
   },
 });
 
@@ -758,10 +669,17 @@ export default function ChallengeScreen() {
 
   return (
     <View style={gs.container}>
-      <ExitModal
+      <ConfirmDialog
         visible={showExitModal}
-        onContinue={() => setShowExitModal(false)}
-        onLeave={() => { setShowExitModal(false); storeActions.reset(); router.back(); }}
+        title={t('challenge.exitTitle')}
+        message={t('challenge.exitMessage')}
+        primaryLabel={t('challenge.exitConfirm')}
+        primaryVariant="primary"
+        onPrimary={() => setShowExitModal(false)}
+        confirmLabel={t('challenge.exitLeave')}
+        confirmVariant="neutral"
+        onConfirm={() => { setShowExitModal(false); storeActions.reset(); router.back(); }}
+        layout="stack"
       />
 
       {/* Header: [X] [Questão X de 20 + progress] [⏰ timer] */}

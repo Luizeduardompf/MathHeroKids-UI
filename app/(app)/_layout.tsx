@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 
 import { useAuthStore, selectAuthStatus } from '@/stores/auth.store';
 import { useProfileStore, selectHasActiveChild } from '@/stores/profile.store';
@@ -11,10 +11,18 @@ import { colors } from '@/theme';
  * Redirects happen here (not in root layout) to avoid interfering with the
  * registration flow that lives inside (auth).
  */
+// Routes inside (app) that are accessible without an active child.
+// These are parent-level screens that don't require a selected child profile.
+const PARENT_ONLY_ROUTES = ['settings'];
+
 export default function AppLayout() {
   const status = useAuthStore(selectAuthStatus);
   const hasActiveChild = useProfileStore(selectHasActiveChild);
   const router = useRouter();
+  const segments = useSegments();
+
+  // True when the current route is a parent-only screen (no activeChild required)
+  const isParentOnlyRoute = PARENT_ONLY_ROUTES.some((r) => segments.includes(r));
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -24,13 +32,13 @@ export default function AppLayout() {
       return;
     }
 
-    if (!hasActiveChild) {
+    if (!hasActiveChild && !isParentOnlyRoute) {
       router.replace('/(profile-select)/');
     }
-  }, [status, hasActiveChild, router]);
+  }, [status, hasActiveChild, isParentOnlyRoute, router]);
 
   // Prevent flash of app content while redirecting
-  if (status === 'loading' || status === 'unauthenticated' || !hasActiveChild) {
+  if (status === 'loading' || status === 'unauthenticated' || (!hasActiveChild && !isParentOnlyRoute)) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary }}>
         <ActivityIndicator color={colors.text.inverse} size="large" />
