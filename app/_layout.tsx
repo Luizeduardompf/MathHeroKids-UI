@@ -20,7 +20,9 @@ import { useAuthListener } from '@/hooks/use-auth';
 import { colors } from '@/theme';
 
 // Keep the splash screen visible while we load resources
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Ignore error — Expo Go sometimes throws if splash already hidden
+});
 
 function AuthListener() {
   useAuthListener();
@@ -29,6 +31,7 @@ function AuthListener() {
 
 export default function RootLayout() {
   const [i18nReady, setI18nReady] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     Nunito_400Regular,
@@ -39,20 +42,33 @@ export default function RootLayout() {
 
   // Initialize i18n
   useEffect(() => {
-    initI18n().then(() => setI18nReady(true));
+    initI18n()
+      .then(() => setI18nReady(true))
+      .catch(() => setI18nReady(true)); // fail-safe: mark ready even on error
   }, []);
 
-  // Hide splash screen once everything is ready
+  // Safety timeout — never block the app for more than 3 seconds
   useEffect(() => {
-    if ((fontsLoaded || fontError) && i18nReady) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError, i18nReady]);
+    const timer = setTimeout(() => setTimedOut(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
-  if (!(fontsLoaded || fontError) || !i18nReady) {
+  const fontsReady = fontsLoaded || !!fontError || timedOut;
+  const appReady = fontsReady && (i18nReady || timedOut);
+
+  // Hide splash screen once everything is ready (or timed out)
+  useEffect(() => {
+    if (appReady) {
+      SplashScreen.hideAsync().catch(() => {
+        // Ignore error — safe in Expo Go
+      });
+    }
+  }, [appReady]);
+
+  if (!appReady) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary }}>
-        <ActivityIndicator color={colors.text.inverse} />
+        <ActivityIndicator color={colors.text.inverse} size="large" />
       </View>
     );
   }
