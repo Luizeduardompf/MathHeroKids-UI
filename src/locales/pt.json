@@ -331,7 +331,8 @@
       "invalidEmail": "Digite um e-mail válido.",
       "usernameTaken": "Este nome de usuário já está em uso.",
       "usernameFormat": "Use apenas letras, números e _",
-      "termsRequired": "Você deve aceitar os termos para continuar."
+      "termsRequired": "Você deve aceitar os termos para continuar.",
+      "invalidDate": "Use o formato dd/mm/aaaa (ex: 15/03/2018)."
     }
   }
 }

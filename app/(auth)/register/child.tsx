@@ -51,6 +51,10 @@ export default function RegisterChildScreen() {
     if (!name.trim()) return t('errors.validation.required');
     if (!username.trim()) return t('errors.validation.required');
     if (!USERNAME_REGEX.test(username.trim())) return t('errors.validation.usernameFormat');
+    // Birth date is optional — but if filled, must be valid dd/mm/yyyy
+    if (birthDate.trim() && !parseBirthDate(birthDate.trim())) {
+      return t('errors.validation.invalidDate');
+    }
     return null;
   }
 
@@ -126,7 +130,8 @@ export default function RegisterChildScreen() {
           hint={t('auth.register.child.birthDateHint')}
           value={birthDate}
           onChangeText={(v: string) => { setBirthDate(v); setError(null); }}
-          keyboardType="numeric"
+          keyboardType="numbers-and-punctuation"
+          maxLength={10}
         />
 
         {error ? (

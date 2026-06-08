@@ -320,7 +320,8 @@
       "invalidEmail": "Enter a valid email.",
       "usernameTaken": "This username is already taken.",
       "usernameFormat": "Use only letters, numbers and _",
-      "termsRequired": "You must accept the terms to continue."
+      "termsRequired": "You must accept the terms to continue.",
+      "invalidDate": "Use format dd/mm/yyyy (e.g. 15/03/2018)."
     }
   }
 }
