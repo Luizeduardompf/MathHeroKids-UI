@@ -24,7 +24,10 @@ export default function RegisterParentScreen() {
 
   function validate(): string | null {
     if (!name.trim()) return t('errors.validation.required');
+    if (name.trim().length < 2) return t('errors.validation.nameTooShort');
+    if (!email.trim()) return t('errors.validation.required');
     if (!EMAIL_REGEX.test(email.trim())) return t('errors.validation.invalidEmail');
+    if (!password) return t('errors.validation.required');
     if (password.length < 8) return t('errors.auth.weakPassword');
     if (!termsAccepted) return t('errors.validation.termsRequired');
     return null;

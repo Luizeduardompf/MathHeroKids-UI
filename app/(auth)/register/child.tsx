@@ -49,12 +49,11 @@ export default function RegisterChildScreen() {
 
   function validate(): string | null {
     if (!name.trim()) return t('errors.validation.required');
+    if (name.trim().length < 2) return t('errors.validation.nameTooShort');
     if (!username.trim()) return t('errors.validation.required');
     if (!USERNAME_REGEX.test(username.trim())) return t('errors.validation.usernameFormat');
-    // Birth date is optional — but if filled, must be valid dd/mm/yyyy
-    if (birthDate.trim() && !parseBirthDate(birthDate.trim())) {
-      return t('errors.validation.invalidDate');
-    }
+    if (!birthDate.trim()) return t('errors.validation.required');
+    if (!parseBirthDate(birthDate.trim())) return t('errors.validation.invalidDate');
     return null;
   }
 

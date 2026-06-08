@@ -328,6 +328,7 @@
     },
     "validation": {
       "required": "Este campo é obrigatório.",
+      "nameTooShort": "O nome deve ter pelo menos 2 caracteres.",
       "invalidEmail": "Digite um e-mail válido.",
       "usernameTaken": "Este nome de usuário já está em uso.",
       "usernameFormat": "Use apenas letras, números e _",
