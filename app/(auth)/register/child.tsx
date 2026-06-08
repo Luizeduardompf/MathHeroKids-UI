@@ -14,6 +14,14 @@ import type { AvatarId } from '@/constants/config';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
 
+/** Aplica máscara dd/mm/yyyy conforme o utilizador digita. */
+function applyDateMask(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
 /** Parse "dd/mm/yyyy" → "YYYY-MM-DD" or null if invalid. */
 function parseBirthDate(raw: string): string | null {
   const parts = raw.split('/');
@@ -132,8 +140,8 @@ export default function RegisterChildScreen() {
           placeholder="dd/mm/yyyy"
           hint={t('auth.register.child.birthDateHint')}
           value={birthDate}
-          onChangeText={(v: string) => { setBirthDate(v); setError(null); }}
-          keyboardType="numbers-and-punctuation"
+          onChangeText={(v: string) => { setBirthDate(applyDateMask(v)); setError(null); }}
+          keyboardType="number-pad"
           maxLength={10}
         />
 
