@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { Ionicons } from '@expo/vector-icons';
 import {
   Nunito_400Regular,
   Nunito_600SemiBold,
@@ -41,6 +42,7 @@ export default function RootLayout() {
     Nunito_600SemiBold,
     Nunito_700Bold,
     Nunito_800ExtraBold,
+    ...Ionicons.font, // loads Ionicons.ttf — prevents fallback glyph rendering
   });
 
   // Initialize i18n — read saved locale from AsyncStorage first (no device auto-detect)

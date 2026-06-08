@@ -3,11 +3,13 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { Ionicons } from '@expo/vector-icons';
 import { Button, Input, Text } from '@/components/ui';
 import { Screen } from '@/components/layout/Screen';
 import { MiloMessage } from '@/components/milo/MiloMessage';
 import { childService } from '@/services/child.service';
 import { AVATAR_IDS } from '@/constants/config';
+import { AVATAR_ICONS } from '@/constants/icons';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { colors, radius, space } from '@/theme';
 import type { AvatarId } from '@/constants/config';
@@ -32,16 +34,6 @@ function parseBirthDate(raw: string): string | null {
   if (isNaN(date.getTime())) return null;
   return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
 }
-
-// Avatar emoji map — temporary until real avatar assets land in Phase 2
-const AVATAR_EMOJI: Record<AvatarId, string> = {
-  sofia: '👧',
-  gabriel: '👦',
-  pedro: '🧒',
-  ana: '👧🏽',
-  theo: '👦🏻',
-  mia: '👧🏼',
-};
 
 export default function RegisterChildScreen() {
   const { t } = useTranslation();
@@ -113,7 +105,7 @@ export default function RegisterChildScreen() {
             style={[styles.avatarItem, selectedAvatar === id ? styles.avatarSelected : null] as import("react-native").StyleProp<import("react-native").ViewStyle>}
           >
             {/* RNText sem Nunito para emoji renderizar correctamente no iOS */}
-            <RNText style={styles.avatarEmoji}>{AVATAR_EMOJI[id]}</RNText>
+            <RNText style={styles.avatarEmoji}>{AVATAR_ICONS[id]}</RNText>
           </Pressable>
         ))}
       </View>
@@ -125,6 +117,7 @@ export default function RegisterChildScreen() {
           value={name}
           onChangeText={(v: string) => { setName(v); setError(null); }}
           autoCapitalize="words"
+          leftIcon={<Ionicons name="person-outline" size={20} color={colors.text.tertiary} />}
         />
         <Input
           label={t('auth.register.child.usernameLabel')}
@@ -134,6 +127,7 @@ export default function RegisterChildScreen() {
           onChangeText={(v: string) => { setUsername(v); setError(null); }}
           autoCapitalize="none"
           autoCorrect={false}
+          leftIcon={<Ionicons name="at-outline" size={20} color={colors.text.tertiary} />}
         />
         <Input
           label={t('auth.register.child.birthDateLabel')}

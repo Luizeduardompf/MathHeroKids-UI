@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button, Text } from '@/components/ui';
 import { Screen } from '@/components/layout/Screen';
+import { Icons } from '@/constants/icons';
 import { colors, space } from '@/theme';
 
 export default function WelcomeScreen() {
@@ -16,7 +17,7 @@ export default function WelcomeScreen() {
       <View style={styles.hero}>
         {/* TODO Phase 2: Milo illustration + logo asset */}
         <Text variant="display" color={colors.text.inverse} align="center">
-          🧙‍♂️
+          {Icons.milo}
         </Text>
         <Text variant="display" color={colors.text.inverse} align="center">
           {t('auth.welcome.title')}

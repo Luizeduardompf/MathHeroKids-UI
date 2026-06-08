@@ -173,7 +173,7 @@ export default function EditarCriancaScreen() {
             label={t('auth.register.child.nameLabel')}
             placeholder={t('auth.register.child.namePlaceholder')}
             value={name}
-            onChangeText={(v) => { setName(v); setError(null); }}
+            onChangeText={(v: string) => { setName(v); setError(null); }}
             autoCapitalize="words"
           />
           <Input
@@ -181,7 +181,7 @@ export default function EditarCriancaScreen() {
             placeholder={t('auth.register.child.usernamePlaceholder')}
             hint={t('auth.register.child.usernameHint')}
             value={username}
-            onChangeText={(v) => { setUsername(v); setError(null); }}
+            onChangeText={(v: string) => { setUsername(v); setError(null); }}
             autoCapitalize="none"
             autoCorrect={false}
           />
@@ -190,7 +190,7 @@ export default function EditarCriancaScreen() {
             placeholder="dd/mm/yyyy"
             hint={t('auth.register.child.birthDateHint')}
             value={birthDate}
-            onChangeText={(v) => { setBirthDate(applyDateMask(v)); setError(null); }}
+            onChangeText={(v: string) => { setBirthDate(applyDateMask(v)); setError(null); }}
             keyboardType="number-pad"
             maxLength={10}
           />

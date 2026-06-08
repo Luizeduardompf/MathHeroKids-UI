@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import { Text } from '@/components/ui/Text';
+import { Icons } from '@/constants/icons';
 import { colors, radius, space } from '@/theme';
 
 type MiloVariant = 'blue' | 'orange' | 'green';
@@ -21,24 +22,23 @@ interface MiloMessageProps {
 
 /**
  * Milo the mascot speech bubble.
- * Appears on auth screens, challenge feedback, achievements, etc.
  *
- * Phase 2: replace the placeholder emoji with the actual Milo illustration asset.
+ * Phase 2: replace the emoji with <Image source={miloAsset} /> inside the avatar circle.
  */
 export function MiloMessage({ message, variant = 'blue', style }: MiloMessageProps) {
   const v = variantStyles[variant];
 
   return (
     <View style={[styles.container, { backgroundColor: v.bg }, style] as StyleProp<ViewStyle>}>
-      {/* TODO Phase 2: Replace with <Image source={miloAsset} /> */}
+      {/* TODO Phase 2: Replace with <Image source={miloAsset} style={styles.miloImage} /> */}
       <View style={styles.avatar}>
-        <Text style={styles.emoji}>🧙</Text>
+        <Text style={styles.emoji}>{Icons.miloAvatar}</Text>
       </View>
       <View style={styles.bubble}>
-        <Text variant="caption" color={colors.text.tertiary} style={styles.label}>
+        <Text variant="caption" style={styles.label}>
           MILO DIZ
         </Text>
-        <Text variant="body" color={v.textColor} style={styles.message}>
+        <Text variant="bodyLarge" color={v.textColor} style={styles.message}>
           {message}
         </Text>
       </View>
@@ -50,20 +50,30 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: radius.xl,
-    padding: space.md,
-    gap: space.sm,
+    borderRadius: radius['3xl'],
+    paddingVertical: space.md,
+    paddingHorizontal: space.md,
+    gap: space.md,
+    minHeight: 80,
   },
+  // White circle — Phase 2 will contain the real Milo illustration
   avatar: {
-    width: 48,
-    height: 48,
+    width: 64,
+    height: 64,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: colors.background.card,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  emoji: { fontSize: 24 },
-  bubble: { flex: 1, gap: 2 },
-  label: { opacity: 0.8, fontWeight: '700', letterSpacing: 0.5 },
-  message: { fontWeight: '700' },
+  emoji: { fontSize: 36 },
+  bubble: { flex: 1, gap: 3 },
+  label: {
+    color: 'rgba(255,255,255,0.65)',
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    fontSize: 11,
+    textTransform: 'uppercase',
+  } as import('react-native').TextStyle,
+  message: { fontWeight: '800' },
 });

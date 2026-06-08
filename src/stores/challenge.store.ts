@@ -64,6 +64,8 @@ interface ChallengeState {
   phase: ChallengePhase;
   lastAnswerCorrect: boolean | null;
   lastCorrectAnswer: number | null;
+  lastUserAnswer: number | null;
+  lastAnsweredQuestion: { operand_a: number; operand_b: number; correct_answer: number } | null;
   errorMessage: string | null;
 
   // ─── Actions ────────────────────────────────────────────────────────────────
@@ -83,6 +85,8 @@ interface ChallengeState {
   submitAnswer: (childAnswer: number | null) => void;
   /** Called when player opts to retry the current block */
   retryBlock: () => void;
+  /** Called when player accepts wrong answer and advances to next question */
+  advanceAfterWrong: () => void;
   /** Called after milestone overlay is dismissed */
   dismissMilestone: () => void;
 
@@ -107,6 +111,23 @@ export const selectBlockCorrectCount = (s: ChallengeState): number =>
 
 export const selectAllAnswers = (s: ChallengeState): AnswerDraft[] => s.answers;
 
+export const selectSessionXp = (s: ChallengeState): number => {
+  const correct = new Set(
+    s.answers
+      .filter((a) => a.child_answer !== null && a.child_answer === a.operand_a * a.operand_b)
+      .map((a) => a.question_index),
+  );
+  return correct.size * 10;
+};
+
+export const selectUniqueCorrectCount = (s: ChallengeState): number => {
+  return new Set(
+    s.answers
+      .filter((a) => a.child_answer !== null && a.child_answer === a.operand_a * a.operand_b)
+      .map((a) => a.question_index),
+  ).size;
+};
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 const initialState = {
@@ -125,6 +146,8 @@ const initialState = {
   phase: 'idle' as ChallengePhase,
   lastAnswerCorrect: null as boolean | null,
   lastCorrectAnswer: null as number | null,
+  lastUserAnswer: null as number | null,
+  lastAnsweredQuestion: null as { operand_a: number; operand_b: number; correct_answer: number } | null,
   errorMessage: null as string | null,
 };
 
@@ -149,6 +172,8 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
       phase: 'playing',
       lastAnswerCorrect: null,
       lastCorrectAnswer: null,
+      lastUserAnswer: null,
+      lastAnsweredQuestion: null,
       errorMessage: null,
     });
   },
@@ -186,12 +211,18 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
     const isLast = nextIndex >= CHALLENGE.TOTAL_QUESTIONS;
 
     if (!isCorrect) {
-      // Wrong or timeout — continue to overlay
+      // Wrong or timeout — store for display in overlay
       set({
         answers: newAnswers,
         blockAnswers: newBlockAnswers,
         lastAnswerCorrect: false,
         lastCorrectAnswer: question.correct_answer,
+        lastUserAnswer: childAnswer,
+        lastAnsweredQuestion: {
+          operand_a: question.operand_a,
+          operand_b: question.operand_b,
+          correct_answer: question.correct_answer,
+        },
         phase: childAnswer === null ? 'timeout' : 'wrong',
       });
       return;
@@ -205,6 +236,8 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
         currentQuestionIndex: nextIndex,
         lastAnswerCorrect: true,
         lastCorrectAnswer: null,
+        lastUserAnswer: null,
+        lastAnsweredQuestion: null,
         phase: 'completed',
       });
       return;
@@ -219,6 +252,8 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
         blockAnswers: [],
         lastAnswerCorrect: true,
         lastCorrectAnswer: null,
+        lastUserAnswer: null,
+        lastAnsweredQuestion: null,
         phase: isMilestone ? 'milestone' : 'correct',
       });
       return;
@@ -231,6 +266,8 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
         currentQuestionIndex: nextIndex,
         lastAnswerCorrect: true,
         lastCorrectAnswer: null,
+        lastUserAnswer: null,
+        lastAnsweredQuestion: null,
         phase: 'milestone',
       });
       return;
@@ -242,13 +279,14 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
       currentQuestionIndex: nextIndex,
       lastAnswerCorrect: true,
       lastCorrectAnswer: null,
+      lastUserAnswer: null,
+      lastAnsweredQuestion: null,
       phase: 'correct',
     });
   },
 
   retryBlock: () => {
     const state = get();
-    // Go back to start of current block
     const blockStart = (state.currentBlock - 1) * CHALLENGE.QUESTIONS_PER_BLOCK;
     set({
       currentQuestionIndex: blockStart,
@@ -256,6 +294,25 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
       blockAnswers: [],
       phase: 'playing',
       questionStartTime: Date.now(),
+    });
+  },
+
+  advanceAfterWrong: () => {
+    const state = get();
+    const nextIndex = state.currentQuestionIndex + 1;
+
+    if (nextIndex >= CHALLENGE.TOTAL_QUESTIONS) {
+      set({ currentQuestionIndex: nextIndex, phase: 'completed' });
+      return;
+    }
+
+    const isLastInBlock = nextIndex % CHALLENGE.QUESTIONS_PER_BLOCK === 0;
+    const isMilestone = nextIndex === 5 || nextIndex === 10 || nextIndex === 15;
+
+    set({
+      currentQuestionIndex: nextIndex,
+      ...(isLastInBlock ? { currentBlock: state.currentBlock + 1, blockAttempt: 1, blockAnswers: [] } : {}),
+      phase: isMilestone ? 'milestone' : 'playing',
     });
   },
 

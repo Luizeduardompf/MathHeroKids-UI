@@ -6,12 +6,12 @@
 
 ---
 
-## Estado actual — 2026-06-08 13:00
+## Estado actual — 2026-06-08 18:30
 
 ### 🔴 Em curso (actualizar ANTES de começar cada tarefa)
 ```
 ESTADO: LIVRE — nenhuma tarefa em curso
-ÚLTIMA ACÇÃO: Phase 2 completa + fix do tab challenge + handoff actualizado
+ÚLTIMA ACÇÃO: Design fidelidade — challenge screen reimplementada + EFs deployadas + E2E validado
 ```
 
 ### ✅ Concluído nesta sessão (2026-06-08)

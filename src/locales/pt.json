@@ -127,13 +127,17 @@
       "subtitle": "Veja a resposta certa abaixo.",
       "yourAnswer": "Sua resposta:",
       "continue": "Continuar →",
-      "retry": "Tentar o bloco de novo"
+      "retry": "Tentar o bloco de novo",
+      "miloMessage": "Errar faz parte de aprender! Agora você já sabe esta. Bora continuar!",
+      "continueAnyway": "Continuar →",
+      "hint": "Lembre: {{a}} × {{b}} = {{a}} grupos de {{b}}"
     },
     "timeout": {
       "title": "Acabou o tempo!",
       "message": "Não tem problema. Você consegue! Vamos tentar de novo com calma.",
       "retry": "Tentar o bloco de novo",
-      "goHome": "Voltar ao início"
+      "goHome": "Voltar ao início",
+      "miloMessage": "Sem pressa! Respire fundo e tente outra vez. Eu acredito em você!"
     },
     "blockIncomplete": {
       "title": "Você chegou bem perto!",
@@ -143,28 +147,36 @@
       "target": "Meta: 100%",
       "retry": "Tentar o bloco de novo",
       "continueAnyway": "Continuar mesmo assim",
-      "goHome": "Voltar ao início"
+      "goHome": "Voltar ao início",
+      "miloMessage": "Faltou pouquinho! Mais uma tentativa e essa estrela perfeita é sua!"
     },
     "milestone": {
       "q5": {
         "title": "Mandou bem!",
-        "subtitle": "Você já completou 5 questões. Continue assim!"
+        "subtitle": "Você já completou 5 questões. Continue assim!",
+        "xp": "+50 XP"
       },
       "q10": {
         "title": "Você está na metade!",
-        "subtitle": "10 questões concluídas. Falta pouco para a estrela!"
+        "subtitle": "10 questões concluídas. Falta pouco para a estrela!",
+        "xp": "+100 XP"
       },
       "q15": {
         "title": "Faltam só algumas!",
-        "subtitle": "15 questões! Você é um verdadeiro herói da matemática."
+        "subtitle": "15 questões! Você é um verdadeiro herói da matemática.",
+        "xp": "+150 XP"
       },
       "continue": "Continuar"
     },
     "completed": {
       "title": "Desafio concluído!",
       "subtitle": "Incrível! Você terminou o desafio de hoje. Milo está orgulhoso!",
-      "continue": "Continuar"
-    }
+      "continue": "Continuar",
+      "xp": "+{{xp}} XP",
+      "questionsLabel": "{{done}}/{{total}} questões"
+    },
+    "miloDiz": "MILO DIZ",
+    "yourAnswer": "Sua resposta:"
   },
   "calendar": {
     "title": "Calendário",

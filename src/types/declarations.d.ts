@@ -31,7 +31,7 @@ declare module 'react-native' {
     lineHeight?: number; letterSpacing?: number; textAlign?: 'left' | 'center' | 'right' | 'justify';
     textDecorationLine?: string; includeFontPadding?: boolean;
   }
-  export type StyleProp<T> = T | T[] | null | undefined | false;
+  export type StyleProp<T> = T | (T | false | null | undefined)[] | null | undefined | false;
 
   // ── StyleSheet ───────────────────────────────────────────────────────────
   export const StyleSheet: {
@@ -119,6 +119,7 @@ declare module 'react-native' {
   export const Text: ComponentType<TextProps>;
   export const TextInput: ComponentType<TextInputProps>;
   export const Pressable: ComponentType<PressableProps>;
+  export const TouchableOpacity: ComponentType<PressableProps & { activeOpacity?: number }>;
   export const ScrollView: ComponentType<ScrollViewProps>;
   export const ActivityIndicator: ComponentType<{ color?: string; size?: 'small' | 'large'; style?: StyleProp<ViewStyle> }>;
   export const KeyboardAvoidingView: ComponentType<ViewProps & { behavior?: 'padding' | 'height' | 'position' }>;
@@ -150,6 +151,8 @@ declare module 'expo-router' {
   export function useSegments<T extends string[]>(): T;
   export function useLocalSearchParams<T extends Record<string, string>>(): T;
   export function useGlobalSearchParams<T extends Record<string, string>>(): T;
+  export type EffectCallback = () => undefined | void | (() => void);
+  export function useFocusEffect(effect: EffectCallback): void;
 
   export interface LinkProps { href: Href; children?: ReactNode; style?: TextStyle }
   export function Link(props: LinkProps): JSX.Element;

@@ -1,3 +1,5 @@
+export { Icon } from './Icon';
+export type { IoniconsName } from './Icon';
 export { Text } from './Text';
 export { Button } from './Button';
 export { Input } from './Input';

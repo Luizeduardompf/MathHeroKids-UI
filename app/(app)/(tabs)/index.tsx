@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +8,7 @@ import { Avatar, Badge, Button, Card, ProgressBar, Text } from '@/components/ui'
 import { MiloMessage } from '@/components/milo/MiloMessage';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { LEVEL_THRESHOLDS } from '@/constants/config';
-import { colors, space } from '@/theme';
+import { colors, radius, space } from '@/theme';
 
 /** XP required for the next level, or last threshold if max level. */
 function getXpNextLevel(level: number): number {
@@ -67,7 +68,7 @@ export default function HomeScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* Center/Right: XP progress bar */}
+          {/* Right: XP progress */}
           <TouchableOpacity
             style={styles.xpBlock}
             onPress={() => router.push('/(app)/progression')}
@@ -102,38 +103,51 @@ export default function HomeScreen() {
         />
 
         {/* Section 2 — Streak stats */}
-        <Card>
-          <View style={styles.streakRow}>
-            <View style={styles.streakItem}>
-              <Text style={styles.streakEmoji}>🔥</Text>
-              <Text variant="h1" color={colors.accent}>{child.current_streak}</Text>
-              <Text variant="caption" color={colors.text.secondary}>{t('home.dayStreak')}</Text>
+        <View style={styles.streakRow}>
+          {/* Current streak — orange pill, horizontal layout */}
+          <View style={styles.streakPillAccent}>
+            <View style={styles.streakIconCircleLight}>
+              <Ionicons name="flame" size={20} color={colors.text.inverse} />
             </View>
-            <View style={styles.divider} />
-            <View style={styles.streakItem}>
-              <Text style={styles.streakEmoji}>🏆</Text>
-              <Text variant="h1">{child.best_streak}</Text>
+            <View>
+              <Text variant="h2" color={colors.text.inverse}>{child.current_streak}</Text>
+              <Text variant="caption" color="rgba(255,255,255,0.85)">{t('home.dayStreak')}</Text>
+            </View>
+          </View>
+          {/* Best streak — white pill, horizontal layout */}
+          <View style={styles.streakPillNeutral}>
+            <View style={styles.streakIconCircleGold}>
+              <Ionicons name="trophy" size={20} color={colors.warning} />
+            </View>
+            <View>
+              <Text variant="h2">{child.best_streak}</Text>
               <Text variant="caption" color={colors.text.secondary}>{t('home.bestStreak')}</Text>
             </View>
           </View>
-        </Card>
+        </View>
 
         {/* Section 3 — Today's Challenge */}
         <Card style={styles.challengeCard}>
           <View style={styles.challengeHeader}>
-            <Badge label={t('home.challenge.notStarted')} variant="primary" />
-            <Text variant="label" color={colors.primary}>+150 XP</Text>
+            <Badge label={t('home.challenge.notStarted')} variant="success" />
+            <Text variant="label" color={colors.text.inverse}>+150 XP</Text>
           </View>
-          <Text variant="caption" color={colors.text.secondary} style={{ marginTop: space.xs }}>
+          <Text variant="caption" color="rgba(255,255,255,0.75)" style={{ marginTop: space.xs }}>
             {t('home.challenge.todaysChallenge')}
           </Text>
-          <Text variant="h2">Multiplication Mountain</Text>
-          <Text variant="bodySmall" color={colors.text.secondary}>
+          <Text variant="h2" color={colors.text.inverse}>Multiplication Mountain</Text>
+          <Text variant="bodySmall" color="rgba(255,255,255,0.75)">
             {t('home.challenge.questions', { current: 0, total: 20 })}
           </Text>
-          <ProgressBar value={0} color={colors.success} style={{ marginTop: space.xs }} />
+          <ProgressBar
+            value={0}
+            color="rgba(255,255,255,0.9)"
+            trackColor="rgba(255,255,255,0.25)"
+            style={{ marginTop: space.xs }}
+          />
           <Button
             label={t('home.challenge.start')}
+            variant="secondary"
             onPress={() => router.push(`/(app)/challenge/${todayDate}`)}
             style={{ marginTop: space.md }}
           />
@@ -153,13 +167,13 @@ export default function HomeScreen() {
         <View style={styles.trophyRow}>
           {(
             [
-              { key: 'home.trophy.daily', emoji: '🏅' },
-              { key: 'home.trophy.weekly', emoji: '🔒' },
-              { key: 'home.trophy.monthly', emoji: '🔒' },
-            ] as const
-          ).map(({ key, emoji }) => (
+              { key: 'home.trophy.daily', icon: 'medal-outline' as const, color: colors.warning },
+              { key: 'home.trophy.weekly', icon: 'lock-closed-outline' as const, color: colors.text.tertiary },
+              { key: 'home.trophy.monthly', icon: 'lock-closed-outline' as const, color: colors.text.tertiary },
+            ]
+          ).map(({ key, icon, color }) => (
             <Card key={key} style={styles.trophyCard} padding={space.md}>
-              <Text style={styles.trophyEmoji}>{emoji}</Text>
+              <Ionicons name={icon} size={28} color={color} />
               <Text variant="caption" color={colors.text.secondary} align="center">
                 {t(key)}
               </Text>
@@ -214,16 +228,59 @@ const styles = StyleSheet.create({
   xpValue: { fontWeight: '600' },
   scroll: { flex: 1 },
   content: { padding: space.md, gap: space.md, paddingBottom: space['2xl'] },
-  streakRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
-  streakItem: { alignItems: 'center', gap: space.xs },
-  streakEmoji: { fontSize: 24 },
-  divider: { width: 1, height: 64, backgroundColor: colors.border.default },
-  challengeCard: { gap: space.xs },
+
+  // Streak — horizontal pill layout matching design
+  streakRow: { flexDirection: 'row', gap: space.sm },
+  streakPillAccent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    backgroundColor: colors.accent,
+    borderRadius: radius.full,
+    paddingVertical: space.md,
+    paddingHorizontal: space.md,
+  },
+  streakPillNeutral: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    backgroundColor: colors.background.card,
+    borderRadius: radius.full,
+    paddingVertical: space.md,
+    paddingHorizontal: space.md,
+  },
+  streakIconCircleLight: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  streakIconCircleGold: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.warningLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Challenge
+  challengeCard: {
+    gap: space.xs,
+    backgroundColor: colors.success,
+  },
   challengeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+
+  // Trophies
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   trophyRow: { flexDirection: 'row', gap: space.sm },
   trophyCard: { flex: 1, alignItems: 'center', gap: space.xs },
-  trophyEmoji: { fontSize: 28 },
+
+  // Stats
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   statCard: { width: '47%' },
 });

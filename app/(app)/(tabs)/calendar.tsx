@@ -1,12 +1,13 @@
 import { StyleSheet, View } from 'react-native';
 import { Text } from '@/components/ui';
+import { Icons } from '@/constants/icons';
 import { colors, space } from '@/theme';
 
 // TODO: Implement in Phase 2+
 export default function CalendrioScreen() {
   return (
     <View style={styles.container}>
-      <Text style={{ fontSize: 48 }}>📅</Text>
+      <Text style={{ fontSize: 48 }}>{Icons.calendar}</Text>
       <Text variant="h2">Calendário</Text>
       <Text variant="body" color={colors.text.secondary}>Em breve</Text>
     </View>

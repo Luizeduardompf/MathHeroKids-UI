@@ -1,21 +1,39 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
+import type React from 'react';
 
 import { Text } from '@/components/ui';
-import { Icons } from '@/constants/icons';
+import type { IoniconsName } from '@/components/ui';
 import { colors, radius, shadows, space } from '@/theme';
 
-function TabIcon({ icon, focused }: { icon: string; focused: boolean }) {
-  return <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{icon}</Text>;
+// ─── Tab icon helpers ─────────────────────────────────────────────────────────
+
+interface TabIconProps {
+  outlineName: IoniconsName;
+  solidName: IoniconsName;
+  focused: boolean;
 }
 
-function ChallengeFAB({ focused }: { focused: boolean }) {
+function TabIcon({ outlineName, solidName, focused }: TabIconProps): React.JSX.Element {
   return (
-    <View style={[styles.fab, focused ? styles.fabActive : null] as import("react-native").StyleProp<import("react-native").ViewStyle>}>
-      <Text style={{ fontSize: 24, color: colors.text.inverse }}>{Icons.challengeTab}</Text>
+    <Ionicons
+      name={focused ? solidName : outlineName}
+      size={24}
+      color={focused ? colors.tabBar.active : colors.tabBar.inactive}
+    />
+  );
+}
+
+function ChallengeFAB({ focused }: { focused: boolean }): React.JSX.Element {
+  return (
+    <View style={[styles.fab, focused ? styles.fabActive : null] as import('react-native').StyleProp<import('react-native').ViewStyle>}>
+      <Ionicons name="close" size={26} color={colors.text.inverse} />
     </View>
   );
 }
+
+// ─── Layout ───────────────────────────────────────────────────────────────────
 
 export default function TabsLayout() {
   return (
@@ -33,14 +51,18 @@ export default function TabsLayout() {
         name="index"
         options={{
           tabBarLabel: 'Início',
-          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon icon={Icons.home} focused={focused} />,
+          tabBarIcon: ({ focused }: { focused: boolean }) => (
+            <TabIcon outlineName="home-outline" solidName="home" focused={focused} />
+          ),
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
           tabBarLabel: 'Calendário',
-          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon icon={Icons.calendar} focused={focused} />,
+          tabBarIcon: ({ focused }: { focused: boolean }) => (
+            <TabIcon outlineName="calendar-outline" solidName="calendar" focused={focused} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -55,14 +77,18 @@ export default function TabsLayout() {
         name="friends"
         options={{
           tabBarLabel: 'Amigos',
-          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon icon={Icons.friends} focused={focused} />,
+          tabBarIcon: ({ focused }: { focused: boolean }) => (
+            <TabIcon outlineName="people-outline" solidName="people" focused={focused} />
+          ),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           tabBarLabel: 'Ajustes',
-          tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon icon="⚙️" focused={focused} />,
+          tabBarIcon: ({ focused }: { focused: boolean }) => (
+            <TabIcon outlineName="settings-outline" solidName="settings" focused={focused} />
+          ),
         }}
       />
     </Tabs>

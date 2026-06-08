@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { Ionicons } from '@expo/vector-icons';
 import { Button, Input, Text } from '@/components/ui';
 import { Screen } from '@/components/layout/Screen';
 import { authService } from '@/services/auth.service';
@@ -51,6 +52,7 @@ export default function LoginScreen() {
           keyboardType="email-address"
           autoComplete="email"
           autoCapitalize="none"
+          leftIcon={<Ionicons name="person-outline" size={20} color={colors.text.tertiary} />}
         />
         <Input
           label={t('auth.login.passwordLabel')}
@@ -60,6 +62,7 @@ export default function LoginScreen() {
           isPassword
           autoComplete="current-password"
           error={error ?? undefined}
+          leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.text.tertiary} />}
         />
         <Text
           variant="body"

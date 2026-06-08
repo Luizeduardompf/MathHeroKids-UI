@@ -9,6 +9,7 @@ import { childService } from '@/services/child.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { useProfileStore } from '@/stores/profile.store';
 import type { ChildProfile } from '@/types';
+import { Icons } from '@/constants/icons';
 import { colors, radius, space } from '@/theme';
 
 export default function ProfileSelectScreen() {
@@ -67,11 +68,11 @@ export default function ProfileSelectScreen() {
                     <View style={styles.childNameRow}>
                       <Text variant="h3">{child.display_name}</Text>
                       <Text variant="body" color={colors.text.secondary}>
-                        ⭐ {t('common.level', { level: child.level })}
+                        {Icons.star} {t('common.level', { level: child.level })}
                       </Text>
                     </View>
                     <Text variant="label" color={colors.primary}>
-                      ⚡ {child.xp_total.toLocaleString()} XP
+                      {Icons.xp} {child.xp_total.toLocaleString()} XP
                     </Text>
                   </View>
                 </Card>

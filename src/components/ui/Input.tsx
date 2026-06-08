@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   Pressable,
@@ -71,11 +72,13 @@ export function Input({
           <Pressable
             style={styles.eyeButton}
             onPress={() => setIsSecure((v) => !v)}
-            accessibilityLabel={isSecure ? 'Show password' : 'Hide password'}
+            accessibilityLabel={isSecure ? 'Mostrar senha' : 'Ocultar senha'}
           >
-            <Text variant="bodySmall" color={colors.text.tertiary}>
-              {isSecure ? '👁' : '🙈'}
-            </Text>
+            <Ionicons
+              name={isSecure ? 'eye-outline' : 'eye-off-outline'}
+              size={20}
+              color={colors.text.tertiary}
+            />
           </Pressable>
         ) : null}
       </View>

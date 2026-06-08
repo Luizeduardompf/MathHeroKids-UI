@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { Ionicons } from '@expo/vector-icons';
 import { Button, Input, Text } from '@/components/ui';
 import { Screen } from '@/components/layout/Screen';
 import { MiloMessage } from '@/components/milo/MiloMessage';
@@ -73,6 +74,7 @@ export default function RegisterParentScreen() {
           onChangeText={(v: string) => { setName(v); setError(null); }}
           autoComplete="name"
           autoCapitalize="words"
+          leftIcon={<Ionicons name="person-outline" size={20} color={colors.text.tertiary} />}
         />
         <Input
           label={t('auth.register.parent.emailLabel')}
@@ -82,6 +84,7 @@ export default function RegisterParentScreen() {
           keyboardType="email-address"
           autoComplete="email"
           autoCapitalize="none"
+          leftIcon={<Ionicons name="mail-outline" size={20} color={colors.text.tertiary} />}
         />
         <Input
           label={t('auth.register.parent.passwordLabel')}
@@ -91,6 +94,7 @@ export default function RegisterParentScreen() {
           onChangeText={(v: string) => { setPassword(v); setError(null); }}
           isPassword
           autoComplete="new-password"
+          leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.text.tertiary} />}
         />
 
         {/* Terms checkbox */}
