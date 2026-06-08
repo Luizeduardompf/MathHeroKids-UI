@@ -1,25 +1,18 @@
-import { StyleSheet, View } from 'react-native';
-import { Text } from '@/components/ui';
-import { colors, space } from '@/theme';
+/**
+ * Challenge tab — redirects immediately to today's challenge screen.
+ * The actual gameplay lives in app/(app)/challenge/[date].tsx.
+ */
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
 
-// TODO: Implement in Phase 2+
-export default function DesafioScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={{ fontSize: 48 }}>✖</Text>
-      <Text variant="h2">Desafio</Text>
-      <Text variant="body" color={colors.text.secondary}>Em breve</Text>
-    </View>
-  );
+export default function ChallengTab() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0]!;
+    // Replace so the tab doesn't appear in the back stack
+    router.replace(`/(app)/challenge/${today}`);
+  }, [router]);
+
+  return null;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.md,
-    padding: space.md,
-    backgroundColor: colors.background.primary,
-  },
-});
