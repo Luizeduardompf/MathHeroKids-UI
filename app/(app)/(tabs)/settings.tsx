@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+// @ts-expect-error RN 0.85 quirk
+import { Alert } from 'react-native'; // eslint-disable-line
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -15,6 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { Avatar, Button, Card, Text } from '@/components/ui';
 import { childService } from '@/services/child.service';
+import { authService } from '@/services/auth.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { useProfileStore } from '@/stores/profile.store';
 import { SUPPORTED_LOCALES, TIMER_OPTIONS, MULTIPLICATION_RANGES } from '@/constants/config';
@@ -210,12 +213,87 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
   );
 }
 
+// ─── Parent card ──────────────────────────────────────────────────────────────
+
+function ParentCard() {
+  const user          = useAuthStore((s) => s.user);
+  const parentProfile = useAuthStore((s) => s.parentProfile);
+
+  // Nome: parentProfile.name > user_metadata.name > email prefix
+  const rawName = (parentProfile?.name as string | undefined)
+    ?? (user?.user_metadata?.name as string | undefined)
+    ?? user?.email?.split('@')[0]
+    ?? '—';
+  const email   = user?.email ?? '—';
+  const initials = rawName.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
+
+  return (
+    <Card style={pc.card}>
+      {/* Avatar com iniciais */}
+      <View style={pc.avatarCircle}>
+        <Text style={pc.initials}>{initials}</Text>
+      </View>
+      <View style={pc.info}>
+        <Text variant="h3">{rawName}</Text>
+        <Text variant="caption" color={colors.text.secondary}>{email}</Text>
+      </View>
+    </Card>
+  );
+}
+
+const pc = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginBottom: space.xs,
+  },
+  avatarCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initials: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#fff',
+    lineHeight: 24,
+  },
+  info: { flex: 1, gap: 2 },
+});
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
-  const parentId = useAuthStore(selectParentId);
+  const router      = useRouter();
+  const parentId    = useAuthStore(selectParentId);
   const [pinVerified, setPinVerified] = useState(false);
+  const [loggingOut, setLoggingOut]   = useState(false);
+
+  async function handleLogout() {
+    Alert.alert(
+      'Sair da conta',
+      'Tem certeza que deseja sair?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sair',
+          style: 'destructive',
+          onPress: async () => {
+            setLoggingOut(true);
+            await authService.signOut();
+            setLoggingOut(false);
+            // useAuthListener detecta signOut e redireciona para welcome
+            router.replace('/(auth)/welcome');
+          },
+        },
+      ],
+    );
+  }
 
   // Reset PIN gate every time the tab comes into focus
   useFocusEffect(useCallback(() => {
@@ -251,6 +329,10 @@ export default function SettingsScreen() {
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
+        {/* ── Dados do pai ──────────────────────────────────────── */}
+        <ParentCard />
+
         {/* ── Language (global) ─────────────────────────────────── */}
         <Card style={styles.section}>
           <Text variant="h3" style={styles.sectionLabel}>{t('settings.language')}</Text>
@@ -281,6 +363,16 @@ export default function SettingsScreen() {
         {children.map((child) => (
           <ChildSettingsCard key={child.id} child={child} />
         ))}
+
+        {/* ── Logout ───────────────────────────────────────────── */}
+        <Button
+          variant="destructive"
+          label={loggingOut ? 'Saindo...' : 'Sair da conta'}
+          loading={loggingOut}
+          onPress={handleLogout}
+          style={styles.logoutBtn}
+        />
+
       </ScrollView>
     </View>
   );
@@ -326,6 +418,7 @@ const styles = StyleSheet.create({
   section: { gap: space.md },
   sectionLabel: { marginBottom: space.xs },
   childrenLabel: { marginTop: space.xs },
+  logoutBtn: { marginTop: space.md },
 
   // Locale grid
   localeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
