@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import type { PressableProps, StyleProp, ViewStyle } from 'react-native';
 import Animated, {
+  createAnimatedComponent,
   useSharedValue,
   useAnimatedStyle,
   withSpring,
@@ -16,9 +17,9 @@ import { Text } from './Text';
 import { colors, radius, space } from '@/theme';
 import type { ButtonVariant, ButtonSize } from '@/types';
 
-// Reanimated 4 + React 19 type incompatibility — safe at runtime
+// Use direct createAnimatedComponent import (more robust in Reanimated 4.x)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable as any) as React.ComponentType<PressableProps & { style?: StyleProp<ViewStyle> }>;
+const AnimatedPressable = createAnimatedComponent(Pressable as any) as React.ComponentType<PressableProps & { style?: StyleProp<ViewStyle>; children?: React.ReactNode }>;
 
 interface ButtonProps extends Omit<PressableProps, 'style'> {
   variant?: ButtonVariant;
@@ -71,16 +72,12 @@ export function Button({
   const isDisabled = disabled ?? loading;
 
   return (
-    // @ts-expect-error — Reanimated 4 + React 19 type incompatibility; safe at runtime
+    // @ts-expect-error — React 19 + Reanimated 4 animated component JSX type mismatch; safe at runtime
     <AnimatedPressable
       style={[animatedStyle, fullWidth ? styles.fullWidth : null, style] as StyleProp<ViewStyle>}
       disabled={isDisabled}
-      onPressIn={() => {
-        scale.value = withSpring(0.97, { damping: 15 });
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1, { damping: 15 });
-      }}
+      onPressIn={() => { scale.value = withSpring(0.97, { damping: 15 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 15 }); }}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
