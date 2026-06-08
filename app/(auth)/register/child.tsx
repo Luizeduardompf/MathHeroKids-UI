@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Button, Input, Text } from '@/components/ui';
@@ -86,6 +86,9 @@ export default function RegisterChildScreen() {
   return (
     <Screen scrollable padded>
       <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
+          <RNText style={styles.backArrow}>‹ Voltar</RNText>
+        </Pressable>
         <Text variant="caption">{t('auth.register.child.stepIndicator')}</Text>
         <Text variant="h1">{t('auth.register.child.title')}</Text>
       </View>
@@ -101,7 +104,8 @@ export default function RegisterChildScreen() {
             onPress={() => setSelectedAvatar(id)}
             style={[styles.avatarItem, selectedAvatar === id ? styles.avatarSelected : null] as import("react-native").StyleProp<import("react-native").ViewStyle>}
           >
-            <Text style={styles.avatarEmoji}>{AVATAR_EMOJI[id]}</Text>
+            {/* RNText sem Nunito para emoji renderizar correctamente no iOS */}
+            <RNText style={styles.avatarEmoji}>{AVATAR_EMOJI[id]}</RNText>
           </Pressable>
         ))}
       </View>
@@ -152,6 +156,8 @@ export default function RegisterChildScreen() {
 
 const styles = StyleSheet.create({
   header: { paddingTop: space.lg, paddingBottom: space.md, gap: space.xs },
+  backBtn: { marginBottom: space.xs },
+  backArrow: { fontSize: 16, color: colors.primary, fontWeight: '600' },
   milo: { marginBottom: space.lg },
   sectionLabel: { marginBottom: space.sm },
   avatarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginBottom: space.lg },
