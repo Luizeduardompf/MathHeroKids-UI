@@ -49,7 +49,7 @@ export function Screen({
   return (
     // SafeAreaView without style prop — use wrapping View for background
     <View style={[styles.safe, { backgroundColor }]}>
-      <SafeAreaView edges={edges}>
+      <SafeAreaView edges={edges} style={styles.flex}>
         <KeyboardAvoidingView
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
