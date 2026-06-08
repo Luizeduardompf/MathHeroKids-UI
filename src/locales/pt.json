@@ -83,15 +83,22 @@
     "addChild": "Adicionar criança"
   },
   "home": {
+    "switchProfile": "Trocar perfil",
     "challenge": {
       "inProgress": "EM ANDAMENTO",
       "completed": "CONCLUÍDO",
       "notStarted": "HOJE",
+      "todaysChallenge": "Desafio de hoje",
       "continue": "Continuar Desafio",
       "start": "Iniciar Desafio",
       "questions": "{{current}} / {{total}} questões"
     },
     "recentTrophies": "Troféus recentes",
+    "trophy": {
+      "daily": "Troféu Diário",
+      "weekly": "Troféu Semanal",
+      "monthly": "Troféu Mensal"
+    },
     "friendsTitle": "Amigos",
     "friendsSubtitle": "Top jogadores que você segue",
     "requests": "Pedidos",

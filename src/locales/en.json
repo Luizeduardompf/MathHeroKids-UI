@@ -83,15 +83,22 @@
     "addChild": "Add child"
   },
   "home": {
+    "switchProfile": "Switch profile",
     "challenge": {
       "inProgress": "IN PROGRESS",
       "completed": "COMPLETED",
       "notStarted": "TODAY",
+      "todaysChallenge": "Today's Challenge",
       "continue": "Continue Challenge",
       "start": "Start Challenge",
       "questions": "{{current}} / {{total}} questions"
     },
     "recentTrophies": "Recent trophies",
+    "trophy": {
+      "daily": "Daily Trophy",
+      "weekly": "Weekly Trophy",
+      "monthly": "Monthly Trophy"
+    },
     "friendsTitle": "Friends",
     "friendsSubtitle": "Top players you follow",
     "requests": "Requests",
