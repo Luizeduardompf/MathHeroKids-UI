@@ -1,8 +1,9 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text as RNText, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import { Text } from './Text';
+import { AVATAR_ICONS } from '@/constants/icons';
 import { colors, radius } from '@/theme';
 import type { AvatarId } from '@/constants/config';
 import type { AvatarSize } from '@/types';
@@ -36,23 +37,20 @@ interface AvatarProps {
   style?: StyleProp<ViewStyle>;
 }
 
+// Emoji font size is larger than text — scale down relative to container
+const EMOJI_SCALE = 0.55;
+
 export function Avatar({
-  avatarId: _avatarId,
+  avatarId,
   displayName,
   size = 'md',
   ringColor,
   style,
 }: AvatarProps) {
   const s = sizeMap[size];
-  const initials = displayName
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
   const bgColor = colorFromString(displayName);
+  const emoji = avatarId ? AVATAR_ICONS[avatarId] : null;
 
-  // TODO Phase 2: render Image from avatarId asset when avatar images are added
   return (
     <View
       style={[
@@ -61,7 +59,7 @@ export function Avatar({
           width: s.container,
           height: s.container,
           borderRadius: s.borderRadius,
-          backgroundColor: bgColor,
+          backgroundColor: emoji ? colors.background.cardAlt : bgColor,
           borderWidth: ringColor ? 2.5 : 0,
           borderColor: ringColor ?? undefined,
         },
@@ -69,11 +67,16 @@ export function Avatar({
       ] as StyleProp<ViewStyle>}
       accessibilityLabel={displayName}
     >
-      <Text
-        style={{ fontSize: s.fontSize, fontWeight: '700', color: colors.text.inverse }}
-      >
-        {initials}
-      </Text>
+      {emoji ? (
+        // RNText to avoid Nunito font breaking emoji rendering on iOS
+        <RNText style={{ fontSize: s.container * EMOJI_SCALE, lineHeight: s.container }}>
+          {emoji}
+        </RNText>
+      ) : (
+        <Text style={{ fontSize: s.fontSize, fontWeight: '700', color: colors.text.inverse }}>
+          {displayName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
+        </Text>
+      )}
     </View>
   );
 }
