@@ -55,9 +55,14 @@ export const authService = {
           data: { name: params.name.trim() },
         },
       });
-      if (error) return { data: null, error: mapAuthError(error) };
+      if (error) {
+        console.error('[auth.signUp] error:', error.message);
+        // Show raw message in dev to diagnose
+        return { data: null, error: __DEV__ ? error.message : mapAuthError(error) };
+      }
       return { data: undefined, error: null };
     } catch (e) {
+      console.error('[auth.signUp] exception:', e);
       return { data: null, error: mapAuthError(e as Error) };
     }
   },
