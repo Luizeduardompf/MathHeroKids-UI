@@ -60,19 +60,9 @@ create policy "Parent updates own children (non-progression fields)"
     -- Edge Functions use service_role and bypass RLS to write these fields.
   );
 
--- Children profiles are readable by friends (for social features — Phase 5)
--- Only public fields: id, username, display_name, avatar_id, level
-create policy "Child profile visible to friends"
-  on public.child_profiles for select
-  using (
-    exists (
-      select 1 from public.friendships f
-      where f.child_id = child_profiles.id
-        and f.friend_id in (
-          select id from public.child_profiles where parent_id = auth.uid()
-        )
-    )
-  );
+-- NOTE: "Child profile visible to friends" policy intentionally omitted.
+-- Subquery on child_profiles inside a child_profiles policy causes 42P17 infinite recursion.
+-- Will be re-added in Phase 5 using a security-definer helper function to avoid recursion.
 
 -- ──────────────────────────────────────────────────────────────
 -- CHALLENGE SESSIONS & ANSWERS
