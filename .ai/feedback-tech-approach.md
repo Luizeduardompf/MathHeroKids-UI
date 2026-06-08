@@ -33,6 +33,15 @@ Separação de concerns, testabilidade, loading/error handling consistente.
 
 ---
 
+**Diagnóstico de erros de módulos nativos no Expo Go:**
+- `Cannot find native module 'ExpoAsset'` → Expo Go desactualizado no Simulator (não é problema de packages)
+- `No native ExponentConstants module found` → mesmo problema
+- `Invariant Violation: "main" has not been registered` → consequência do erro anterior
+- Fix: no terminal do `expo start`, premir `i` → Expo CLI instala a versão correcta (~200MB, 1-2 min)
+- Estes módulos nativos vivem **dentro do app Expo Go**, não nos node_modules JS
+
+---
+
 **Workflow do Simulator iOS:**
 - O utilizador corre `npx expo start` no Terminal do Mac (projecto em `~/Documents/Claude/Projects/MathHeroKids-UI`)
 - Metro URL: `exp://192.168.1.247:8081` (IP pode mudar, porta 8081 é fixa)
