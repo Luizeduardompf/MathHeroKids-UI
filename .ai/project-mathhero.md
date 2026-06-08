@@ -26,7 +26,7 @@ CLAUDE.md     → Instruções para agentes IA (root do projecto)
 
 ---
 
-## Status de Implementação (2026-06-07)
+## Status de Implementação (2026-06-08)
 
 ### Phase 0 — Foundation ✅ COMPLETO
 Design system, Expo Router skeleton, i18n, Supabase client, Zustand stores, tema.
@@ -42,7 +42,31 @@ Design system, Expo Router skeleton, i18n, Supabase client, Zustand stores, tema
 - Telas wired: login, register/parent (com checkbox terms), register/child (cria filho real no Supabase), forgot-password (com estado "enviado"), profile-select (filhos reais via TanStack Query)
 - `backend/` scaffolded: functions (complete_challenge, start_challenge, verify_parent_pin, send/respond_friend_request), migrations 001+002, seeds/level_thresholds
 
-### Phases 2–9 — Pendentes
+### Phase 2 — Challenge Engine ⚠️ CÓDIGO COMPLETO / AGUARDANDO E2E
+
+**Implementado (commit f04109e + cb58193):**
+- `src/lib/question-generator.ts` — PRNG determinístico (djb2 + Mulberry32), 20 pares únicos por seed
+- `src/stores/challenge.store.ts` — FSM completa: idle → loading → playing → correct/wrong/timeout/milestone → completed → submitting
+- `src/services/challenge.service.ts` — startChallenge, completeChallenge, offline queue + flush
+- `app/(app)/challenge/[date].tsx` — gameplay completo (keypad, timer, overlays, milestones Q5/Q10/Q15, conclusão)
+- `app/(app)/(tabs)/challenge.tsx` — redireciona para challenge/[hoje]
+- `backend/functions/start_challenge/index.ts` — cria/retoma sessão, idempotente
+- `backend/functions/complete_challenge/index.ts` — valida respostas, XP, level, streak, calendar, ledger
+- `backend/functions/_shared/cors.ts` — CORS headers partilhados
+
+**Decisão arquitectural (vs spec original):**
+- `submit_answer` por questão → removido; batch de 20 respostas via `complete_challenge` (documentado no CLAUDE.md)
+
+**Gaps conhecidos:**
+- `block_end` overlay (BlockIncomplete) — fase existe no store mas UI não tem tela dedicada; erros de bloco vão para wrong/timeout
+- Testes automatizados — zero ficheiros `.test.` no repo
+- Trophy/achievement logic — placeholder no `complete_challenge` ("simplified for Phase 2"); full logic delegada para Phase 3
+
+**Status deploy:**
+- Edge Functions `start_challenge` e `complete_challenge` — **não deployadas ainda**
+- Teste E2E — **não realizado ainda**
+
+### Phases 3–9 — Pendentes
 
 Ver `docs/implementation-phases.md` para roadmap completo.
 
