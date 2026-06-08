@@ -14,10 +14,13 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { queryClient } from '@/lib/query-client';
-import { initI18n } from '@/lib/i18n';
+import { initI18n, LOCALE_STORAGE_KEY } from '@/lib/i18n';
 import { useAuthListener } from '@/hooks/use-auth';
 import { colors } from '@/theme';
+import type { SupportedLocale } from '@/constants/config';
 
 // Keep the splash screen visible while we load resources
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -40,11 +43,12 @@ export default function RootLayout() {
     Nunito_800ExtraBold,
   });
 
-  // Initialize i18n
+  // Initialize i18n — read saved locale from AsyncStorage first (no device auto-detect)
   useEffect(() => {
-    initI18n()
-      .then(() => setI18nReady(true))
-      .catch(() => setI18nReady(true)); // fail-safe: mark ready even on error
+    AsyncStorage.getItem(LOCALE_STORAGE_KEY)
+      .then((saved) => initI18n((saved as SupportedLocale) ?? undefined))
+      .catch(() => initI18n())
+      .finally(() => setI18nReady(true));
   }, []);
 
   // Safety timeout — never block the app for more than 3 seconds

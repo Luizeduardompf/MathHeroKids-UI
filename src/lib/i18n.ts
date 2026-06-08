@@ -1,6 +1,5 @@
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import { getLocales } from 'expo-localization';
 
 import en from '@/locales/en.json';
 import pt from '@/locales/pt.json';
@@ -12,31 +11,27 @@ import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from '@/constants/config';
 
 export const resources = { en: { translation: en }, pt: { translation: pt }, es: { translation: es }, fr: { translation: fr } } as const;
 
-/**
- * Detect the best locale from device settings, falling back to DEFAULT_LOCALE.
- */
-function detectLocale(): SupportedLocale {
-  const deviceLocales = getLocales();
-  for (const locale of deviceLocales) {
-    const lang = locale.languageCode as SupportedLocale;
-    if (SUPPORTED_LOCALES.includes(lang)) return lang;
-  }
-  return DEFAULT_LOCALE;
-}
+export const LOCALE_STORAGE_KEY = 'math-hero-locale-v1';
 
 let _initialized = false;
 
+/**
+ * Initialize i18n. Language priority:
+ * 1. savedLocale (read from AsyncStorage by the caller before app renders)
+ * 2. DEFAULT_LOCALE ('pt') — no device auto-detection
+ */
 export async function initI18n(savedLocale?: SupportedLocale): Promise<void> {
   if (_initialized) return;
   _initialized = true;
 
+  const lng =
+    savedLocale && SUPPORTED_LOCALES.includes(savedLocale) ? savedLocale : DEFAULT_LOCALE;
+
   await i18next.use(initReactI18next).init({
     resources,
-    lng: savedLocale ?? detectLocale(),
+    lng,
     fallbackLng: DEFAULT_LOCALE,
-    interpolation: {
-      escapeValue: false, // React already escapes values
-    },
+    interpolation: { escapeValue: false },
     compatibilityJSON: 'v4',
   });
 }
