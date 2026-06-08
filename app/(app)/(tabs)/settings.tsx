@@ -37,12 +37,23 @@ const LOCALE_LABEL: Record<SupportedLocale, string> = {
 
 function PinGate({ onUnlock }: { onUnlock: () => void }) {
   const { t } = useTranslation();
+  const router        = useRouter();
   const parentProfile = useAuthStore((s) => s.parentProfile);
+  const user          = useAuthStore((s) => s.user);
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const hasPinSet = !!parentProfile?.pin_hash;
+
+  // Dados do pai
+  const rawName = (parentProfile?.name as string | undefined)
+    ?? (user?.user_metadata?.name as string | undefined)
+    ?? user?.email?.split('@')[0]
+    ?? '—';
+  const email   = user?.email ?? '—';
+  const initials = rawName.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
 
   async function handleVerify() {
     if (!hasPinSet) { onUnlock(); return; }
@@ -51,13 +62,28 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
     setLoading(true);
     try {
       // TODO Phase 7: call verify_parent_pin Edge Function
-      // For now, EF returns 501 — degrade gracefully
       onUnlock();
     } catch {
       setError('PIN incorreto. Tente novamente.');
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleLogout() {
+    Alert.alert('Sair da conta', 'Tem certeza que deseja sair?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Sair',
+        style: 'destructive',
+        onPress: async () => {
+          setLoggingOut(true);
+          await authService.signOut();
+          setLoggingOut(false);
+          router.replace('/(auth)/welcome');
+        },
+      },
+    ]);
   }
 
   return (
@@ -71,38 +97,68 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
         </View>
       </SafeAreaView>
 
-      <View style={styles.pinGate}>
-        <Text style={styles.pinLock}>🔒</Text>
-        <Text variant="h2">{t('parentArea.pin.title')}</Text>
-        <Text variant="body" color={colors.text.secondary} align="center">
-          {hasPinSet ? t('parentArea.pin.subtitle') : 'PIN não configurado — acesso direto.'}
-        </Text>
+      <ScrollView
+        contentContainerStyle={styles.pinGateScroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Dados do responsável */}
+        <Card style={styles.parentCard}>
+          <View style={styles.parentAvatarCircle}>
+            <Text style={styles.parentInitials}>{initials}</Text>
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text variant="h3">{rawName}</Text>
+            <Text variant="caption" color={colors.text.secondary}>{email}</Text>
+          </View>
+        </Card>
 
-        {hasPinSet && (
-          <TextInput
-            style={styles.pinInput}
-            value={pin}
-            onChangeText={(v) => { setPin(v.replace(/\D/g, '').slice(0, 4)); setError(null); }}
-            keyboardType="number-pad"
-            maxLength={4}
-            secureTextEntry
-            placeholder="• • • •"
-            placeholderTextColor={colors.text.tertiary}
-            textAlign="center"
+        {/* Separador */}
+        <View style={styles.divider} />
+
+        {/* PIN gate */}
+        <View style={styles.pinCenter}>
+          <Text style={styles.pinLock}>🔒</Text>
+          <Text variant="h2">{t('parentArea.pin.title')}</Text>
+          <Text variant="body" color={colors.text.secondary} align="center">
+            {hasPinSet ? t('parentArea.pin.subtitle') : 'PIN não configurado — acesso direto.'}
+          </Text>
+
+          {hasPinSet && (
+            <TextInput
+              style={styles.pinInput}
+              value={pin}
+              onChangeText={(v) => { setPin(v.replace(/\D/g, '').slice(0, 4)); setError(null); }}
+              keyboardType="number-pad"
+              maxLength={4}
+              secureTextEntry
+              placeholder="• • • •"
+              placeholderTextColor={colors.text.tertiary}
+              textAlign="center"
+            />
+          )}
+
+          {error && (
+            <Text variant="bodySmall" color={colors.error} align="center">{error}</Text>
+          )}
+
+          <Button
+            label={hasPinSet ? 'Confirmar' : 'Entrar nas configurações'}
+            loading={loading}
+            onPress={handleVerify}
+            style={styles.pinBtn}
           />
-        )}
+        </View>
 
-        {error && (
-          <Text variant="bodySmall" color={colors.error} align="center">{error}</Text>
-        )}
-
+        {/* Botão de logout */}
         <Button
-          label={hasPinSet ? 'Confirmar' : 'Entrar'}
-          loading={loading}
-          onPress={handleVerify}
-          style={styles.pinBtn}
+          variant="destructive"
+          label={loggingOut ? 'Saindo...' : 'Sair da conta'}
+          loading={loggingOut}
+          onPress={handleLogout}
+          style={styles.logoutBtnGate}
         />
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -390,13 +446,45 @@ const styles = StyleSheet.create({
   },
   appName: { opacity: 0.8, letterSpacing: 0.5 },
 
-  // PIN gate
-  pinGate: {
-    flex: 1,
+  // PIN gate scroll container
+  pinGateScroll: {
+    padding: space.md,
+    paddingBottom: space['2xl'],
+    gap: space.md,
+  },
+
+  // Parent card no topo do gate
+  parentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+  },
+  parentAvatarCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: space.xl,
+  },
+  parentInitials: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#fff',
+    lineHeight: 24,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: colors.border.default,
+    marginVertical: space.sm,
+  },
+
+  // Área centralizada do PIN
+  pinCenter: {
+    alignItems: 'center',
     gap: space.md,
+    paddingVertical: space.lg,
   },
   pinLock: { fontSize: 48 },
   pinInput: {
@@ -412,6 +500,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   pinBtn: { width: '100%', marginTop: space.sm },
+  logoutBtnGate: { marginTop: space.sm },
 
   // Content
   content: { padding: space.md, gap: space.md, paddingBottom: space['2xl'] },
