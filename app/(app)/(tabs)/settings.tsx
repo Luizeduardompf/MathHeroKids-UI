@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
 
 import { Card, Text } from '@/components/ui';
 import { childService } from '@/services/child.service';
@@ -23,6 +24,7 @@ const LOCALE_STORAGE_KEY = 'math-hero-locale-v1';
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   const child = useProfileStore(selectActiveChild);
   const setActiveChild = useProfileStore((s) => s.setActiveChild);
 
@@ -174,6 +176,22 @@ export default function SettingsScreen() {
             </View>
           </Card>
         )}
+
+        {/* ── Parent area ──────────────────────────────────────── */}
+        <TouchableOpacity onPress={() => router.push('/(app)/parent-area/')} activeOpacity={0.7}>
+          <Card style={styles.parentAreaRow}>
+            <View style={styles.sectionTitle}>
+              <Text style={styles.sectionIcon}>🔒</Text>
+              <View style={styles.parentAreaText}>
+                <Text variant="label">{t('settings.parentArea')}</Text>
+                <Text variant="caption" color={colors.text.secondary}>
+                  {t('settings.parentAreaSubtitle')}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.rowChevron}>›</Text>
+          </Card>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -192,6 +210,9 @@ const styles = StyleSheet.create({
   appName: { opacity: 0.8, textTransform: 'uppercase', letterSpacing: 1 },
   content: { padding: space.md, gap: space.md, paddingBottom: space['2xl'] },
   section: { gap: space.md },
+  parentAreaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  parentAreaText: { flex: 1, gap: 2 },
+  rowChevron: { fontSize: 22, color: colors.text.tertiary },
   sectionTitle: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionIcon: { fontSize: 20 },

@@ -83,15 +83,6 @@ export default function HomeScreen() {
             </View>
             <ProgressBar value={xpProgress} height={6} color={colors.primary} />
           </TouchableOpacity>
-
-          {/* Gear → parent area */}
-          <TouchableOpacity
-            onPress={() => router.push('/(app)/parent-area/')}
-            style={styles.gearBtn}
-            hitSlop={12}
-          >
-            <Text style={styles.gearIcon}>⚙️</Text>
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
 
@@ -221,8 +212,6 @@ const styles = StyleSheet.create({
   xpBlock: { flex: 1, gap: 4 },
   xpRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   xpValue: { fontWeight: '600' },
-  gearBtn: { padding: 4 },
-  gearIcon: { fontSize: 20 },
   scroll: { flex: 1 },
   content: { padding: space.md, gap: space.md, paddingBottom: space['2xl'] },
   streakRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
