@@ -28,6 +28,12 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { Text } from '@/components/ui';
 import { colors, fontFamily, radius, space, shadows } from '@/theme';
+import { CorrectOverlay } from '@/components/challenge/CorrectOverlay';
+import {
+  TimeExpiredScreen,
+  WrongAnswerScreen,
+  BlockEndScreen,
+} from '@/components/challenge/StatusScreens';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import {
   useChallengeStore,
@@ -238,12 +244,12 @@ function NumericKeypad({
       {/* Row 4: ⌫ | 0 | ✓ */}
       <Pressable
         style={({ pressed }) =>
-          [kpStyles.key, pressed && !disabled ? kpStyles.keyPressed : null, disabled ? kpStyles.keyDisabled : null] as StyleProp<ViewStyle>
+          [kpStyles.key, kpStyles.keyMuted, pressed && !disabled ? kpStyles.keyPressed : null, disabled ? kpStyles.keyDisabled : null] as StyleProp<ViewStyle>
         }
         onPress={() => { if (!disabled) onDelete(); }}
         accessibilityLabel="Apagar"
       >
-        <Ionicons name="backspace-outline" size={22} color={colors.text.secondary} />
+        <Ionicons name="backspace-outline" size={26} color="#6B7280" />
       </Pressable>
       <Pressable
         style={({ pressed }) =>
@@ -254,49 +260,63 @@ function NumericKeypad({
       >
         <Text style={kpStyles.keyText}>0</Text>
       </Pressable>
-      {hasInput && onSubmit ? (
-        <Pressable
-          style={({ pressed }) =>
-            [kpStyles.key, kpStyles.keyConfirm, pressed ? kpStyles.keyPressed : null] as StyleProp<ViewStyle>
-          }
-          onPress={onSubmit}
-          accessibilityLabel="Confirmar"
-        >
-          <Ionicons name="checkmark" size={28} color="#fff" />
-        </Pressable>
-      ) : (
-        <View style={kpStyles.keyEmpty} />
-      )}
+      {/* Confirm button — always visible, dimmed until there's input */}
+      <Pressable
+        style={({ pressed }) =>
+          [
+            kpStyles.key,
+            kpStyles.keyConfirm,
+            !hasInput ? kpStyles.keyConfirmDisabled : null,
+            pressed && hasInput ? kpStyles.keyPressed : null,
+          ] as StyleProp<ViewStyle>
+        }
+        onPress={() => { if (hasInput && onSubmit) onSubmit(); }}
+        accessibilityLabel="Confirmar"
+        accessibilityState={{ disabled: !hasInput }}
+      >
+        <Ionicons name="checkmark" size={30} color="#fff" />
+      </Pressable>
     </View>
   );
 }
 
+// ─── Keypad styles — port do zip numeric-keypad.tsx ──────────────────────────
+// grid grid-cols-3 gap-2.5
 const kpStyles = StyleSheet.create({
   keypad: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-    paddingBottom: 8,
+    gap: 10,                   // gap-2.5
+    paddingHorizontal: 0,
+    paddingBottom: 4,
   },
+  // h-[clamp(3.25rem,9vh,4.5rem)] rounded-2xl shadow-sm → ~72px on iPhone 15
   key: {
     width: '30%',
-    height: 68,
-    backgroundColor: '#fff',
-    borderRadius: 20,
+    height: 72,
+    backgroundColor: '#FFFFFF', // bg-card
+    borderRadius: 16,           // rounded-2xl
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.sm,
   },
-  keyConfirm: { backgroundColor: colors.success },
-  keyPressed: { opacity: 0.65, transform: [{ scale: 0.94 }] },
-  keyDisabled: { opacity: 0.3 },
-  keyEmpty: { width: '30%', height: 68 },
+  // bg-muted text-ink-muted (backspace)
+  keyMuted: {
+    backgroundColor: '#EDEEF5',
+  },
+  // bg-brand-green text-white (confirm)
+  keyConfirm: {
+    backgroundColor: '#22C55E',
+  },
+  keyConfirmDisabled: { opacity: 0.5 },
+  keyPressed: { opacity: 0.7, transform: [{ scale: 0.95 }] },
+  keyDisabled: { opacity: 0.35 },
+  // text-3xl font-black text-ink
   keyText: {
-    fontFamily: fontFamily.extraBold,
-    fontSize: 26,
-    color: colors.text.primary,
+    fontFamily: fontFamily.bold,  // 700 — mais legível que ExtraBold no iOS
+    fontSize: 28,
+    lineHeight: 34,               // linha explícita evita clipping
+    color: '#1A1F36',
   },
 });
 
@@ -451,10 +471,16 @@ export default function ChallengeScreen() {
     async function init() {
       if (!child || !date) return;
       storeActions.setPhase('loading');
+
+      const sid = randomUUID();
+      const seed = buildQuestionSeed(child.id, date, MODULE_ID.MULTIPLICATION);
+      const questions = generateQuestions(seed, child.multiplication_max);
+
+      // Backend é best-effort — questões geradas localmente sempre funcionam.
+      // Se a EF falhar (offline, deploy pendente), a sessão local inicia igualmente
+      // e o payload é enviado no complete_challenge quando estiver disponível.
+      let resumeFromIndex = 0;
       try {
-        const sid = randomUUID();
-        const seed = buildQuestionSeed(child.id, date, MODULE_ID.MULTIPLICATION);
-        const questions = generateQuestions(seed, child.multiplication_max);
         const result = await challengeService.startChallenge({
           childId: child.id,
           challengeDate: date,
@@ -464,14 +490,21 @@ export default function ChallengeScreen() {
           timerSeconds: child.timer_seconds,
           multiplicationMax: child.multiplication_max,
         });
+        resumeFromIndex = result.resumeFromIndex;
+      } catch (backendErr) {
+        // Backend indisponível — continua com sessão local
+        console.warn('[Challenge] start_challenge indisponível, iniciando sessão local:', backendErr);
+      }
+
+      try {
         storeActions.startSession({
-          sessionId: result.sessionId,
+          sessionId: sid,
           childId: child.id,
           challengeDate: date,
           moduleId: MODULE_ID.MULTIPLICATION,
           questions,
           timerSeconds: child.timer_seconds,
-          resumeFromIndex: result.resumeFromIndex,
+          resumeFromIndex,
         });
       } catch (e) {
         storeActions.setPhase('error');
@@ -586,21 +619,10 @@ export default function ChallengeScreen() {
     );
   }
 
-  // ─── Correct overlay — full screen green with confetti ───────────────────
+  // ─── Correct overlay — CorrectOverlay com confetti animado ─────────────────
 
   if (phase === 'correct') {
-    return (
-      <View style={[gs.container, gs.centered, { backgroundColor: '#DCFCE7' }]}>
-        <Confetti />
-        <XpBadge xp="+10 XP" />
-        <View style={{ height: 16 }} />
-        <View style={correctStyles.circle}>
-          <Ionicons name="checkmark" size={52} color="#fff" />
-        </View>
-        <View style={{ height: 20 }} />
-        <Text style={correctStyles.label}>{t('challenge.correct')}</Text>
-      </View>
-    );
+    return <CorrectOverlay xpGain={10} />;
   }
 
   // ─── Milestone — full screen colored with Milo ────────────────────────────
@@ -678,127 +700,61 @@ export default function ChallengeScreen() {
   if (phase === 'wrong') {
     const q = lastAnsweredQuestion;
     return (
-      <View style={[gs.container, gs.centered]}>
-        <View style={overlayStyles.card}>
-          {/* Icon */}
-          <View style={[overlayStyles.iconCircle, { backgroundColor: '#F5722A' }]}>
-            <Ionicons name="close" size={36} color="#fff" />
-          </View>
-          {/* Title */}
-          <Text style={overlayStyles.title}>{t('challenge.wrong.title')}</Text>
-          <Text style={overlayStyles.subtitle}>{t('challenge.wrong.subtitle')}</Text>
-          {/* Equation with correct answer */}
-          {q && (
-            <View style={overlayStyles.equationCard}>
-              <View style={overlayStyles.equationRow}>
-                <Text style={overlayStyles.eqNum}>{q.operand_a}</Text>
-                <Text style={overlayStyles.eqOp}>×</Text>
-                <Text style={overlayStyles.eqNum}>{q.operand_b}</Text>
-                <Text style={overlayStyles.eqOp}>=</Text>
-                <Text style={[overlayStyles.eqNum, { color: colors.success }]}>{q.correct_answer}</Text>
-                <Ionicons name="checkmark-circle" size={22} color={colors.success} />
-              </View>
-              <View style={overlayStyles.divider} />
-              <Text style={overlayStyles.yourAnswer}>
-                {t('challenge.yourAnswer')}{' '}
-                <Text style={{ color: colors.error, fontFamily: fontFamily.bold }}>{lastUserAnswer}</Text>
-              </Text>
-            </View>
-          )}
-          {/* Milo box */}
-          <MiloBox
-            message={t('challenge.wrong.miloMessage')}
-            bg="#2B52E5"
-          />
-          {/* Actions */}
-          <Pressable style={overlayStyles.primaryBtn} onPress={() => storeActions.advanceAfterWrong()}>
-            <Text style={overlayStyles.primaryBtnText}>{t('challenge.wrong.continueAnyway')}</Text>
-          </Pressable>
-          <Pressable style={overlayStyles.ghostBtn} onPress={() => storeActions.retryBlock()}>
-            <Ionicons name="refresh" size={16} color={colors.text.secondary} />
-            <Text style={overlayStyles.ghostBtnText}>{t('challenge.wrong.retry')}</Text>
-          </Pressable>
-        </View>
-      </View>
+      <WrongAnswerScreen
+        operandA={q?.operand_a ?? 0}
+        operandB={q?.operand_b ?? 0}
+        correctAnswer={q?.correct_answer ?? 0}
+        userAnswer={lastUserAnswer}
+        onContinue={() => storeActions.advanceAfterWrong()}
+        onRetry={() => storeActions.retryBlock()}
+      />
     );
   }
 
-  // ─── Timeout overlay ──────────────────────────────────────────────────────
+  // ─── Timeout screen ───────────────────────────────────────────────────────
 
   if (phase === 'timeout') {
     return (
-      <View style={[gs.container, gs.centered]}>
-        <View style={overlayStyles.card}>
-          <View style={[overlayStyles.iconCircle, { backgroundColor: colors.error }]}>
-            <Ionicons name="time-outline" size={36} color="#fff" />
-          </View>
-          <Text style={overlayStyles.title}>{t('challenge.timeout.title')}</Text>
-          <Text style={overlayStyles.subtitle}>{t('challenge.timeout.message')}</Text>
-          <MiloBox
-            message={t('challenge.timeout.miloMessage')}
-            bg={colors.error}
-          />
-          <Pressable style={[overlayStyles.primaryBtn, { backgroundColor: colors.primary }]} onPress={() => storeActions.retryBlock()}>
-            <Ionicons name="refresh" size={18} color="#fff" />
-            <Text style={overlayStyles.primaryBtnText}>{t('challenge.timeout.retry')}</Text>
-          </Pressable>
-          <Pressable style={overlayStyles.ghostBtn} onPress={() => { storeActions.reset(); router.back(); }}>
-            <Ionicons name="home-outline" size={16} color={colors.text.secondary} />
-            <Text style={overlayStyles.ghostBtnText}>{t('challenge.timeout.goHome')}</Text>
-          </Pressable>
-        </View>
-      </View>
+      <TimeExpiredScreen
+        onRetry={() => storeActions.retryBlock()}
+        onGoHome={() => { storeActions.reset(); router.back(); }}
+      />
     );
   }
 
-  // ─── Block end overlay ────────────────────────────────────────────────────
+  // ─── Block end screen ─────────────────────────────────────────────────────
 
   if (phase === 'block_end') {
     const blockCorrect = useChallengeStore.getState().answers.filter(
       (a) => a.block_number === useChallengeStore.getState().currentBlock &&
              a.child_answer !== null && a.child_answer === a.operand_a * a.operand_b,
     ).length;
-    const pct = Math.round((blockCorrect / CHALLENGE.QUESTIONS_PER_BLOCK) * 100);
 
     return (
-      <View style={[gs.container, gs.centered]}>
-        <View style={overlayStyles.card}>
-          <View style={[overlayStyles.iconCircle, { backgroundColor: '#F59E0B' }]}>
-            <Ionicons name="radio-button-on-outline" size={36} color="#fff" />
-          </View>
-          <Text style={overlayStyles.title}>{t('challenge.blockIncomplete.title')}</Text>
-          <Text style={overlayStyles.subtitle}>{t('challenge.blockIncomplete.subtitle')}</Text>
-          <View style={overlayStyles.scoreCard}>
-            <Text style={overlayStyles.scoreText}>{blockCorrect}/{CHALLENGE.QUESTIONS_PER_BLOCK}</Text>
-            <Text style={overlayStyles.scoreLabel}>respostas corretas</Text>
-            <View style={overlayStyles.scoreTrack}>
-              <View style={[overlayStyles.scoreFill, { width: `${pct}%` as `${number}%` }]} />
-            </View>
-            <View style={overlayStyles.scoreFooter}>
-              <Text style={overlayStyles.scoreFooterText}>{pct}% acertos</Text>
-              <Text style={[overlayStyles.scoreFooterText, { color: '#F59E0B' }]}>★ Meta: 100%</Text>
-            </View>
-          </View>
-          <MiloBox
-            message={t('challenge.blockIncomplete.miloMessage')}
-            bg="#F59E0B"
-          />
-          <Pressable style={[overlayStyles.primaryBtn, { backgroundColor: colors.primary }]} onPress={() => storeActions.retryBlock()}>
-            <Ionicons name="refresh" size={18} color="#fff" />
-            <Text style={overlayStyles.primaryBtnText}>{t('challenge.blockIncomplete.retry')}</Text>
-          </Pressable>
-          <Pressable style={overlayStyles.ghostBtn} onPress={() => { storeActions.reset(); router.back(); }}>
-            <Ionicons name="home-outline" size={16} color={colors.text.secondary} />
-            <Text style={overlayStyles.ghostBtnText}>{t('challenge.blockIncomplete.goHome')}</Text>
-          </Pressable>
-        </View>
-      </View>
+      <BlockEndScreen
+        correct={blockCorrect}
+        total={CHALLENGE.QUESTIONS_PER_BLOCK}
+        onRetry={() => storeActions.retryBlock()}
+        onGoHome={() => { storeActions.reset(); router.back(); }}
+      />
     );
   }
 
+
   // ─── Gameplay ─────────────────────────────────────────────────────────────
 
-  const timerColor = (child?.timer_seconds ?? 0) > 0 && remaining <= 5 ? colors.error : colors.text.secondary;
+  const timerActive = (child?.timer_seconds ?? 0) > 0;
+  // bg-muted = oklch(0.95 0.01 255) — cinza com leve tom azul, visível sobre #EEF1FF
+  const timerBg = timerActive && remaining <= 2
+    ? '#FEE2E2'                 // brand-red-soft
+    : timerActive && remaining <= 5
+      ? '#FFF3EC'               // brand-orange-soft
+      : '#E4E5EF';              // muted com contraste visível sobre #EEF1FF
+  const timerColor = timerActive && remaining <= 2
+    ? colors.error
+    : timerActive && remaining <= 5
+      ? colors.accent
+      : '#6B7280';              // ink-muted
 
   return (
     <View style={gs.container}>
@@ -808,43 +764,43 @@ export default function ChallengeScreen() {
         onLeave={() => { setShowExitModal(false); storeActions.reset(); router.back(); }}
       />
 
-      {/* Header */}
+      {/* Header: [X] [Questão X de 20 + progress] [⏰ timer] */}
       <View style={gs.header}>
         <Pressable onPress={() => setShowExitModal(true)} style={gs.exitBtn} accessibilityLabel="Sair do desafio">
           <View style={gs.exitBtnCircle}>
-            <Ionicons name="close" size={18} color={colors.text.secondary} />
+            <Ionicons name="close" size={20} color={colors.text.secondary} />
           </View>
         </Pressable>
-        <Text style={gs.headerTitle}>
-          {t('challenge.question', {
-            current: String(currentQuestionIndex + 1),
-            total: String(CHALLENGE.TOTAL_QUESTIONS),
-          })}
-        </Text>
-        <View style={gs.timerRow}>
-          {(child?.timer_seconds ?? 0) > 0 && (
-            <Ionicons name="time-outline" size={16} color={timerColor} />
-          )}
+
+        <View style={gs.headerMiddle}>
+          <Text style={gs.headerTitle}>
+            {t('challenge.question', {
+              current: String(currentQuestionIndex + 1),
+              total: String(CHALLENGE.TOTAL_QUESTIONS),
+            })}
+          </Text>
+          <View style={{ height: 6 }} />
+          <View style={gs.progressTrack}>
+            <Animated.View style={[gs.progressFill, animatedProgress] as StyleProp<ViewStyle>}>
+              <View style={gs.progressDot} />
+            </Animated.View>
+          </View>
+        </View>
+
+        <View style={[gs.timerChip, { backgroundColor: timerBg }]}>
+          <Ionicons name="time-outline" size={15} color={timerColor} />
           <Text style={[gs.timerText, { color: timerColor }]}>
             {child?.timer_seconds === 0 ? '∞' : `${remaining}s`}
           </Text>
         </View>
       </View>
 
-      {/* Progress bar */}
-      <View style={gs.progressTrack}>
-        <Animated.View style={[gs.progressFill, animatedProgress] as StyleProp<ViewStyle>}>
-          <View style={gs.progressDot} />
-        </Animated.View>
-      </View>
-
-      {/* Category badge */}
-      <View style={gs.categoryBadge}>
-        <Text style={gs.categoryBadgeText}>{t('challenge.category')}</Text>
-      </View>
-
-      {/* Equation: 7 × 8 = ? */}
+      {/* Main: badge + equation — centered together (matches zip flex-1 items-center justify-center) */}
       <View style={gs.questionArea}>
+        <View style={gs.categoryBadge}>
+          <Text style={gs.categoryBadgeText}>{t('challenge.category')}</Text>
+        </View>
+
         {question ? (
           <Animated.View style={[gs.equationRow, animatedQuestion] as StyleProp<ViewStyle>}>
             <Text style={gs.operandText}>{question.operand_a}</Text>
@@ -852,21 +808,16 @@ export default function ChallengeScreen() {
             <Text style={gs.operandText}>{question.operand_b}</Text>
             <Text style={gs.operatorText}>=</Text>
             <View style={[
-              gs.answerCircle,
-              inputDigits.length > 0 ? gs.answerCircleActive : null,
+              gs.answerBox,
+              inputDigits.length > 0 ? gs.answerBoxActive : null,
             ] as StyleProp<ViewStyle>}>
-              <Text style={[
-                gs.answerCircleText,
-                inputDigits.length > 0 ? { color: colors.primary } : { color: colors.primary },
-              ]}>
+              <Text style={gs.answerBoxText}>
                 {inputDigits.join('') || '?'}
               </Text>
             </View>
           </Animated.View>
         ) : null}
       </View>
-
-      <View style={{ flex: 1 }} />
 
       {/* Keypad */}
       <NumericKeypad
@@ -1106,13 +1057,12 @@ const overlayStyles = StyleSheet.create({
   },
 });
 
-// ─── Gameplay styles ──────────────────────────────────────────────────────────
-
+// ─── Gameplay styles — port exato do zip (Tailwind → px) ─────────────────────
 const gs = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
-    paddingHorizontal: 20,
+    backgroundColor: '#EEF1FF', // --background oklch(0.97 0.012 255)
+    paddingHorizontal: 16,      // px-4
     paddingTop: 56,
     paddingBottom: 16,
   },
@@ -1121,124 +1071,158 @@ const gs = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Header
+  // header: flex items-center gap-3 px-4 pt-safe
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  exitBtn: {},
-  exitBtnCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.sm,
-  },
-  headerTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 16,
-    color: colors.text.primary,
-    flex: 1,
-    textAlign: 'center',
-  },
-  timerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    minWidth: 52,
-    justifyContent: 'flex-end',
-  },
-  timerText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 16,
+    gap: 12,                    // gap-3
+    marginBottom: 0,            // conteúdo principal centrado pelo questionArea flex:1
   },
 
-  // Progress bar — green with leading dot
-  progressTrack: {
-    height: 8,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 4,
-    overflow: 'visible',
-    marginBottom: 20,
+  exitBtn: {},
+
+  // h-10 w-10 rounded-full bg-muted text-ink-muted
+  exitBtnCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 9999,
+    // bg-muted: oklch(0.95 0.01 255) — levemente azul-acinzentado, não branco puro
+    backgroundColor: '#EDEEF5',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+
+  headerMiddle: {
+    flex: 1,
+  },
+
+  // text-xs font-extrabold text-ink — xs = 12px
+  headerTitle: {
+    fontFamily: fontFamily.extraBold,
+    fontSize: 12,               // text-xs
+    color: '#1A1F36',
+    marginBottom: 4,
+  },
+
+  // flex items-center gap-1 rounded-full px-2.5 py-1 bg-muted
+  timerChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,                     // gap-1
+    paddingHorizontal: 10,      // px-2.5
+    paddingVertical: 4,         // py-1
+    borderRadius: 9999,
+  },
+
+  // text-sm font-extrabold tabular-nums — sm = 14px
+  timerText: {
+    fontFamily: fontFamily.extraBold,
+    fontSize: 14,
+  },
+
+  // h-2.5 overflow-VISIBLE (dot precisa ultrapassar) bg-brand-green-soft rounded-full
+  progressTrack: {
+    height: 10,
+    backgroundColor: '#DCFCE7', // brand-green-soft
+    borderRadius: 9999,
+    overflow: 'visible',        // permite o dot ultrapassar a borda
+  },
+
+  // bg-brand-green rounded-full — contém o dot no extremo direito
   progressFill: {
-    height: 8,
-    backgroundColor: colors.success,
-    borderRadius: 4,
+    height: 10,
+    backgroundColor: '#22C55E',
+    borderRadius: 9999,
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
     overflow: 'visible',
   },
+
+  // dot verde no extremo direito da barra (igual ao design)
   progressDot: {
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: colors.success,
-    marginRight: -7,
-    borderWidth: 2,
-    borderColor: '#fff',
+    backgroundColor: '#22C55E',
+    borderWidth: 2.5,
+    borderColor: '#EEF1FF',    // mesmo fundo da tela
+    marginRight: -7,            // metade para fora da barra
   },
 
-  // Category badge
+  // main: flex-1 items-center justify-center — badge + equação centrados juntos
+  questionArea: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // mb-6 rounded-full bg-brand-green-soft px-4 py-1.5 text-sm font-extrabold text-brand-green-dark
   categoryBadge: {
-    alignSelf: 'center',
     backgroundColor: '#DCFCE7',
-    borderRadius: 99,
-    paddingHorizontal: 20,
-    paddingVertical: 7,
-    marginBottom: 32,
+    borderRadius: 9999,
+    paddingHorizontal: 20,      // px-4 + um pouco mais de fôlego
+    paddingVertical: 8,
+    marginBottom: 28,           // mb-6 + espaço extra para separar da equação
   },
   categoryBadgeText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 14,
+    fontFamily: fontFamily.extraBold,
+    fontSize: 14,               // text-sm
     color: '#16A34A',
   },
 
-  // Equation
-  questionArea: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
+  // flex flex-wrap items-center justify-center gap-x-3 gap-y-2
   equationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    columnGap: 12,              // gap-x-3
+    rowGap: 8,                  // gap-y-2
   },
+
+  // text-7xl font-black text-ink (72px)
   operandText: {
     fontFamily: fontFamily.extraBold,
-    fontSize: 68,
+    fontSize: 72,
+    lineHeight: 88,             // linha explícita previne clipping iOS
     color: '#1A1F36',
-    lineHeight: 80,
   },
+
+  // text-6xl font-black text-brand-blue (60px)
   operatorText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 46,
-    color: '#1A1F36',
-    lineHeight: 80,
+    fontFamily: fontFamily.extraBold,
+    fontSize: 60,
+    lineHeight: 88,             // mesma altura de linha dos operandos — alinhamento vertical
+    color: '#2B52E5',
   },
-  answerCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 2.5,
-    borderColor: colors.primary,
+
+  // h-24 min-w-24 rounded-3xl border-4 border-dashed px-3 border-brand-blue-soft
+  // brand-blue-soft = oklch(0.93 0.04 255) ≈ #DCE2FF (leve, não saturado)
+  answerBox: {
+    minWidth: 96,
+    height: 96,
+    borderRadius: 24,           // rounded-3xl
+    borderWidth: 4,
+    borderColor: '#C8CEFF',     // brand-blue-soft — leve, quase pastela
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 12,
   },
-  answerCircleActive: {
+
+  // active: border-brand-blue bg-brand-blue-soft solid
+  answerBoxActive: {
     borderStyle: 'solid',
-    backgroundColor: '#EEF1FF',
+    borderColor: '#2B52E5',
+    backgroundColor: '#DCE2FF', // brand-blue-soft
   },
-  answerCircleText: {
+
+  // text-7xl font-black text-brand-blue (72px — mesmo tamanho dos operandos)
+  answerBoxText: {
     fontFamily: fontFamily.extraBold,
-    fontSize: 34,
-    color: colors.primary,
+    fontSize: 72,
+    lineHeight: 88,
+    color: '#2B52E5',
   },
 });
