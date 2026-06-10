@@ -4,65 +4,41 @@
 
 ---
 
-## Estado actual — 2026-06-10 20:30
+## Estado actual — 2026-06-10 23:30
 
 ### 🟢 Em curso
 ```
 ESTADO: LIVRE
-ÚLTIMO COMMIT: 3b0b843
+ÚLTIMO COMMIT: a2abf6b
 ```
 
-### ✅ Concluído nesta sessão (2026-06-10)
+### ✅ Concluído nesta sessão (2026-06-10 — continuação)
 
-**Visual polish — Design system:**
-- `Button`: sombra colorida por variante, prop `icon`, animação Y no press
-- `Card`: `radius['2xl']`, border sutil 1px, scale spring no press
-- `Badge`: border colorida por variante, prop `icon`
+**Confetti — animação corrigida:**
+- `CorrectOverlay.tsx` (`ConfettoPiece`): adicionado `opacity` sharedValue com `withDelay` fade-out nos últimos 35% da queda — peças somem antes de empilhar no fundo
+- `[date].tsx` (MilestoneScreen): confetti estático substituído por `MilestoneConfettoPiece` animado — mesma física fall + fade do CorrectOverlay
+- Quirk documentado: `withDelay` precisa de `@ts-expect-error` neste tsconfig (mesmo padrão do `Easing`)
 
-**Visual polish — Tab bar:**
-- FAB: `LinearGradient` laranja, sombra colorida, spring scale no focus
-- Tab icons: spring scale 1→1.15 ao focar (Reanimated 4)
-- Quirk: `tabBarItemStyle` requer `@ts-expect-error` nesta versão expo-router
+**StatusScreens redesign:**
+- `MILO_PLACEHOLDER` (ícone verde do app) → `milo-celebrate.png` (mascote real)
+- `EntranceView` wrapper: slide-up + fade-in nas 3 telas (TimeExpired, WrongAnswer, BlockEnd)
+- Reanimated imports adicionados ao StatusScreens.tsx
 
-**Visual polish — Home dashboard:**
-- Challenge card: `LinearGradient` verde escuro + círculos decorativos
-- Streak pill laranja: `LinearGradient`
-- Stats grid: ícones com fundo tintado por cor
-- MiloMessage: gradiente + speech bubble branco separado + Image real do mascote
+**Calendar screen — implementação completa (`app/(app)/(tabs)/calendar.tsx`):**
+- Header fixo (fora do ScrollView) com `useSafeAreaInsets` — sem barra cinza no status bar
+- MiloMessage contextual ao streak
+- Stats cards horizontal pixel-faithful: `StreakCard` (gradient laranja, flame em círculo semi-transparente) + `RecordCard` (branco, trophy em círculo âmbar)
+- Calendário mensal: mês actual + 3 meses anteriores em lista vertical
+- Estados por dia: ⭐ perfeito (star amarelo), 🏆 completo (trophy verde), 🏆 incompleto (trophy vermelho/rosa), 🔵 hoje, 🔒 bloqueado/futuro
+- Legenda em rodapé
+- `useFocusEffect` invalida query ao entrar no ecrã
+- Query range: 4 meses numa só chamada Supabase
 
-**Visual polish — Auth screens:**
-- Novo `AuthScreen` component (`src/components/layout/AuthScreen.tsx`): header `LinearGradient` + back button + body scrollável
-- Welcome: mascote em círculo com ring, fundo `LinearGradient`, CTAs com `Button`
-- Login, Register Parent, Register Child: migrados para `AuthScreen` + form em `Card`
-- `Input`: `radius.md → radius.xl`
-
-**Visual polish — Gamification (telas construídas do zero):**
-- `progression.tsx`: card azul gradient com nível dourado, XP bar, timeline marcos
-- `trophy-room.tsx`: stats row dourado/laranja, próximo troféu com progress, grid 3-col por categoria
-- `achievements.tsx`: progresso geral com %, grid 2-col earned/locked
-
-**Settings redesign:**
-- Header `LinearGradient`
-- Section icons tintados (globo/timer/×/people)
-- Language grid 2×2 com border + check circle
-- Botão editar (lápis) no ParentCard → `/(app)/parent-area/edit-profile`
-- PIN gate também com gradiente
-
-**Nova tela: `/(app)/parent-area/edit-profile.tsx`:**
-- Nome editável (salva em `auth.updateUser` + `parent_profiles`)
-- Email read-only com badge "fixo"
-- Card separado para redefinição de senha
-
-**Avatares reais (PNG 3D):**
-- Extraídos de `07-Authentication-Onboarding.zip` → `assets/images/avatars/`
-- 6 personagens: sofia, lucas, luna, mia, pedro, theo (substituindo gabriel + ana)
-- `AVATAR_IDS` actualizado em `config.ts`
-- `Avatar.tsx` reescrito com `Image` (static require map — Metro exige paths estáticos)
-- `AvatarPicker` component novo (`src/components/ui/AvatarPicker.tsx`) — grid com PNG real + check badge
-- Usado em: `register/child`, `add-child`, `parent-area/child/[id]`
-
-**Bug fix:**
-- Botão "+ Adicionar criança" no profile-select: criada `/(profile-select)/add-child.tsx` fora do grupo `(auth)` (AuthGuard bloqueava acesso autenticado); invalida query `['children', parentId]` após criar filho
+**Calendar — fallback AsyncStorage (EF não deployada):**
+- `challenge.service.ts`: `storeLocalCompletion()` + `getLocalCompletions()` — persistência local por `(childId, challengeDate, isPerfect)`
+- `[date].tsx handleComplete`: chama `storeLocalCompletion()` ANTES da EF → dado garantido mesmo se EF falha
+- `calendar.tsx buildDayGrid`: prioridade `calendar_days` > `challenge_sessions` > **AsyncStorage local** > today > future > missed
+- RLS de `calendar_days` e `challenge_sessions` só tem SELECT — escrita directa do client bloqueada; AsyncStorage é a solução correcta
 
 ### ⚠️ Issues conhecidos
 
@@ -72,26 +48,25 @@ ESTADO: LIVRE
 
 **Edge Functions não deployadas:**
 - `start_challenge` e `complete_challenge` só em código local
-- Challenge usa fallback local (WARN no log — não é erro crítico)
+- Calendar usa AsyncStorage como fallback (funciona correctamente)
+- XP/level/streak NÃO são actualizados enquanto EF não estiver deployada
 
 **Git locks virtiofs:**
 - Fix: `find .git -name "*.lock" | while read f; do mv "$f" "${f}.gone"; done`
 
 **Avatares — tamanho dos PNGs:**
 - ~1.2MB cada (6 ficheiros = ~7.2MB no bundle)
-- Considerar optimização com `sharp` ou `expo-image` com cache em produção
-- Não bloqueia MVP
+- Não bloqueia MVP; optimizar com `sharp` antes de produção
 
 ### ⏭️ Próximos passos
 
-**A — Phase 2/3 — Edge Functions + Gamification:**
+**A (prioridade alta) — Phase 2/3 — Edge Functions + Gamification:**
 - Deploy `start_challenge` + `complete_challenge` no Supabase
 - Ligar XP/level/streak/trophies a dados reais (Phase 3)
 - Level Up modal (post-challenge se level mudou)
 
 **B — Telas restantes com design:**
-- Calendar screen (design: `03-home-dashboard-calendar.zip`)
-- Friends screen (design: `06-friends.zip`)
+- Friends screen (design: `06-friends.zip`) — única tab ainda placeholder
 
 **C — Optimização de assets:**
 - Redimensionar avatares PNG para ≤200KB cada
