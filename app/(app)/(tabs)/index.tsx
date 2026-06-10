@@ -1,15 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+// @ts-expect-error RN 0.85 strict API quirk — Modal present at runtime
+import { Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'; // eslint-disable-line
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 
 import { Avatar, Badge, Button, Card, ProgressBar, Text } from '@/components/ui';
 import { MiloMessage } from '@/components/milo/MiloMessage';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
+import { useAuthStore, selectParentId } from '@/stores/auth.store';
+import { childService } from '@/services/child.service';
 import { LEVEL_THRESHOLDS } from '@/constants/config';
-import { colors, radius, space } from '@/theme';
+import { colors, fontFamily, radius, space } from '@/theme';
+import type { ChildProfile } from '@/types';
 
 /** XP required for the next level, or last threshold if max level. */
 function getXpNextLevel(level: number): number {
@@ -27,41 +33,65 @@ function getXpFloor(level: number): number {
 
 export default function HomeScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
-  const child = useProfileStore(selectActiveChild);
+  const router   = useRouter();
+  const parentId = useAuthStore(selectParentId);
+  const child    = useProfileStore(selectActiveChild);
+  const setActiveChild = useProfileStore((s) => s.setActiveChild);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [headerBottom, setHeaderBottom] = useState(0);
 
-  if (!child) return null; // Guard in (app)/_layout.tsx handles the redirect
+  const { data: children = [] } = useQuery({
+    queryKey: ['children', parentId],
+    queryFn: () => childService.listChildren(parentId!),
+    enabled: !!parentId,
+    staleTime: 60_000,
+  });
 
-  const xpFloor = getXpFloor(child.level);
-  const xpCeil = getXpNextLevel(child.level);
-  const xpProgress =
-    xpCeil > xpFloor ? (child.xp_total - xpFloor) / (xpCeil - xpFloor) : 1;
+  if (!child) return null;
 
-  const todayDate = new Date().toISOString().split('T')[0]!;
+  const xpFloor    = getXpFloor(child.level);
+  const xpCeil     = getXpNextLevel(child.level);
+  const xpProgress = xpCeil > xpFloor ? (child.xp_total - xpFloor) / (xpCeil - xpFloor) : 1;
+  const todayDate  = new Date().toISOString().split('T')[0]!;
+
+  function handleSelectChild(c: ChildProfile) {
+    setActiveChild(c);
+    setDropdownOpen(false);
+  }
 
   return (
     <View style={styles.root}>
-      <SafeAreaView edges={['top']} style={styles.safeHeader}>
+      <SafeAreaView
+        edges={['top']}
+        style={styles.safeHeader}
+      >
         {/* ── Header ──────────────────────────────────────────────────── */}
-        <View style={styles.header}>
-          {/* Left: avatar + name ▾ + level */}
+        <View
+          style={styles.header}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onLayout={(e: any) => setHeaderBottom((e.nativeEvent.layout.y as number) + (e.nativeEvent.layout.height as number))}
+        >
+          {/* Left: profile card button */}
           <TouchableOpacity
             style={styles.profileBtn}
-            onPress={() => router.push('/(profile-select)/')}
-            activeOpacity={0.7}
+            onPress={() => setDropdownOpen((v) => !v)}
+            activeOpacity={0.85}
             accessibilityLabel={t('home.switchProfile')}
           >
             <Avatar
               avatarId={child.avatar_id}
               displayName={child.display_name}
               size="md"
+              ringColor={colors.primaryLight}
             />
             <View style={styles.nameBlock}>
               <View style={styles.nameRow}>
-                <Text variant="label" color={colors.text.primary} style={styles.nameText}>
-                  {child.display_name}
-                </Text>
-                <Text style={styles.chevron}>▾</Text>
+                <Text style={styles.nameText}>{child.display_name}</Text>
+                <Ionicons
+                  name={dropdownOpen ? 'chevron-up' : 'chevron-down'}
+                  size={14}
+                  color={colors.text.secondary}
+                />
               </View>
               <Text variant="caption" color={colors.text.secondary}>
                 {t('common.level', { level: child.level })}
@@ -69,24 +99,76 @@ export default function HomeScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* Right: XP progress */}
+          {/* Right: XP progress with gradient fill */}
           <TouchableOpacity
             style={styles.xpBlock}
             onPress={() => router.push('/(app)/progression')}
             activeOpacity={0.8}
           >
             <View style={styles.xpRow}>
-              <Text variant="caption" color={colors.primary} style={styles.xpValue}>
-                {child.xp_total.toLocaleString()} XP
-              </Text>
-              <Text variant="caption" color={colors.text.tertiary}>
-                {xpCeil.toLocaleString()}
-              </Text>
+              <Text style={styles.xpValue}>{child.xp_total.toLocaleString()} XP</Text>
+              <Text variant="caption" color={colors.text.tertiary}>{xpCeil.toLocaleString()}</Text>
             </View>
-            <ProgressBar value={xpProgress} height={6} color={colors.primary} />
+            {/* Gradient XP bar */}
+            <View style={styles.xpTrack}>
+              <LinearGradient
+                colors={[colors.primary, colors.primaryDark]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.xpFill, { width: `${Math.round(xpProgress * 100)}%` as `${number}%` }]}
+              />
+            </View>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+
+      {/* ── Profile dropdown ──────────────────────────────────────────── */}
+      <Modal visible={dropdownOpen} transparent animationType="fade" onRequestClose={() => setDropdownOpen(false)}>
+        <Pressable style={styles.dropdownBackdrop} onPress={() => setDropdownOpen(false)} />
+        <View style={[styles.dropdown, { top: headerBottom + 8 }]}>
+          {children.map((c) => {
+            const selected = c.id === child.id;
+            return (
+              <TouchableOpacity
+                key={c.id}
+                style={[styles.dropdownRow, selected ? styles.dropdownRowSelected : null]}
+                onPress={() => handleSelectChild(c)}
+                activeOpacity={0.75}
+              >
+                <Avatar
+                  avatarId={c.avatar_id}
+                  displayName={c.display_name}
+                  size="sm"
+                  ringColor={selected ? colors.primary : undefined}
+                />
+                <View style={styles.dropdownInfo}>
+                  <Text style={styles.dropdownName}>{c.display_name}</Text>
+                  <Text variant="caption" color={colors.text.secondary}>
+                    {t('common.level', { level: c.level })}
+                  </Text>
+                </View>
+                {selected && (
+                  <View style={styles.checkCircle}>
+                    <Ionicons name="checkmark" size={14} color="#fff" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+
+          {/* Add child button */}
+          <TouchableOpacity
+            style={styles.addChildBtn}
+            onPress={() => { setDropdownOpen(false); router.push('/(profile-select)/add-child'); }}
+            activeOpacity={0.75}
+          >
+            <View style={styles.addChildIcon}>
+              <Ionicons name="add" size={20} color={colors.primary} />
+            </View>
+            <Text style={styles.addChildText}>Add Child</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
 
       {/* ── Scrollable content ──────────────────────────────────────── */}
       <ScrollView
@@ -245,14 +327,127 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border.default,
   },
-  profileBtn: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+
+  // ── Profile card button ────────────────────────────────────────────────────
+  profileBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    backgroundColor: colors.background.card,
+    borderRadius: radius['2xl'],
+    paddingVertical: space.xs,
+    paddingHorizontal: space.sm,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    ...({
+      shadowColor: '#1A1F36',
+      shadowOpacity: 0.06,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    } as object),
+  },
   nameBlock: { gap: 2 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  nameText: { fontSize: 15 },
-  chevron: { fontSize: 13, color: colors.text.secondary, marginTop: 1 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  nameText: {
+    fontFamily: fontFamily.extraBold,
+    fontSize: 15,
+    color: colors.text.primary,
+    lineHeight: 20,
+  } as import('react-native').TextStyle,
+
+  // ── XP bar with gradient ───────────────────────────────────────────────────
   xpBlock: { flex: 1, gap: 4 },
   xpRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  xpValue: { fontWeight: '600' },
+  xpValue: {
+    fontFamily: fontFamily.bold,
+    fontSize: 12,
+    color: colors.primary,
+  } as import('react-native').TextStyle,
+  xpTrack: {
+    height: 10,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.full,
+    overflow: 'hidden',
+  },
+  xpFill: {
+    height: 10,
+    borderRadius: radius.full,
+  },
+
+  // ── Dropdown ──────────────────────────────────────────────────────────────
+  dropdownBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  dropdown: {
+    position: 'absolute',
+    left: space.md,
+    width: 248,
+    backgroundColor: colors.background.card,
+    borderRadius: radius['2xl'],
+    padding: space.sm,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    ...({
+      shadowColor: '#1A1F36',
+      shadowOpacity: 0.18,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 12,
+    } as object),
+  },
+  dropdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    borderRadius: radius.xl,
+    padding: space.sm,
+  },
+  dropdownRowSelected: { backgroundColor: colors.primaryLight },
+  dropdownInfo: { flex: 1, gap: 1 },
+  dropdownName: {
+    fontFamily: fontFamily.bold,
+    fontSize: 14,
+    color: colors.text.primary,
+  } as import('react-native').TextStyle,
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addChildBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    borderRadius: radius.xl,
+    borderWidth: 2,
+    borderColor: colors.primaryLight,
+    borderStyle: 'dashed',
+    padding: space.sm,
+    marginTop: space.xs,
+  },
+  addChildIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addChildText: {
+    fontFamily: fontFamily.extraBold,
+    fontSize: 14,
+    color: colors.primary,
+  } as import('react-native').TextStyle,
+
   scroll: { flex: 1 },
   content: { padding: space.md, gap: space.md, paddingBottom: space['2xl'] },
 
