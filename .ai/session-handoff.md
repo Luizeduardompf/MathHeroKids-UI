@@ -4,7 +4,7 @@
 
 ---
 
-## Estado actual — 2026-06-10 22:44 (checkpoint)
+## Estado actual — 2026-06-10 23:45
 
 ### 🟢 Em curso
 ```
@@ -24,7 +24,7 @@ ESTADO: LIVRE
 - `EntranceView` wrapper: slide-up + fade-in nas 3 telas (TimeExpired, WrongAnswer, BlockEnd)
 - Reanimated imports adicionados ao StatusScreens.tsx
 
-**Calendar screen — implementação completa (`app/(app)/(tabs)/calendar.tsx`):**
+**Calendar screen — implementação completa (`app/(app)/(tabs)/calendar.tsx`): ✅ FUNCIONANDO**
 - Header fixo (fora do ScrollView) com `useSafeAreaInsets` — sem barra cinza no status bar
 - MiloMessage contextual ao streak
 - Stats cards horizontal pixel-faithful: `StreakCard` (gradient laranja, flame em círculo semi-transparente) + `RecordCard` (branco, trophy em círculo âmbar)
@@ -60,13 +60,15 @@ ESTADO: LIVRE
 
 ### ⏭️ Próximos passos
 
-**A (prioridade alta) — Phase 2/3 — Edge Functions + Gamification:**
+**A (prioridade alta — PRÓXIMA TAREFA) — Friends screen:**
+- Design disponível em `design/exports/06-friends.zip`
+- Única tab ainda placeholder
+- Implementar lista de amigos, pedidos pendentes, pesquisa por username
+
+**B — Phase 2/3 — Edge Functions + Gamification:**
 - Deploy `start_challenge` + `complete_challenge` no Supabase
 - Ligar XP/level/streak/trophies a dados reais (Phase 3)
 - Level Up modal (post-challenge se level mudou)
-
-**B — Telas restantes com design:**
-- Friends screen (design: `06-friends.zip`) — única tab ainda placeholder
 
 **C — Optimização de assets:**
 - Redimensionar avatares PNG para ≤200KB cada
