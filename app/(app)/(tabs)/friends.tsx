@@ -70,20 +70,28 @@ const av = StyleSheet.create({
 
 // ─── Period toggle ────────────────────────────────────────────────────────────
 
+export type RankingPeriod = 'weekly' | 'monthly' | 'global';
+
+const PERIOD_LABELS: Record<RankingPeriod, string> = {
+  weekly:  'Semanal',
+  monthly: 'Mensal',
+  global:  'Global',
+};
+
 function PeriodToggle({ value, onChange }: {
-  value: 'weekly' | 'monthly';
-  onChange: (v: 'weekly' | 'monthly') => void;
+  value: RankingPeriod;
+  onChange: (v: RankingPeriod) => void;
 }) {
   return (
     <View style={pt.wrap}>
-      {(['weekly', 'monthly'] as const).map((p) => (
+      {(['weekly', 'monthly', 'global'] as const).map((p) => (
         <Pressable
           key={p}
           style={[pt.btn, value === p ? pt.btnActive : null]}
           onPress={() => onChange(p)}
         >
           <RNText style={[pt.label, value === p ? pt.labelActive : null]}>
-            {p === 'weekly' ? 'Semanal' : 'Mensal'}
+            {PERIOD_LABELS[p]}
           </RNText>
         </Pressable>
       ))}
@@ -223,7 +231,7 @@ export default function AmigosScreen() {
   const queryClient = useQueryClient();
   const child       = useProfileStore(selectActiveChild);
 
-  const [period, setPeriod] = useState<'weekly' | 'monthly'>('weekly');
+  const [period, setPeriod] = useState<RankingPeriod>('weekly');
 
   // Badge: pedidos pendentes
   const { data: requests = [] } = useQuery({

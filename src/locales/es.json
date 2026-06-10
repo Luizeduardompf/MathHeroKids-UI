@@ -238,7 +238,8 @@
       "monthly": "Mensual",
       "you": "Tú",
       "empty": "Sin datos de ranking",
-      "emptyDesc": "¡Añade amigos y completa desafíos para ver el ranking!"
+      "emptyDesc": "¡Añade amigos y completa desafíos para ver el ranking!",
+      "global": "Global"
     }
   },
   "calendar": {

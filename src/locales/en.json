@@ -222,7 +222,8 @@
       "monthly": "Monthly",
       "you": "You",
       "empty": "No ranking data",
-      "emptyDesc": "Add friends and complete challenges to see the ranking!"
+      "emptyDesc": "Add friends and complete challenges to see the ranking!",
+      "global": "Global"
     },
     "mathHeroKids": "Math Hero Kids",
     "emptyRanking": "No ranking yet",

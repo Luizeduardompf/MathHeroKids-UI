@@ -183,7 +183,8 @@
       "monthly": "Mensuel",
       "you": "Vous",
       "empty": "Pas de données",
-      "emptyDesc": "Ajoutez des amis et relevez des défis pour voir le classement !"
+      "emptyDesc": "Ajoutez des amis et relevez des défis pour voir le classement !",
+      "global": "Mondial"
     }
   },
   "calendar": {

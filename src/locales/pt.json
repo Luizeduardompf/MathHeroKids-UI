@@ -234,7 +234,8 @@
       "monthly": "Mensal",
       "you": "Você",
       "empty": "Sem dados de ranking",
-      "emptyDesc": "Adiciona amigos e faz desafios para ver o ranking!"
+      "emptyDesc": "Adiciona amigos e faz desafios para ver o ranking!",
+      "global": "Global"
     },
     "mathHeroKids": "Math Hero Kids",
     "emptyRanking": "Sem ranking ainda",

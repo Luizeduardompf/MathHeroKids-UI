@@ -256,24 +256,47 @@ export const socialService = {
   },
 
   /**
-   * Ranking de amigos por XP semanal ou mensal.
-   * Query: child_xp_ledger dentro do período (requer RLS cross-child).
-   * Fallback: usa xp_total se ledger não acessível.
+   * Ranking: amigos (semanal/mensal) ou global (todos os jogadores por xp_total).
    */
   async getFriendsRanking(
-    childId:       string,
-    selfProfile:   FriendProfile,
-    period:        'weekly' | 'monthly',
+    childId:     string,
+    selfProfile: FriendProfile,
+    period:      'weekly' | 'monthly' | 'global',
   ): Promise<RankedFriend[]> {
     try {
+      // ── Global: top jogadores por xp_total ─────────────────────────────────
+      if (period === 'global') {
+        const { data: topPlayers } = await supabase
+          .from('child_profiles')
+          .select('id, display_name, username, avatar_id, level, xp_total, current_streak')
+          .eq('is_active', true)
+          .order('xp_total', { ascending: false })
+          .limit(50);
+
+        const players = (topPlayers ?? []) as FriendProfile[];
+
+        // Garantir que self aparece mesmo que não esteja no top 50
+        const selfInList = players.some((p) => p.id === childId);
+        const allPlayers = selfInList ? players : [...players, selfProfile];
+
+        return allPlayers
+          .sort((a, b) => b.xp_total - a.xp_total)
+          .map((child, i) => ({
+            child,
+            xp:     child.xp_total,
+            position: i + 1,
+            isSelf: child.id === childId,
+          }));
+      }
+
+      // ── Amigos: semanal ou mensal via child_xp_ledger ──────────────────────
       const friends = await socialService.getFriends(childId);
 
-      const now     = new Date();
+      const now        = new Date();
       const weekStart  = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0,0,0,0);
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const periodStart = period === 'weekly' ? weekStart : monthStart;
 
-      // Tentar obter XP do ledger para amigos + self
       const allChildren = [selfProfile, ...friends];
       const allIds = allChildren.map((c) => c.id);
 
@@ -283,13 +306,12 @@ export const socialService = {
         .in('child_id', allIds)
         .gte('created_at', periodStart.toISOString());
 
-      // Soma por child_id
       const xpMap = new Map<string, number>(allIds.map((id) => [id, 0]));
       for (const row of (ledgerRows ?? []) as Array<{ child_id: string; amount: number }>) {
         xpMap.set(row.child_id, (xpMap.get(row.child_id) ?? 0) + row.amount);
       }
 
-      const ranked: RankedFriend[] = allChildren
+      return allChildren
         .map((child) => ({
           child,
           xp:     xpMap.get(child.id) ?? 0,
@@ -298,8 +320,6 @@ export const socialService = {
         }))
         .sort((a, b) => b.xp - a.xp)
         .map((item, i) => ({ ...item, position: i + 1 }));
-
-      return ranked;
     } catch {
       return [];
     }
