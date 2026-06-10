@@ -187,7 +187,7 @@ const DAY_STYLE: Record<DayVariant, { bg: string; iconColor: string; icon?: stri
   failed:    { bg: '#FECDD3', iconColor: '#F87171',  icon: 'trophy'      },
   today:     { bg: '#2B52E5', iconColor: '#fff'                          },
   future:    { bg: '#E5E7EB', iconColor: '#9CA3AF',  icon: 'lock-closed' },
-  missed:    { bg: '#E5E7EB', iconColor: '#9CA3AF',  icon: 'lock-closed' },
+  missed:    { bg: '#FECDD3', iconColor: '#F87171',  icon: 'trophy'      }, // Perdido
 };
 
 function DayCell({ info }: { info: DayInfo | null }) {
@@ -544,9 +544,26 @@ export default function CalendarioScreen() {
 
   if (!child) return null;
 
-  const calDays   = data?.calDays    ?? [];
-  const sessions  = data?.sessions   ?? [];
+  const calDays    = data?.calDays    ?? [];
+  const sessions   = data?.sessions   ?? [];
   const localComps = data?.localComps ?? [];
+
+  // Meses com pelo menos 1 desafio realizado + sempre o mês actual
+  const completedMonths = useMemo(() => {
+    const hasActivity = (year: number, month: number): boolean => {
+      const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+      return (
+        calDays.some((d)    => d.day_date.startsWith(prefix)) ||
+        sessions.some((s)   => s.challenge_date.startsWith(prefix)) ||
+        localComps.some((l) => l.challengeDate.startsWith(prefix))
+      );
+    };
+    const currentMonth = months[0]!; // índice 0 = mês actual
+    return months.filter(
+      (m, i) => i === 0 || hasActivity(m.year, m.month),
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calDays, sessions, localComps, months]);
 
   const xpFloor    = getXpFloor(child.level);
   const xpCeil     = getXpCeil(child.level);
@@ -580,11 +597,11 @@ export default function CalendarioScreen() {
           <RecordCard value={child.best_streak} />
         </View>
 
-        {/* Calendars */}
+        {/* Calendars — só meses com actividade + mês actual */}
         {isLoading ? (
           <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 32 }} />
         ) : (
-          months.map(({ year, month }) => (
+          completedMonths.map(({ year, month }) => (
             <MonthCalendar
               key={`${year}-${month}`}
               year={year} month={month}
