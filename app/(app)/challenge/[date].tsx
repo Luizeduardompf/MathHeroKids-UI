@@ -47,9 +47,8 @@ import { challengeService } from '@/services/challenge.service';
 import { generateQuestions, buildQuestionSeed } from '@/lib/question-generator';
 import { MODULE_ID, CHALLENGE } from '@/constants/config';
 
-// ─── Milo asset ───────────────────────────────────────────────────────────────
-// TODO: replace with extracted Milo character PNG from design exports
-const MILO_IMAGE = require('../../../assets/images/icon.png') as number;
+// ─── Milo celebrate asset ─────────────────────────────────────────────────────
+const MILO_CELEBRATE = require('../../../assets/images/milo-celebrate.png') as number;
 
 // ─── UUID helper ──────────────────────────────────────────────────────────────
 
@@ -103,29 +102,296 @@ function Confetti() {
   );
 }
 
-// ─── XP Badge ─────────────────────────────────────────────────────────────────
+// ─── Milestone / Completed full-screen component ──────────────────────────────
 
-function XpBadge({ xp }: { xp: string }) {
+type MilestoneVariant = 'q5' | 'q10' | 'q15' | 'completed';
+
+const MILESTONE_CFG: Record<MilestoneVariant, {
+  bg: string;
+  badgeBg: string;
+  badgeIcon: 'star' | 'trophy';
+  title: string;
+  subtitle: string;
+  questions: number;
+  pct: number;
+  xp: number;
+}> = {
+  q5: {
+    bg: '#2B52E5', badgeBg: '#2B52E5', badgeIcon: 'star',
+    title: 'Mandou bem!',
+    subtitle: 'Você já completou 5 questões.\nContinue assim!',
+    questions: 5, pct: 25, xp: 50,
+  },
+  q10: {
+    bg: '#F5722A', badgeBg: '#F5722A', badgeIcon: 'star',
+    title: 'Você está\nna metade!',
+    subtitle: '10 questões concluídas. Falta pouco\npara a estrela!',
+    questions: 10, pct: 50, xp: 100,
+  },
+  q15: {
+    bg: '#16A34A', badgeBg: '#16A34A', badgeIcon: 'star',
+    title: 'Faltam só\nalgunas!',
+    subtitle: '15 questões! Você é um verdadeiro\nherói da matemática.',
+    questions: 15, pct: 75, xp: 150,
+  },
+  completed: {
+    bg: '#F59E0B', badgeBg: '#D97706', badgeIcon: 'trophy',
+    title: 'Desafio\nconcluído!',
+    subtitle: 'Incrível! Você terminou o desafio de\nhoje. Milo está orgulhoso!',
+    questions: 20, pct: 100, xp: 300,
+  },
+};
+
+function MilestoneScreen({
+  variant,
+  xpOverride,
+  questionsCorrect,
+  onContinue,
+  isLoading,
+}: {
+  variant: MilestoneVariant;
+  xpOverride?: number;
+  questionsCorrect?: number;
+  onContinue: () => void;
+  isLoading?: boolean;
+}) {
+  const cfg = MILESTONE_CFG[variant];
+  const xp = xpOverride ?? cfg.xp;
+  const qs = questionsCorrect ?? cfg.questions;
+  const pct = Math.round((qs / CHALLENGE.TOTAL_QUESTIONS) * 100);
+
   return (
-    <View style={xpBadgeStyles.badge}>
-      <Text style={xpBadgeStyles.text}>{xp}</Text>
+    <View style={[msStyles.root, { backgroundColor: cfg.bg }]}>
+      {/* Confetti */}
+      <Confetti />
+
+      {/* XP badge — top right */}
+      <View style={msStyles.xpBadge}>
+        <Ionicons name="flash" size={14} color="#78350F" style={{ marginRight: 3 }} />
+        <Text style={msStyles.xpBadgeText}>+{xp} XP</Text>
+      </View>
+
+      {/* Decorative stars */}
+      <View style={msStyles.starTopLeft}>
+        <Ionicons name="star" size={32} color="rgba(255,255,255,0.85)" />
+      </View>
+
+      {/* Sparkle — top right area */}
+      <View style={msStyles.sparkleTopRight}>
+        <Ionicons name="sparkles" size={36} color="rgba(255,255,255,0.75)" />
+      </View>
+
+      {/* Content */}
+      <View style={msStyles.content}>
+        {/* Milo circle with badge */}
+        <View style={msStyles.miloOuter}>
+          <View style={msStyles.miloRing}>
+            <View style={msStyles.miloCircle}>
+              <Image source={MILO_CELEBRATE} style={msStyles.miloImg} resizeMode="contain" />
+            </View>
+          </View>
+          {/* Star or trophy badge */}
+          <View style={[msStyles.miloBadge, { backgroundColor: cfg.badgeBg }]}>
+            <Ionicons
+              name={cfg.badgeIcon === 'star' ? 'star' : 'trophy'}
+              size={22}
+              color="#fff"
+            />
+          </View>
+        </View>
+
+        {/* Title */}
+        <Text style={msStyles.title}>{cfg.title}</Text>
+        <Text style={msStyles.subtitle}>{cfg.subtitle}</Text>
+
+        {/* Progress */}
+        <View style={msStyles.progressSection}>
+          <View style={msStyles.progressRow}>
+            <Text style={msStyles.progressCount}>
+              {qs} / {CHALLENGE.TOTAL_QUESTIONS} questões
+            </Text>
+            <Text style={msStyles.progressPct}>{pct}%</Text>
+          </View>
+          <View style={msStyles.progressTrack}>
+            <View style={[msStyles.progressFill, { width: `${pct}%` as `${number}%` }]} />
+          </View>
+        </View>
+
+        {/* Button */}
+        {isLoading ? (
+          <ActivityIndicator color="#fff" size="large" style={{ marginTop: 24 }} />
+        ) : (
+          <Pressable style={msStyles.continueBtn} onPress={onContinue}>
+            <Text style={[msStyles.continueBtnText, { color: cfg.bg }]}>Continuar</Text>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
 
-const xpBadgeStyles = StyleSheet.create({
-  badge: {
-    backgroundColor: '#F59E0B',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    alignSelf: 'center',
+const msStyles = StyleSheet.create({
+  root: {
+    flex: 1,
+    position: 'relative',
   },
-  text: {
+  // ── Decorations ─────────────────────────────────────────────────────────────
+  xpBadge: {
+    position: 'absolute',
+    top: 56,
+    right: 20,
+    zIndex: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F59E0B',
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  xpBadgeText: {
     fontFamily: fontFamily.extraBold,
-    fontSize: 15,
+    fontSize: 16,
+    color: '#78350F',
+    letterSpacing: 0.2,
+  },
+  starTopLeft: {
+    position: 'absolute',
+    top: 80,
+    left: 28,
+    zIndex: 5,
+  },
+  sparkleTopRight: {
+    position: 'absolute',
+    top: 110,
+    right: 32,
+    zIndex: 5,
+  },
+  // ── Content ─────────────────────────────────────────────────────────────────
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    paddingTop: 60,
+    paddingBottom: 40,
+    gap: 4,
+  },
+  // ── Milo ────────────────────────────────────────────────────────────────────
+  miloOuter: {
+    position: 'relative',
+    marginBottom: 24,
+  },
+  miloRing: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.20)',
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  miloCircle: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  miloImg: {
+    width: 175,
+    height: 175,
+  },
+  miloBadge: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  // ── Text ────────────────────────────────────────────────────────────────────
+  title: {
+    fontFamily: fontFamily.extraBold,
+    fontSize: 40,
     color: '#fff',
-    letterSpacing: 0.3,
+    textAlign: 'center',
+    lineHeight: 46,
+    marginTop: 4,
+  },
+  subtitle: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.90)',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginTop: 8,
+  },
+  // ── Progress ─────────────────────────────────────────────────────────────────
+  progressSection: {
+    width: '100%',
+    marginTop: 24,
+    gap: 8,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  progressCount: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.90)',
+  },
+  progressPct: {
+    fontFamily: fontFamily.bold,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.90)',
+  },
+  progressTrack: {
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.30)',
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 8,
+    backgroundColor: '#fff',
+    borderRadius: 999,
+  },
+  // ── Button ──────────────────────────────────────────────────────────────────
+  continueBtn: {
+    marginTop: 28,
+    backgroundColor: '#fff',
+    borderRadius: 999,
+    height: 56,
+    paddingHorizontal: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  continueBtnText: {
+    fontFamily: fontFamily.extraBold,
+    fontSize: 18,
   },
 });
 
@@ -135,7 +401,7 @@ function MiloBox({ message, bg }: { message: string; bg: string }) {
   return (
     <View style={[miloBoxStyles.box, { backgroundColor: bg }]}>
       <View style={miloBoxStyles.avatarWrap}>
-        <Image source={MILO_IMAGE} style={miloBoxStyles.avatar} />
+        <Image source={MILO_CELEBRATE} style={miloBoxStyles.avatar} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={miloBoxStyles.label}>MILO DIZ</Text>
@@ -539,70 +805,31 @@ export default function ChallengeScreen() {
   // ─── Milestone — full screen colored with Milo ────────────────────────────
 
   if (phase === 'milestone') {
-    const mk = currentQuestionIndex <= 5 ? 'q5' : currentQuestionIndex <= 10 ? 'q10' : 'q15';
-    const bgColors = { q5: '#2B52E5', q10: '#F5722A', q15: '#16A34A' };
-    const bg = bgColors[mk];
-    const pct = Math.round((currentQuestionIndex / CHALLENGE.TOTAL_QUESTIONS) * 100);
-
+    const mk: MilestoneVariant =
+      currentQuestionIndex <= 5 ? 'q5' :
+      currentQuestionIndex <= 10 ? 'q10' : 'q15';
     return (
-      <View style={[gs.container, gs.centered, { backgroundColor: bg }]}>
-        <Confetti />
-        <XpBadge xp={`+${sessionXp} XP`} />
-        <View style={{ height: 20 }} />
-        <View style={milestoneStyles.miloCircle}>
-          <Image source={MILO_IMAGE} style={milestoneStyles.miloImg} />
-        </View>
-        <View style={{ height: 24 }} />
-        <Text style={milestoneStyles.title}>{t(`challenge.milestone.${mk}.title`)}</Text>
-        <Text style={milestoneStyles.subtitle}>{t(`challenge.milestone.${mk}.subtitle`)}</Text>
-        <View style={{ height: 28 }} />
-        <Text style={milestoneStyles.progressText}>
-          {currentQuestionIndex}/{CHALLENGE.TOTAL_QUESTIONS} questões · {pct}%
-        </Text>
-        <View style={milestoneStyles.progressTrack}>
-          <View style={[milestoneStyles.progressFill, { width: `${pct}%` as `${number}%` }]} />
-        </View>
-        <View style={{ height: 32 }} />
-        <Pressable style={milestoneStyles.continueBtn} onPress={() => storeActions.dismissMilestone()}>
-          <Text style={milestoneStyles.continueBtnText}>{t('challenge.milestone.continue')}</Text>
-        </Pressable>
-      </View>
+      <MilestoneScreen
+        variant={mk}
+        xpOverride={sessionXp}
+        questionsCorrect={currentQuestionIndex}
+        onContinue={() => storeActions.dismissMilestone()}
+      />
     );
   }
 
-  // ─── Completed — full screen gold ────────────────────────────────────────
+  // ─── Completed ───────────────────────────────────────────────────────────
 
   if (phase === 'completed' || phase === 'submitting') {
     const totalXp = sessionXp + 200 + (uniqueCorrect === 20 ? 100 : 0);
-    const pct = Math.round((uniqueCorrect / CHALLENGE.TOTAL_QUESTIONS) * 100);
-
     return (
-      <View style={[gs.container, gs.centered, { backgroundColor: '#F59E0B' }]}>
-        <Confetti />
-        <XpBadge xp={`+${totalXp} XP`} />
-        <View style={{ height: 20 }} />
-        <View style={milestoneStyles.miloCircle}>
-          <Image source={MILO_IMAGE} style={milestoneStyles.miloImg} />
-        </View>
-        <View style={{ height: 24 }} />
-        <Text style={[milestoneStyles.title, { fontSize: 34 }]}>{t('challenge.completed.title')}</Text>
-        <Text style={milestoneStyles.subtitle}>{t('challenge.completed.subtitle')}</Text>
-        <View style={{ height: 28 }} />
-        <Text style={milestoneStyles.progressText}>
-          {uniqueCorrect}/{CHALLENGE.TOTAL_QUESTIONS} questões · {pct}%
-        </Text>
-        <View style={milestoneStyles.progressTrack}>
-          <View style={[milestoneStyles.progressFill, { width: `${pct}%` as `${number}%` }]} />
-        </View>
-        <View style={{ height: 32 }} />
-        {isSubmitting ? (
-          <ActivityIndicator color="#fff" size="large" />
-        ) : (
-          <Pressable style={milestoneStyles.continueBtn} onPress={() => { void handleComplete(); }}>
-            <Text style={milestoneStyles.continueBtnText}>{t('challenge.completed.continue')}</Text>
-          </Pressable>
-        )}
-      </View>
+      <MilestoneScreen
+        variant="completed"
+        xpOverride={totalXp}
+        questionsCorrect={uniqueCorrect}
+        onContinue={() => { void handleComplete(); }}
+        isLoading={isSubmitting}
+      />
     );
   }
 
@@ -769,71 +996,7 @@ const correctStyles = StyleSheet.create({
   },
 });
 
-// ─── Milestone / Completed styles ─────────────────────────────────────────────
-
-const milestoneStyles = StyleSheet.create({
-  miloCircle: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.5)',
-  },
-  miloImg: { width: 96, height: 96 },
-  title: {
-    fontFamily: fontFamily.extraBold,
-    fontSize: 30,
-    color: '#fff',
-    textAlign: 'center',
-    paddingHorizontal: 24,
-  },
-  subtitle: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.85)',
-    textAlign: 'center',
-    paddingHorizontal: 32,
-    marginTop: 6,
-  },
-  progressText: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  progressTrack: {
-    width: '60%',
-    height: 6,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: 6,
-    backgroundColor: '#fff',
-    borderRadius: 3,
-  },
-  continueBtn: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.6)',
-    borderRadius: 32,
-    height: 54,
-    paddingHorizontal: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  continueBtnText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 16,
-    color: '#fff',
-  },
-});
+// milestoneStyles removed — replaced by MilestoneScreen component + msStyles
 
 // ─── Overlay card styles (wrong / timeout / block_end) ────────────────────────
 
