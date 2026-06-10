@@ -1,4 +1,4 @@
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
@@ -10,22 +10,23 @@ import Animated, {
 } from 'react-native-reanimated';
 import type React from 'react';
 
-import type { IoniconsName } from '@/components/ui';
-import { colors, radius, shadows } from '@/theme';
+import { colors, radius } from '@/theme';
 
 // ─── Spring config ────────────────────────────────────────────────────────────
 
 const SPRING = { damping: 12, stiffness: 260, mass: 0.8 };
 
-// ─── Tab icon — animates scale on focus ───────────────────────────────────────
+// ─── Tab icon — Feather (= Lucide clone), color-only active state ─────────────
+// Design uses Lucide icons: same stroke weight, NO fill on active — just color.
+
+type FeatherName = React.ComponentProps<typeof Feather>['name'];
 
 interface TabIconProps {
-  outlineName: IoniconsName;
-  solidName: IoniconsName;
+  name: FeatherName;
   focused: boolean;
 }
 
-function TabIcon({ outlineName, solidName, focused }: TabIconProps): React.JSX.Element {
+function TabIcon({ name, focused }: TabIconProps): React.JSX.Element {
   const scale = useSharedValue(focused ? 1.15 : 1);
 
   useEffect(() => {
@@ -38,8 +39,8 @@ function TabIcon({ outlineName, solidName, focused }: TabIconProps): React.JSX.E
 
   return (
     <Animated.View style={animStyle}>
-      <Ionicons
-        name={focused ? solidName : outlineName}
+      <Feather
+        name={name}
         size={24}
         color={focused ? colors.tabBar.active : colors.tabBar.inactive}
       />
@@ -61,7 +62,6 @@ function ChallengeFAB({ focused }: { focused: boolean }): React.JSX.Element {
   }));
 
   return (
-    // Outer View holds the colored shadow (can't animate + shadow in same Animated.View on RN)
     <View style={styles.fabShadow}>
       <Animated.View style={animStyle}>
         <LinearGradient
@@ -98,7 +98,7 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: 'Início',
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <TabIcon outlineName="home-outline" solidName="home" focused={focused} />
+            <TabIcon name="home" focused={focused} />
           ),
         }}
       />
@@ -107,7 +107,7 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: 'Calendário',
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <TabIcon outlineName="calendar-outline" solidName="calendar" focused={focused} />
+            <TabIcon name="calendar" focused={focused} />
           ),
         }}
       />
@@ -128,7 +128,7 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: 'Amigos',
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <TabIcon outlineName="people-outline" solidName="people" focused={focused} />
+            <TabIcon name="users" focused={focused} />
           ),
         }}
       />
@@ -137,7 +137,7 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: 'Ajustes',
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <TabIcon outlineName="settings-outline" solidName="settings" focused={focused} />
+            <TabIcon name="settings" focused={focused} />
           ),
         }}
       />
@@ -155,7 +155,6 @@ const styles = StyleSheet.create({
     height: Platform.OS === 'ios' ? 82 : 64,
     paddingBottom: Platform.OS === 'ios' ? 22 : 8,
     paddingTop: 8,
-    // Stronger shadow than before — tab bar should feel elevated
     ...Platform.select({
       ios: {
         shadowColor: '#1A1F36',
@@ -183,7 +182,6 @@ const styles = StyleSheet.create({
   },
   fabShadow: {
     borderRadius: radius.full,
-    // Colored shadow matching accent
     ...Platform.select({
       ios: {
         shadowColor: colors.accent,
