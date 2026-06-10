@@ -6,19 +6,17 @@
  */
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text as RNText, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Card, Input, Text } from '@/components/ui';
+import { AvatarPicker, Button, Card, Input, Text } from '@/components/ui';
 import { AuthScreen } from '@/components/layout/AuthScreen';
 import { MiloMessage } from '@/components/milo/MiloMessage';
 import { childService } from '@/services/child.service';
-import { AVATAR_IDS } from '@/constants/config';
-import { AVATAR_ICONS } from '@/constants/icons';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
-import { colors, radius, space } from '@/theme';
+import { colors, space } from '@/theme';
 import type { AvatarId } from '@/constants/config';
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
@@ -104,20 +102,7 @@ export default function AddChildScreen() {
         <Text variant="label" style={styles.sectionLabel}>
           {t('auth.register.child.avatarLabel')}
         </Text>
-        <View style={styles.avatarGrid}>
-          {AVATAR_IDS.map((id) => (
-            <Pressable
-              key={id}
-              onPress={() => setSelectedAvatar(id)}
-              style={[
-                styles.avatarItem,
-                selectedAvatar === id ? styles.avatarSelected : null,
-              ] as import('react-native').StyleProp<import('react-native').ViewStyle>}
-            >
-              <RNText style={styles.avatarEmoji}>{AVATAR_ICONS[id]}</RNText>
-            </Pressable>
-          ))}
-        </View>
+        <AvatarPicker selected={selectedAvatar} onSelect={setSelectedAvatar} />
       </Card>
 
       <Card border shadow="sm">
@@ -167,25 +152,5 @@ export default function AddChildScreen() {
 
 const styles = StyleSheet.create({
   sectionLabel: { marginBottom: space.sm },
-  avatarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.sm,
-  },
-  avatarItem: {
-    width: 60,
-    height: 60,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-    backgroundColor: colors.background.cardAlt,
-  },
-  avatarSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.background.card,
-  },
-  avatarEmoji: { fontSize: 36 },
   form: { gap: space.md },
 });

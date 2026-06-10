@@ -4,14 +4,12 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text as RNText, V
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
-import { Button, Input, Text } from '@/components/ui';
+import { AvatarPicker, Button, Input, Text } from '@/components/ui';
 import { MiloMessage } from '@/components/milo/MiloMessage';
 import { childService } from '@/services/child.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
-import { AVATAR_IDS } from '@/constants/config';
-import { AVATAR_ICONS } from '@/constants/icons';
-import { colors, radius, space } from '@/theme';
+import { colors, space } from '@/theme';
 import type { AvatarId } from '@/constants/config';
 import type { ChildProfile } from '@/types';
 
@@ -152,20 +150,7 @@ export default function EditarCriancaScreen() {
         <Text variant="label" style={styles.sectionLabel}>
           {t('auth.register.child.avatarLabel')}
         </Text>
-        <View style={styles.avatarGrid}>
-          {AVATAR_IDS.map((aid) => (
-            <Pressable
-              key={aid}
-              onPress={() => setAvatar(aid)}
-              style={[
-                styles.avatarItem,
-                avatar === aid && styles.avatarSelected,
-              ] as import('react-native').StyleProp<import('react-native').ViewStyle>}
-            >
-              <RNText style={styles.avatarEmoji}>{AVATAR_ICONS[aid]}</RNText>
-            </Pressable>
-          ))}
-        </View>
+        <AvatarPicker selected={avatar} onSelect={setAvatar} style={styles.avatarGrid} />
 
         {/* Form fields */}
         <View style={styles.form}>
@@ -229,15 +214,7 @@ const styles = StyleSheet.create({
   content: { padding: space.md, gap: space.md, paddingBottom: space['2xl'] },
   milo: { marginBottom: space.sm },
   sectionLabel: { marginBottom: space.sm },
-  avatarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginBottom: space.md },
-  avatarItem: {
-    width: 60, height: 60, borderRadius: radius.full,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'transparent',
-    backgroundColor: colors.background.cardAlt,
-  },
-  avatarSelected: { borderColor: colors.primary, backgroundColor: colors.background.card },
-  avatarEmoji: { fontSize: 36 },
+  avatarGrid: { marginBottom: space.md },
   form: { gap: space.md },
   saveBtn: { marginTop: space.sm },
 });

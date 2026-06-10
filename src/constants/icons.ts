@@ -48,13 +48,14 @@ export const Icons = {
   locked: '🔒',
   pinCode: '🔐',
 
-  // Avatars — temporary until real assets land (Phase 2)
+  // Avatars — real PNG assets now in assets/images/avatars/ (Phase 2 complete)
+  // Kept as emoji fallback for contexts that can't render Image
   avatarSofia: '👧',
-  avatarGabriel: '👦',
+  avatarLucas: '👦',
+  avatarLuna:  '👧🏽',
+  avatarMia:   '👧🏼',
   avatarPedro: '🧒',
-  avatarAna: '👧🏽',
-  avatarTheo: '👦🏻',
-  avatarMia: '👧🏼',
+  avatarTheo:  '👦🏻',
 
   // Input / Password
   passwordShow: '👁',
@@ -66,14 +67,14 @@ export type IconKey = keyof typeof Icons;
 // ─── Avatar icon lookup ───────────────────────────────────────────────────────
 
 /**
- * Maps each AvatarId to its temporary emoji representation.
- * Replace values here when real image assets are ready (Phase 2).
+ * Maps each AvatarId to an emoji fallback (used in the avatar selector grid).
+ * The Avatar component uses real PNG assets from assets/images/avatars/.
  */
 export const AVATAR_ICONS: Record<AvatarId, string> = {
-  sofia:   Icons.avatarSofia,
-  gabriel: Icons.avatarGabriel,
-  pedro:   Icons.avatarPedro,
-  ana:     Icons.avatarAna,
-  theo:    Icons.avatarTheo,
-  mia:     Icons.avatarMia,
+  sofia: Icons.avatarSofia,
+  lucas: Icons.avatarLucas,
+  luna:  Icons.avatarLuna,
+  mia:   Icons.avatarMia,
+  pedro: Icons.avatarPedro,
+  theo:  Icons.avatarTheo,
 };

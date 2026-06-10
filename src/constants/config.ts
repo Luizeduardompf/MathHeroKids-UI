@@ -26,7 +26,7 @@ export const MULTIPLICATION_RANGES = [10, 12, 15, 20] as const;
 export type MultiplicationRange = (typeof MULTIPLICATION_RANGES)[number];
 export const DEFAULT_MULTIPLICATION_MAX = 10 satisfies MultiplicationRange;
 
-export const AVATAR_IDS = ['sofia', 'gabriel', 'pedro', 'ana', 'theo', 'mia'] as const;
+export const AVATAR_IDS = ['sofia', 'lucas', 'luna', 'mia', 'pedro', 'theo'] as const;
 export type AvatarId = (typeof AVATAR_IDS)[number];
 
 export const SUPPORTED_LOCALES = ['pt', 'en', 'es', 'fr'] as const;

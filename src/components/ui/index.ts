@@ -6,6 +6,7 @@ export { Input } from './Input';
 export { Card } from './Card';
 export { Badge } from './Badge';
 export { Avatar } from './Avatar';
+export { AvatarPicker } from './AvatarPicker';
 export { ProgressBar } from './ProgressBar';
 
 export type { TextVariant } from './Text';
