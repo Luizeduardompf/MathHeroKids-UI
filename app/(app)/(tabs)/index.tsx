@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -104,8 +105,13 @@ export default function HomeScreen() {
 
         {/* Section 2 — Streak stats */}
         <View style={styles.streakRow}>
-          {/* Current streak — orange pill, horizontal layout */}
-          <View style={styles.streakPillAccent}>
+          {/* Current streak — orange gradient pill */}
+          <LinearGradient
+            colors={[colors.accent, colors.accentDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.streakPillAccent}
+          >
             <View style={styles.streakIconCircleLight}>
               <Ionicons name="flame" size={20} color={colors.text.inverse} />
             </View>
@@ -113,8 +119,8 @@ export default function HomeScreen() {
               <Text variant="h2" color={colors.text.inverse}>{child.current_streak}</Text>
               <Text variant="caption" color="rgba(255,255,255,0.85)">{t('home.dayStreak')}</Text>
             </View>
-          </View>
-          {/* Best streak — white pill, horizontal layout */}
+          </LinearGradient>
+          {/* Best streak — white pill */}
           <View style={styles.streakPillNeutral}>
             <View style={styles.streakIconCircleGold}>
               <Ionicons name="trophy" size={20} color={colors.warning} />
@@ -127,16 +133,34 @@ export default function HomeScreen() {
         </View>
 
         {/* Section 3 — Today's Challenge */}
-        <Card style={styles.challengeCard}>
+        <LinearGradient
+          colors={['#16A34A', '#14532D']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.challengeCard}
+        >
+          {/* Decorative circles */}
+          <View style={styles.challengeDecoTR} pointerEvents="none" />
+          <View style={styles.challengeDecoBL} pointerEvents="none" />
+
           <View style={styles.challengeHeader}>
-            <Badge label={t('home.challenge.notStarted')} variant="success" />
-            <Text variant="label" color={colors.text.inverse}>+150 XP</Text>
+            <View style={styles.challengeStatusBadge}>
+              <Ionicons name="sparkles" size={12} color={colors.text.inverse} />
+              <Text variant="caption" style={styles.challengeStatusText}>
+                {t('home.challenge.notStarted')}
+              </Text>
+            </View>
+            <View style={styles.xpBadge}>
+              <Text variant="caption" style={styles.xpBadgeText}>+150 XP</Text>
+            </View>
           </View>
-          <Text variant="caption" color="rgba(255,255,255,0.75)" style={{ marginTop: space.xs }}>
+          <Text variant="caption" color="rgba(255,255,255,0.70)" style={{ marginTop: space.sm }}>
             {t('home.challenge.todaysChallenge')}
           </Text>
-          <Text variant="h2" color={colors.text.inverse}>Multiplication Mountain</Text>
-          <Text variant="bodySmall" color="rgba(255,255,255,0.75)">
+          <Text variant="h2" color={colors.text.inverse} style={styles.challengeTitle}>
+            Multiplication Mountain
+          </Text>
+          <Text variant="bodySmall" color="rgba(255,255,255,0.70)">
             {t('home.challenge.questions', { current: 0, total: 20 })}
           </Text>
           <ProgressBar
@@ -151,7 +175,7 @@ export default function HomeScreen() {
             onPress={() => router.push(`/(app)/challenge/${todayDate}`)}
             style={{ marginTop: space.md }}
           />
-        </Card>
+        </LinearGradient>
 
         {/* Section 4 — Recent Trophies (Phase 3 will populate) */}
         <View style={styles.sectionHeader}>
@@ -186,14 +210,17 @@ export default function HomeScreen() {
         <View style={styles.statsGrid}>
           {(
             [
-              { key: 'home.perfectDays' },
-              { key: 'home.perfectWeeks' },
-              { key: 'home.perfectMonths' },
-              { key: 'home.challengesDone' },
+              { key: 'home.perfectDays',    icon: 'calendar-outline' as const,   iconBg: colors.primaryLight,  iconColor: colors.primary  },
+              { key: 'home.perfectWeeks',   icon: 'calendar-outline' as const,   iconBg: colors.accentLight,   iconColor: colors.accent   },
+              { key: 'home.perfectMonths',  icon: 'ribbon-outline'   as const,   iconBg: colors.successLight,  iconColor: colors.success  },
+              { key: 'home.challengesDone', icon: 'trophy-outline'   as const,   iconBg: colors.warningLight,  iconColor: colors.warning  },
             ] as const
-          ).map(({ key }) => (
+          ).map(({ key, icon, iconBg, iconColor }) => (
             <Card key={key} style={styles.statCard} padding={space.md}>
-              <Text variant="h2">—</Text>
+              <View style={[styles.statIconWrap, { backgroundColor: iconBg }]}>
+                <Ionicons name={icon} size={20} color={iconColor} />
+              </View>
+              <Text variant="h2" style={styles.statValue}>—</Text>
               <Text variant="caption" color={colors.text.secondary}>
                 {t(key)}
               </Text>
@@ -229,17 +256,23 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: space.md, gap: space.md, paddingBottom: space['2xl'] },
 
-  // Streak — horizontal pill layout matching design
+  // ── Streak ──────────────────────────────────────────────────────────────────
   streakRow: { flexDirection: 'row', gap: space.sm },
   streakPillAccent: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    backgroundColor: colors.accent,
     borderRadius: radius.full,
     paddingVertical: space.md,
     paddingHorizontal: space.md,
+    ...({
+      shadowColor: colors.accent,
+      shadowOpacity: 0.30,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 5,
+    } as object),
   },
   streakPillNeutral: {
     flex: 1,
@@ -250,37 +283,112 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     paddingVertical: space.md,
     paddingHorizontal: space.md,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    ...({
+      shadowColor: '#1A1F36',
+      shadowOpacity: 0.06,
+      shadowRadius: 4,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    } as object),
   },
   streakIconCircleLight: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   streakIconCircleGold: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.warningLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  // Challenge
+  // ── Challenge card ───────────────────────────────────────────────────────────
   challengeCard: {
+    borderRadius: radius['2xl'],
+    padding: space.lg,
     gap: space.xs,
-    backgroundColor: colors.success,
+    overflow: 'hidden',
+    ...({
+      shadowColor: '#14532D',
+      shadowOpacity: 0.35,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 8,
+    } as object),
+  },
+  challengeDecoTR: {
+    position: 'absolute',
+    top: -32,
+    right: -32,
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  challengeDecoBL: {
+    position: 'absolute',
+    bottom: -40,
+    left: -24,
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   challengeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  challengeStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderRadius: radius.full,
+    paddingHorizontal: space.sm,
+    paddingVertical: 4,
+  },
+  challengeStatusText: {
+    color: colors.text.inverse,
+    fontWeight: '800',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  } as import('react-native').TextStyle,
+  xpBadge: {
+    backgroundColor: colors.warning,
+    borderRadius: radius.full,
+    paddingHorizontal: space.sm,
+    paddingVertical: 4,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+  xpBadgeText: {
+    color: '#7A2E06',
+    fontWeight: '900',
+    fontSize: 12,
+  } as import('react-native').TextStyle,
+  challengeTitle: { marginTop: 2 },
 
-  // Trophies
+  // ── Trophies ────────────────────────────────────────────────────────────────
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   trophyRow: { flexDirection: 'row', gap: space.sm },
   trophyCard: { flex: 1, alignItems: 'center', gap: space.xs },
 
-  // Stats
+  // ── Stats ───────────────────────────────────────────────────────────────────
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   statCard: { width: '47%' },
+  statIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: space.xs,
+  },
+  statValue: { marginBottom: 2 },
 });

@@ -71,6 +71,7 @@ export default function TabsLayout() {
           tabBarLabel: 'Desafio',
           tabBarIcon: ({ focused }: { focused: boolean }) => <ChallengeFAB focused={focused} />,
           tabBarLabelStyle: styles.tabLabelAccent,
+          // @ts-expect-error tabBarItemStyle exists in RN but not typed in this expo-router version
           tabBarItemStyle: styles.fabItem,
         }}
       />

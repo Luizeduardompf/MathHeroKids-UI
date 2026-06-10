@@ -1,17 +1,19 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+// @ts-expect-error RN 0.85 quirk — Image present at runtime
+import { Image } from 'react-native'; // eslint-disable-line
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import { Text } from '@/components/ui/Text';
-import { Icons } from '@/constants/icons';
-import { colors, radius, space } from '@/theme';
+import { colors, radius, shadows, space } from '@/theme';
 
 type MiloVariant = 'blue' | 'orange' | 'green';
 
-const variantStyles: Record<MiloVariant, { bg: string; textColor: string }> = {
-  blue: { bg: colors.primary, textColor: colors.text.inverse },
-  orange: { bg: colors.accent, textColor: colors.text.inverse },
-  green: { bg: colors.success, textColor: colors.text.inverse },
+const variantGradients: Record<MiloVariant, [string, string]> = {
+  blue:   [colors.primary, colors.primaryDark],
+  orange: [colors.accent,  colors.accentDark],
+  green:  ['#22C55E',      '#15803D'],
 };
 
 interface MiloMessageProps {
@@ -20,29 +22,41 @@ interface MiloMessageProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/**
- * Milo the mascot speech bubble.
- *
- * Phase 2: replace the emoji with <Image source={miloAsset} /> inside the avatar circle.
- */
 export function MiloMessage({ message, variant = 'blue', style }: MiloMessageProps) {
-  const v = variantStyles[variant];
+  const gradient = variantGradients[variant];
 
   return (
-    <View style={[styles.container, { backgroundColor: v.bg }, style] as StyleProp<ViewStyle>}>
-      {/* TODO Phase 2: Replace with <Image source={miloAsset} style={styles.miloImage} /> */}
-      <View style={styles.avatar}>
-        <Text style={styles.emoji}>{Icons.miloAvatar}</Text>
+    <LinearGradient
+      colors={gradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[styles.container, style] as StyleProp<ViewStyle>}
+    >
+      {/* Decorative circles — match v0 design */}
+      <View style={styles.decoTopRight} pointerEvents="none" />
+      <View style={styles.decoBottomLeft} pointerEvents="none" />
+
+      {/* Avatar */}
+      <View style={styles.avatarRing}>
+        <View style={styles.avatar}>
+          <Image
+            source={require('../../../assets/images/milo-mascot.png')}
+            style={styles.miloImage}
+            resizeMode="contain"
+          />
+        </View>
       </View>
-      <View style={styles.bubble}>
-        <Text variant="caption" style={styles.label}>
-          MILO DIZ
-        </Text>
-        <Text variant="bodyLarge" color={v.textColor} style={styles.message}>
-          {message}
-        </Text>
+
+      {/* Speech bubble */}
+      <View style={styles.bubbleWrapper}>
+        <Text variant="caption" style={styles.label}>MILO DIZ</Text>
+        <View style={styles.bubble}>
+          <Text variant="body" style={styles.message} numberOfLines={3}>
+            {message}
+          </Text>
+        </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -50,30 +64,85 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: radius['3xl'],
-    paddingVertical: space.md,
-    paddingHorizontal: space.md,
+    borderRadius: radius['2xl'],
+    padding: space.md,
     gap: space.md,
-    minHeight: 80,
+    overflow: 'hidden',
+    ...({
+      shadowColor: '#1A1F36',
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 6,
+    } as object),
   },
-  // White circle — Phase 2 will contain the real Milo illustration
-  avatar: {
+  decoTopRight: {
+    position: 'absolute',
+    top: -24,
+    right: -24,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  decoBottomLeft: {
+    position: 'absolute',
+    bottom: -32,
+    left: 48,
     width: 64,
     height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  avatarRing: {
+    borderRadius: radius.full,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.35)',
+    flexShrink: 0,
+    ...({
+      shadowColor: '#000',
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 4,
+    } as object),
+  },
+  avatar: {
+    width: 72,
+    height: 72,
     borderRadius: radius.full,
     backgroundColor: colors.background.card,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
+    overflow: 'hidden',
   },
-  emoji: { fontSize: 36 },
-  bubble: { flex: 1, gap: 3 },
+  miloImage: { width: 64, height: 64 },
+  bubbleWrapper: { flex: 1, gap: 4 },
   label: {
-    color: 'rgba(255,255,255,0.65)',
+    color: 'rgba(255,255,255,0.70)',
     fontWeight: '700',
     letterSpacing: 0.8,
-    fontSize: 11,
+    fontSize: 10,
     textTransform: 'uppercase',
   } as import('react-native').TextStyle,
-  message: { fontWeight: '800' },
+  bubble: {
+    backgroundColor: colors.background.card,
+    borderRadius: radius.xl,
+    borderBottomLeftRadius: 4,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.sm,
+    ...({
+      shadowColor: '#1A1F36',
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 3,
+    } as object),
+  },
+  message: {
+    fontWeight: '800',
+    color: colors.text.primary,
+    fontSize: 14,
+    lineHeight: 20,
+  } as import('react-native').TextStyle,
 });
