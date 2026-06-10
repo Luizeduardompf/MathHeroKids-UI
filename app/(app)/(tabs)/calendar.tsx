@@ -1,26 +1,26 @@
 /**
  * Calendar screen — pixel-faithful ao design 03-home-dashboard-calendar.zip
  *
- * Mostra:
- * - Header com avatar, nome, XP/level
- * - Stats: sequência atual + recorde
- * - MiloMessage contextual
- * - Calendário mensal com estados por dia
- * - Navegação entre meses
+ * Layout:
+ * - Header fixo (fora do ScrollView): avatar, nome, level, XP bar
+ * - Conteúdo scrollável:
+ *   - MiloMessage contextual ao streak
+ *   - Stats row: Sequência + Recorde (layout horizontal, igual ao design)
+ *   - Mês actual + 3 meses anteriores em lista vertical
+ *   - Legenda
  *
- * Dados: calendar_days via Supabase + TanStack Query (leitura directa, sem EF)
+ * Dados:
+ * - calendar_days via Supabase (escrita pela Edge Function complete_challenge)
+ * - Fallback: challenge_sessions para quando a EF não está deployada
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
-// @ts-expect-error RN 0.85 — Image present at runtime
-import { Image } from 'react-native'; // eslint-disable-line
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
@@ -31,248 +31,337 @@ import { MiloMessage } from '@/components/milo/MiloMessage';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { LEVEL_THRESHOLDS } from '@/constants/config';
 import { supabase } from '@/lib/supabase';
-import { colors, fontFamily, radius, shadows, space } from '@/theme';
+import { colors, fontFamily, radius, shadows } from '@/theme';
 import type { CalendarDay } from '@/types';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const MONTHS_TO_SHOW = 4; // current + 3 previous
+const DAY_SIZE       = 40;
+const DOW_LABELS     = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+const MONTH_NAMES_PT = [
+  'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro',
+];
+
+// ─── XP helpers ───────────────────────────────────────────────────────────────
 
 function getXpFloor(level: number): number {
   return LEVEL_THRESHOLDS.find((t) => t.level === level)?.xpRequired ?? 0;
 }
 function getXpCeil(level: number): number {
-  return LEVEL_THRESHOLDS.find((t) => t.level === level + 1)?.xpRequired
-    ?? LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]?.xpRequired
-    ?? 99999;
+  return (
+    LEVEL_THRESHOLDS.find((t) => t.level === level + 1)?.xpRequired ??
+    LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]?.xpRequired ??
+    99999
+  );
 }
 
-/** ISO date → "YYYY-MM-DD" */
+// ─── Date helpers ─────────────────────────────────────────────────────────────
+
 function toISO(d: Date): string {
   return d.toISOString().split('T')[0]!;
 }
 
-/** First day of month (day = 1), last day of month */
-function monthBounds(year: number, month: number) {
-  const first = new Date(year, month, 1);
-  const last  = new Date(year, month + 1, 0);
-  return { first: toISO(first), last: toISO(last) };
+function monthsToShow(): Array<{ year: number; month: number }> {
+  const now = new Date();
+  return Array.from({ length: MONTHS_TO_SHOW }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
 }
-
-/** Day-of-week of the 1st of the month (0 = Sun, 6 = Sat) */
-function startDow(year: number, month: number): number {
-  return new Date(year, month, 1).getDay();
-}
-
-const MONTH_NAMES_PT = [
-  'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
-  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro',
-];
-const DOW_LABELS = ['D','S','T','Q','Q','S','S'];
 
 // ─── Supabase query ───────────────────────────────────────────────────────────
 
-async function fetchCalendarDays(childId: string, year: number, month: number): Promise<CalendarDay[]> {
-  const { first, last } = monthBounds(year, month);
-  const { data, error } = await supabase
-    .from('calendar_days')
-    .select('*')
-    .eq('child_id', childId)
-    .gte('day_date', first)
-    .lte('day_date', last);
-
-  if (error) throw error;
-  return (data ?? []) as CalendarDay[];
+interface SessionFallback {
+  challenge_date: string;
+  status: string;
+  correct_count: number;
+  total_questions: number;
+  is_perfect: boolean;
 }
 
-// ─── Day cell logic ───────────────────────────────────────────────────────────
+interface CalendarData {
+  calDays:  CalendarDay[];
+  sessions: SessionFallback[];
+}
 
-type DayVariant = 'perfect' | 'completed' | 'failed' | 'today' | 'future' | 'missed' | 'empty';
+async function fetchCalendarData(childId: string): Promise<CalendarData> {
+  const now      = new Date();
+  const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0); // last day of current month
+  const rangeStart = new Date(now.getFullYear(), now.getMonth() - (MONTHS_TO_SHOW - 1), 1);
+
+  const [calResult, sessResult] = await Promise.all([
+    supabase
+      .from('calendar_days')
+      .select('*')
+      .eq('child_id', childId)
+      .gte('day_date', toISO(rangeStart))
+      .lte('day_date', toISO(rangeEnd)),
+    supabase
+      .from('challenge_sessions')
+      .select('challenge_date, status, correct_count, total_questions, is_perfect')
+      .eq('child_id', childId)
+      .eq('status', 'completed')
+      .gte('challenge_date', toISO(rangeStart))
+      .lte('challenge_date', toISO(rangeEnd)),
+  ]);
+
+  return {
+    calDays:  (calResult.data ?? []) as CalendarDay[],
+    sessions: (sessResult.data ?? []) as SessionFallback[],
+  };
+}
+
+// ─── Day grid builder ─────────────────────────────────────────────────────────
+
+type DayVariant = 'perfect' | 'completed' | 'failed' | 'today' | 'future' | 'missed';
 
 interface DayInfo {
-  day: number;          // 1–31
-  dateStr: string;      // YYYY-MM-DD
-  variant: DayVariant;
-  calDay?: CalendarDay;
+  day:      number;
+  dateStr:  string;
+  variant:  DayVariant;
 }
 
 function buildDayGrid(
-  year: number,
-  month: number,
+  year:    number,
+  month:   number,
   calDays: CalendarDay[],
-  today: string,
+  sessions: SessionFallback[],
+  today:   string,
 ): Array<DayInfo | null> {
-  const byDate = new Map<string, CalendarDay>(calDays.map((d) => [d.day_date, d]));
+  const byDate    = new Map<string, CalendarDay>(calDays.map((d) => [d.day_date, d]));
+  const sessByDate = new Map<string, SessionFallback>(sessions.map((s) => [s.challenge_date, s]));
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const dow = startDow(year, month);
+  const startDow    = new Date(year, month, 1).getDay(); // 0 = Sun
 
-  const cells: Array<DayInfo | null> = Array(dow).fill(null); // leading nulls
+  const cells: Array<DayInfo | null> = Array(startDow).fill(null);
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const calDay  = byDate.get(dateStr);
+    const session = sessByDate.get(dateStr);
 
     let variant: DayVariant;
-    if (dateStr === today) {
+
+    // Priority: calDay data > session fallback > today > future > missed
+    if (calDay) {
+      if (calDay.state === 'completed' && calDay.is_perfect) {
+        variant = 'perfect';
+      } else if (calDay.state === 'completed') {
+        variant = 'completed';
+      } else {
+        variant = 'failed';
+      }
+    } else if (session) {
+      // Fallback: Edge Function not yet deployed — use challenge_sessions directly
+      variant = session.is_perfect ? 'perfect' : 'completed';
+    } else if (dateStr === today) {
       variant = 'today';
     } else if (dateStr > today) {
       variant = 'future';
-    } else if (!calDay) {
-      variant = 'missed';
-    } else if (calDay.state === 'completed' && calDay.is_perfect) {
-      variant = 'perfect';
-    } else if (calDay.state === 'completed') {
-      variant = 'completed';
     } else {
-      // failed / in_progress / abandoned
-      variant = 'failed';
+      variant = 'missed';
     }
 
-    cells.push({ day: d, dateStr, variant, calDay });
+    cells.push({ day: d, dateStr, variant });
   }
 
-  // Pad to complete last row (multiple of 7)
+  // Pad last row to complete 7-column grid
   while (cells.length % 7 !== 0) cells.push(null);
   return cells;
 }
 
-// ─── Day cell styles ──────────────────────────────────────────────────────────
+// ─── Day cell ─────────────────────────────────────────────────────────────────
 
-const DAY_SIZE = 40;
-
-const DAY_CFG: Record<DayVariant, { bg: string; iconColor: string; textColor: string }> = {
-  perfect:   { bg: '#F59E0B', iconColor: '#fff',     textColor: '#fff'     },
-  completed: { bg: '#22C55E', iconColor: '#fff',     textColor: '#fff'     },
-  failed:    { bg: '#FEE2E2', iconColor: '#EF4444',  textColor: '#EF4444'  },
-  today:     { bg: '#2B52E5', iconColor: '#fff',     textColor: '#fff'     },
-  future:    { bg: '#F3F4F6', iconColor: '#9CA3AF',  textColor: '#9CA3AF'  },
-  missed:    { bg: '#F3F4F6', iconColor: '#9CA3AF',  textColor: '#9CA3AF'  },
-  empty:     { bg: 'transparent', iconColor: 'transparent', textColor: 'transparent' },
+const DAY_THEME: Record<DayVariant, {
+  bg: string; iconName: string; iconColor: string; textColor: string;
+}> = {
+  perfect:   { bg: '#F59E0B', iconName: 'star',        iconColor: '#fff',     textColor: '#fff'     },
+  completed: { bg: '#22C55E', iconName: 'trophy',      iconColor: '#fff',     textColor: '#fff'     },
+  failed:    { bg: '#FEE2E2', iconName: 'trophy',      iconColor: '#EF4444',  textColor: '#EF4444'  },
+  today:     { bg: '#2B52E5', iconName: 'none',        iconColor: '#fff',     textColor: '#fff'     },
+  future:    { bg: '#F3F4F6', iconName: 'lock-closed', iconColor: '#C4C9D8',  textColor: '#C4C9D8'  },
+  missed:    { bg: '#F3F4F6', iconName: 'lock-closed', iconColor: '#C4C9D8',  textColor: '#C4C9D8'  },
 };
 
-function DayIcon({ variant }: { variant: DayVariant }) {
-  if (variant === 'today') return null;
-  if (variant === 'future' || variant === 'missed') {
-    return <Ionicons name="lock-closed" size={16} color={DAY_CFG[variant].iconColor} />;
-  }
-  if (variant === 'perfect') {
-    return <Ionicons name="star" size={16} color={DAY_CFG.perfect.iconColor} />;
-  }
-  if (variant === 'completed') {
-    return <Ionicons name="trophy" size={16} color={DAY_CFG.completed.iconColor} />;
-  }
-  if (variant === 'failed') {
-    return <Ionicons name="trophy" size={16} color={DAY_CFG.failed.iconColor} />;
-  }
-  return null;
-}
-
 function DayCell({ info }: { info: DayInfo | null }) {
-  if (!info) {
-    return <View style={dc.cell} />;
-  }
+  if (!info) return <View style={dc.cell} />;
 
-  const cfg = DAY_CFG[info.variant];
+  const th = DAY_THEME[info.variant];
+
+  if (info.variant === 'today') {
+    return (
+      <View style={[dc.cell, { backgroundColor: th.bg }]}>
+        <Text style={dc.todayNum}>{info.day}</Text>
+        <Text style={dc.todayLbl}>HOJE</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={[dc.cell, { backgroundColor: cfg.bg }, info.variant === 'today' && dc.todayRing]}>
-      <DayIcon variant={info.variant} />
-
-      {info.variant === 'today' ? (
-        <>
-          <Text style={[dc.num, { color: '#fff', fontSize: 11, fontFamily: fontFamily.extraBold }]}>
-            {info.day}
-          </Text>
-          <Text style={dc.todayLabel}>HOJE</Text>
-        </>
-      ) : (
-        <Text style={[dc.num, { color: cfg.textColor }]}>{info.day}</Text>
+    <View style={[dc.cell, { backgroundColor: th.bg }]}>
+      {th.iconName !== 'none' && (
+        <Ionicons name={th.iconName as never} size={15} color={th.iconColor} />
       )}
+      <Text style={[dc.num, { color: th.textColor }]}>{info.day}</Text>
     </View>
   );
 }
 
 const dc = StyleSheet.create({
   cell: {
-    width: DAY_SIZE,
-    height: DAY_SIZE,
+    width: DAY_SIZE, height: DAY_SIZE,
     borderRadius: DAY_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 0,
+    alignItems: 'center', justifyContent: 'center',
   },
   num: {
     fontFamily: fontFamily.bold,
-    fontSize: 12,
-    lineHeight: 14,
+    fontSize: 12, lineHeight: 14,
   },
-  todayLabel: {
+  todayNum: {
     fontFamily: fontFamily.extraBold,
-    fontSize: 8,
-    color: '#fff',
-    letterSpacing: 0.5,
-    lineHeight: 10,
+    fontSize: 12, lineHeight: 13, color: '#fff',
   },
-  todayRing: {
-    borderWidth: 0,
+  todayLbl: {
+    fontFamily: fontFamily.extraBold,
+    fontSize: 8, lineHeight: 10, color: '#fff', letterSpacing: 0.4,
   },
 });
 
-// ─── Stats card ───────────────────────────────────────────────────────────────
+// ─── Month calendar ───────────────────────────────────────────────────────────
 
-function StatCard({
-  icon, label, value, gradient,
+function MonthCalendar({
+  year, month, calDays, sessions, today,
 }: {
-  icon: string; label: string; value: number; gradient?: [string, string];
+  year: number; month: number;
+  calDays: CalendarDay[]; sessions: SessionFallback[]; today: string;
 }) {
-  const content = (
-    <View style={st.inner}>
-      <View style={st.iconWrap}>
-        <Ionicons name={icon as never} size={22} color={gradient ? '#fff' : '#F59E0B'} />
+  const grid = buildDayGrid(year, month, calDays, sessions, today);
+
+  return (
+    <View style={mc.card}>
+      <Text style={mc.title}>{MONTH_NAMES_PT[month]} {year}</Text>
+
+      {/* Day-of-week header */}
+      <View style={mc.dowRow}>
+        {DOW_LABELS.map((lbl, i) => (
+          <Text key={i} style={mc.dowLbl}>{lbl}</Text>
+        ))}
       </View>
-      <Text style={[st.value, gradient ? st.valueLight : st.valueAmber]}>{value}</Text>
-      <Text style={[st.label, gradient ? st.labelLight : st.labelDark]}>{label}</Text>
+
+      {/* Grid */}
+      <View style={mc.grid}>
+        {grid.map((info, i) => <DayCell key={i} info={info} />)}
+      </View>
     </View>
   );
-
-  if (gradient) {
-    return (
-      <LinearGradient
-        colors={gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={st.card}
-      >
-        {content}
-      </LinearGradient>
-    );
-  }
-
-  return <View style={[st.card, st.cardWhite]}>{content}</View>;
 }
 
-const st = StyleSheet.create({
+const mc = StyleSheet.create({
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: radius['2xl'],
+    padding: 16,
+    ...shadows.md,
+  },
+  title: {
+    fontFamily: fontFamily.extraBold,
+    fontSize: 18, color: colors.text.primary,
+    textAlign: 'center', marginBottom: 14,
+  },
+  dowRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 6,
+  },
+  dowLbl: {
+    width: DAY_SIZE, textAlign: 'center',
+    fontFamily: fontFamily.bold, fontSize: 12, color: colors.text.secondary,
+  },
+  grid: {
+    flexDirection: 'row', flexWrap: 'wrap',
+    justifyContent: 'space-around', rowGap: 8,
+  },
+});
+
+// ─── Stats cards ──────────────────────────────────────────────────────────────
+// Layout pixel-faithful: ícone em círculo à esquerda, valor + label à direita
+
+function StreakCard({ value }: { value: number }) {
+  return (
+    <LinearGradient
+      colors={['#F5722A', '#D45A18']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={sc.card}
+    >
+      <View style={sc.iconCircleOrange}>
+        <Ionicons name="flame" size={22} color="#F5722A" />
+      </View>
+      <View style={sc.col}>
+        <Text style={sc.valueWhite}>{value}</Text>
+        <Text style={sc.labelWhite}>Sequência</Text>
+      </View>
+    </LinearGradient>
+  );
+}
+
+function RecordCard({ value }: { value: number }) {
+  return (
+    <View style={[sc.card, sc.cardWhite]}>
+      <View style={sc.iconCircleAmber}>
+        <Ionicons name="trophy" size={22} color="#F59E0B" />
+      </View>
+      <View style={sc.col}>
+        <Text style={sc.valueAmber}>{value}</Text>
+        <Text style={sc.labelGray}>Recorde</Text>
+      </View>
+    </View>
+  );
+}
+
+const sc = StyleSheet.create({
   card: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
     borderRadius: radius.xl,
-    paddingVertical: 14,
     paddingHorizontal: 16,
+    paddingVertical: 16,
     ...shadows.md,
   },
   cardWhite: { backgroundColor: '#fff' },
-  inner: { gap: 2 },
-  iconWrap: { marginBottom: 4 },
-  value: {
+  // Orange semi-transparent circle for streak
+  iconCircleOrange: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  // Amber tinted circle for record
+  iconCircleAmber: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(245,158,11,0.15)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  col: { gap: 2 },
+  valueWhite: {
     fontFamily: fontFamily.extraBold,
-    fontSize: 32,
-    lineHeight: 36,
+    fontSize: 36, lineHeight: 40, color: '#fff',
   },
-  valueAmber:  { color: '#F59E0B' },
-  valueLight:  { color: '#fff' },
-  label: {
+  valueAmber: {
+    fontFamily: fontFamily.extraBold,
+    fontSize: 36, lineHeight: 40, color: '#F59E0B',
+  },
+  labelWhite: {
     fontFamily: fontFamily.semiBold,
-    fontSize: 13,
+    fontSize: 14, color: 'rgba(255,255,255,0.85)',
   },
-  labelDark:   { color: '#6B7280' },
-  labelLight:  { color: 'rgba(255,255,255,0.85)' },
+  labelGray: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 14, color: '#6B7280',
+  },
 });
 
 // ─── Milo streak message ──────────────────────────────────────────────────────
@@ -280,8 +369,8 @@ const st = StyleSheet.create({
 function streakMessage(streak: number): string {
   if (streak === 0)  return 'Comece hoje e construa sua sequência! Eu acredito em você.';
   if (streak <= 2)   return `${streak} dia${streak > 1 ? 's' : ''} seguido${streak > 1 ? 's' : ''}! Ótimo começo, continue assim!`;
-  if (streak <= 6)   return `${streak} dias seguidos! Você está pegando o ritmo!`;
-  if (streak <= 13)  return `Sua sequência está incrível! Não perca hoje.`;
+  if (streak <= 6)   return 'Você está pegando o ritmo! Não pare agora.';
+  if (streak <= 13)  return 'Sua sequência está incrível! Não perca hoje.';
   if (streak <= 29)  return `${streak} dias! Você é um verdadeiro herói da matemática!`;
   return `INCRÍVEL! ${streak} dias sem parar. Você é uma lenda!`;
 }
@@ -290,167 +379,107 @@ function streakMessage(streak: number): string {
 
 export default function CalendarioScreen() {
   const child = useProfileStore(selectActiveChild);
-
   const today = useMemo(() => toISO(new Date()), []);
-  const todayDate = useMemo(() => new Date(), []);
+  const months = useMemo(() => monthsToShow(), []);
 
-  const [year, setYear]   = useState(todayDate.getFullYear());
-  const [month, setMonth] = useState(todayDate.getMonth()); // 0-indexed
-
-  const { data: calDays = [], isLoading } = useQuery({
-    queryKey: ['calendar_days', child?.id, year, month],
-    queryFn: () => fetchCalendarDays(child!.id, year, month),
-    enabled: !!child?.id,
+  const { data, isLoading } = useQuery<CalendarData>({
+    queryKey: ['calendar_data', child?.id],
+    queryFn:  () => fetchCalendarData(child!.id),
+    enabled:  !!child?.id,
     staleTime: 60_000,
   });
 
   if (!child) return null;
 
-  const xpFloor   = getXpFloor(child.level);
-  const xpCeil    = getXpCeil(child.level);
+  const calDays  = data?.calDays  ?? [];
+  const sessions = data?.sessions ?? [];
+
+  const xpFloor    = getXpFloor(child.level);
+  const xpCeil     = getXpCeil(child.level);
   const xpProgress = xpCeil > xpFloor
     ? (child.xp_total - xpFloor) / (xpCeil - xpFloor)
     : 1;
 
-  const grid = buildDayGrid(year, month, calDays, today);
-
-  // Navegação de mês
-  function prevMonth() {
-    if (month === 0) { setYear((y) => y - 1); setMonth(11); }
-    else setMonth((m) => m - 1);
-  }
-  function nextMonth() {
-    const now = todayDate;
-    // Não avançar além do mês actual
-    if (year === now.getFullYear() && month === now.getMonth()) return;
-    if (month === 11) { setYear((y) => y + 1); setMonth(0); }
-    else setMonth((m) => m + 1);
-  }
-
-  const isCurrentMonth = year === todayDate.getFullYear() && month === todayDate.getMonth();
-
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+    <SafeAreaView style={s.safe} edges={['top']}>
 
-        {/* ── Header ──────────────────────────────────────────────────── */}
-        <View style={styles.header}>
-          <Avatar
-            avatarId={child.avatar_id}
-            displayName={child.display_name}
-            size="md"
+      {/* ── Fixed header ──────────────────────────────────────────────── */}
+      <View style={s.header}>
+        <Avatar
+          avatarId={child.avatar_id}
+          displayName={child.display_name}
+          size="md"
+        />
+        <View style={s.headerMid}>
+          <View style={s.headerNameRow}>
+            <Text style={s.childName}>{child.display_name}</Text>
+          </View>
+          <Text style={s.levelLabel}>Nível {child.level}</Text>
+          <ProgressBar
+            value={xpProgress}
+            color={colors.primary}
+            trackColor="#E4E5EF"
+            height={6}
+            style={{ marginTop: 4 }}
           />
-          <View style={styles.headerMid}>
-            <Text style={styles.childName}>{child.display_name}</Text>
-            <Text style={styles.levelLabel}>Nível {child.level}</Text>
-            <ProgressBar
-              value={xpProgress}
-              color={colors.primary}
-              trackColor={colors.background.cardAlt}
-              height={6}
-              style={{ marginTop: 4 }}
-            />
-            <View style={styles.xpRow}>
-              <Text style={styles.xpCurrent}>{child.xp_total.toLocaleString('pt-BR')} XP</Text>
-              <Text style={styles.xpNext}>{xpCeil.toLocaleString('pt-BR')}</Text>
-            </View>
+          <View style={s.xpRow}>
+            <Text style={s.xpCurrent}>{child.xp_total.toLocaleString('pt-BR')} XP</Text>
+            <Text style={s.xpNext}>{xpCeil.toLocaleString('pt-BR')}</Text>
           </View>
         </View>
+      </View>
 
-        {/* ── Milo message ────────────────────────────────────────────── */}
+      {/* ── Scrollable content ────────────────────────────────────────── */}
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Milo message */}
         <MiloMessage
           message={streakMessage(child.current_streak)}
           variant="blue"
-          style={styles.milo}
         />
 
-        {/* ── Stats row ────────────────────────────────────────────────── */}
-        <View style={styles.statsRow}>
-          <StatCard
-            icon="flame"
-            label="Sequência"
-            value={child.current_streak}
-            gradient={['#F5722A', '#E55B17']}
-          />
-          <StatCard
-            icon="trophy"
-            label="Recorde"
-            value={child.best_streak}
-          />
+        {/* Stats row */}
+        <View style={s.statsRow}>
+          <StreakCard value={child.current_streak} />
+          <RecordCard value={child.best_streak} />
         </View>
 
-        {/* ── Calendar card ────────────────────────────────────────────── */}
-        <View style={styles.calCard}>
-
-          {/* Month nav */}
-          <View style={styles.monthRow}>
-            <Pressable style={styles.navBtn} onPress={prevMonth} hitSlop={8}>
-              <Ionicons name="chevron-back" size={20} color={colors.text.primary} />
-            </Pressable>
-
-            <Text style={styles.monthTitle}>
-              {MONTH_NAMES_PT[month]} {year}
-            </Text>
-
-            <Pressable
-              style={[styles.navBtn, isCurrentMonth && styles.navBtnDisabled]}
-              onPress={nextMonth}
-              hitSlop={8}
-              disabled={isCurrentMonth}
-            >
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={isCurrentMonth ? '#D1D5DB' : colors.text.primary}
-              />
-            </Pressable>
-          </View>
-
-          {/* Day-of-week headers */}
-          <View style={styles.dowRow}>
-            {DOW_LABELS.map((lbl, i) => (
-              <Text key={i} style={styles.dowLabel}>{lbl}</Text>
-            ))}
-          </View>
-
-          {/* Loading state */}
-          {isLoading ? (
-            <ActivityIndicator
-              color={colors.primary}
-              size="small"
-              style={{ marginVertical: 24 }}
+        {/* Monthly calendars */}
+        {isLoading ? (
+          <ActivityIndicator
+            color={colors.primary}
+            size="large"
+            style={{ marginTop: 32 }}
+          />
+        ) : (
+          months.map(({ year, month }) => (
+            <MonthCalendar
+              key={`${year}-${month}`}
+              year={year}
+              month={month}
+              calDays={calDays}
+              sessions={sessions}
+              today={today}
             />
-          ) : (
-            /* Day grid */
-            <View style={styles.grid}>
-              {grid.map((info, i) => (
-                <DayCell key={i} info={info} />
-              ))}
-            </View>
-          )}
-        </View>
+          ))
+        )}
 
-        {/* ── Legend ───────────────────────────────────────────────────── */}
-        <View style={styles.legend}>
+        {/* Legend */}
+        <View style={s.legend}>
           {[
-            { color: '#F59E0B', icon: 'star',        label: 'Perfeito' },
-            { color: '#22C55E', icon: 'trophy',      label: 'Completo' },
-            { color: '#FEE2E2', icon: 'trophy',      label: 'Incompleto', iconColor: '#EF4444' },
-            { color: '#F3F4F6', icon: 'lock-closed', label: 'Bloqueado', iconColor: '#9CA3AF' },
+            { bg: '#F59E0B', icon: 'star',        label: 'Perfeito',    iconColor: '#fff'    },
+            { bg: '#22C55E', icon: 'trophy',      label: 'Completo',    iconColor: '#fff'    },
+            { bg: '#FEE2E2', icon: 'trophy',      label: 'Incompleto',  iconColor: '#EF4444' },
+            { bg: '#F3F4F6', icon: 'lock-closed', label: 'Bloqueado',   iconColor: '#C4C9D8' },
           ].map((item) => (
-            <View key={item.label} style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: item.color }]}>
-                <Ionicons
-                  name={item.icon as never}
-                  size={10}
-                  color={item.iconColor ?? '#fff'}
-                />
+            <View key={item.label} style={s.legendItem}>
+              <View style={[s.legendDot, { backgroundColor: item.bg }]}>
+                <Ionicons name={item.icon as never} size={10} color={item.iconColor} />
               </View>
-              <Text style={styles.legendLabel}>{item.label}</Text>
+              <Text style={s.legendLabel}>{item.label}</Text>
             </View>
           ))}
         </View>
@@ -462,63 +491,54 @@ export default function CalendarioScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 32,
-    gap: 16,
-  },
 
-  // ── Header ────────────────────────────────────────────────────────────────
+  // ── Fixed header ──────────────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
     backgroundColor: '#fff',
-    borderRadius: radius.xl,
-    padding: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EDEEF5',
     ...shadows.sm,
   },
-  headerMid: {
-    flex: 1,
+  headerMid: { flex: 1 },
+  headerNameRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
   },
   childName: {
     fontFamily: fontFamily.extraBold,
-    fontSize: 17,
-    color: colors.text.primary,
+    fontSize: 17, color: colors.text.primary,
   },
   levelLabel: {
     fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    color: colors.text.secondary,
-    marginTop: 1,
+    fontSize: 12, color: colors.text.secondary, marginTop: 1,
   },
   xpRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 3,
+    flexDirection: 'row', justifyContent: 'space-between', marginTop: 3,
   },
   xpCurrent: {
-    fontFamily: fontFamily.bold,
-    fontSize: 12,
-    color: colors.primary,
+    fontFamily: fontFamily.bold, fontSize: 12, color: colors.primary,
   },
   xpNext: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 11,
-    color: colors.text.secondary,
+    fontFamily: fontFamily.semiBold, fontSize: 11, color: colors.text.secondary,
   },
 
-  // ── Milo ──────────────────────────────────────────────────────────────────
-  milo: {},
+  // ── Scroll content ────────────────────────────────────────────────────────
+  scroll: { flex: 1 },
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 36,
+    gap: 16,
+  },
 
   // ── Stats ─────────────────────────────────────────────────────────────────
   statsRow: {
@@ -526,77 +546,20 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  // ── Calendar card ──────────────────────────────────────────────────────────
-  calCard: {
-    backgroundColor: '#fff',
-    borderRadius: radius['2xl'],
-    padding: 16,
-    ...shadows.md,
-  },
-  monthRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  navBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.background.cardAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navBtnDisabled: {
-    opacity: 0.4,
-  },
-  monthTitle: {
-    fontFamily: fontFamily.extraBold,
-    fontSize: 18,
-    color: colors.text.primary,
-  },
-  dowRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 8,
-  },
-  dowLabel: {
-    width: DAY_SIZE,
-    textAlign: 'center',
-    fontFamily: fontFamily.bold,
-    fontSize: 12,
-    color: colors.text.secondary,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-    rowGap: 8,
-  },
-
   // ── Legend ────────────────────────────────────────────────────────────────
   legend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    justifyContent: 'center',
-    paddingHorizontal: 8,
+    flexDirection: 'row', flexWrap: 'wrap',
+    gap: 12, justifyContent: 'center',
+    paddingVertical: 4,
   },
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
   },
   legendDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 22, height: 22, borderRadius: 11,
+    alignItems: 'center', justifyContent: 'center',
   },
   legendLabel: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 12,
-    color: colors.text.secondary,
+    fontFamily: fontFamily.semiBold, fontSize: 12, color: colors.text.secondary,
   },
 });
