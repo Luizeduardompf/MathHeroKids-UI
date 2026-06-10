@@ -20,6 +20,8 @@ import Animated, {
 } from 'react-native-reanimated';
 // @ts-expect-error reanimated Easing named-export quirk in this TS config
 import { Easing } from 'react-native-reanimated'; // eslint-disable-line
+// @ts-expect-error reanimated withDelay named-export quirk in this TS config
+import { withDelay } from 'react-native-reanimated'; // eslint-disable-line
 import type { SharedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -77,13 +79,18 @@ const CONFETTI = buildConfetti(60);
 
 // Componente por peça — hooks usados correctamente fora de .map()
 function ConfettoPiece({ piece, fallDistance }: { piece: Piece; fallDistance: number }) {
-  const y   = useSharedValue(0);
-  const rot = useSharedValue(0);
+  const y       = useSharedValue(0);
+  const rot     = useSharedValue(0);
+  const opacity = useSharedValue(1);
 
   useEffect(() => {
     const run = () => {
       y.value   = withTiming(fallDistance, { duration: piece.dur, easing: Easing.linear });
       rot.value = withTiming(720, { duration: piece.dur, easing: Easing.linear });
+      // Fade out durante os últimos 35% da queda — peças somem antes de empilhar no fundo
+      const fadeStart = Math.round(piece.dur * 0.65);
+      const fadeDur   = piece.dur - fadeStart;
+      opacity.value   = withDelay(fadeStart, withTiming(0, { duration: fadeDur, easing: Easing.linear }));
     };
     let timer: ReturnType<typeof setTimeout> | undefined;
     if (piece.delay > 0) {
@@ -96,6 +103,7 @@ function ConfettoPiece({ piece, fallDistance }: { piece: Piece; fallDistance: nu
   }, []);
 
   const anim = useAnimatedStyle(() => ({
+    opacity: opacity.value,
     transform: [
       { translateY: y.value },
       { rotate: `${rot.value}deg` as unknown as number },

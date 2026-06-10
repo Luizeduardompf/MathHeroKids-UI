@@ -6,7 +6,7 @@
  * botões rounded-full.
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -18,6 +18,14 @@ import {
 import { Image } from 'react-native'; // eslint-disable-line
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+// @ts-expect-error reanimated Easing named-export quirk
+import { Easing } from 'react-native-reanimated'; // eslint-disable-line
 
 import { Text } from '@/components/ui';
 import { fontFamily } from '@/theme';
@@ -26,7 +34,7 @@ import { fontFamily } from '@/theme';
 // Port do zip: components/milo-bubble.tsx
 // [avatar branco 64px] + [col: label + card branca com mensagem]
 
-const MILO_PLACEHOLDER = require('../../../assets/images/icon.png') as number;
+const MILO_IMG = require('../../../assets/images/milo-celebrate.png') as number;
 
 type BubbleTone = 'destructive' | 'warning' | 'primary';
 
@@ -45,7 +53,7 @@ export function MiloBubble({ message, tone = 'primary' }: { message: string; ton
   return (
     <View style={[mb.wrap, { backgroundColor: BUBBLE_BG[tone] }]}>
       <View style={mb.avatarWrap}>
-        <Image source={MILO_PLACEHOLDER} style={mb.avatar} resizeMode="contain" />
+        <Image source={MILO_IMG} style={mb.avatar} resizeMode="contain" />
       </View>
       <View style={mb.col}>
         <Text style={[mb.label, { color: LABEL_ALPHA[tone] }]}>Milo diz</Text>
@@ -151,6 +159,30 @@ const ab = StyleSheet.create({
   label: { fontFamily: fontFamily.bold, fontSize: 17 },
 });
 
+// ─── Entrance animation wrapper ───────────────────────────────────────────────
+
+function EntranceView({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(24);
+
+  useEffect(() => {
+    opacity.value    = withTiming(1,  { duration: 320, easing: Easing.out(Easing.cubic) });
+    translateY.value = withSpring(0, { damping: 16, stiffness: 160 });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const anim = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return (
+    <Animated.View style={[anim, style] as StyleProp<ViewStyle>}>
+      {children}
+    </Animated.View>
+  );
+}
+
 // ─── StatusIcon ───────────────────────────────────────────────────────────────
 // Anel externo suave + círculo interno sólido + ícone
 // Espelha o padrão do zip: outer bg-color/15, inner bg-color solid
@@ -178,7 +210,7 @@ export function TimeExpiredScreen({ onRetry, onGoHome }: { onRetry: () => void; 
   const { t } = useTranslation();
   return (
     <View style={[sc.root, { backgroundColor: '#FEF2F2' }]}>
-      <View style={sc.body}>
+      <EntranceView style={sc.body}>
         <StatusIcon
           name="time-outline"
           outerBg="rgba(239,68,68,0.15)"
@@ -189,7 +221,7 @@ export function TimeExpiredScreen({ onRetry, onGoHome }: { onRetry: () => void; 
           <Text style={sc.title}>{t('challenge.timeout.title')}</Text>
           <Text style={sc.subtitle}>{t('challenge.timeout.message')}</Text>
         </View>
-      </View>
+      </EntranceView>
       <View style={sc.miloWrap}>
         <MiloBubble message={t('challenge.timeout.miloMessage')} tone="destructive" />
       </View>
@@ -210,7 +242,7 @@ export function WrongAnswerScreen({ operandA, operandB, correctAnswer, userAnswe
   const { t } = useTranslation();
   return (
     <View style={[sc.root, { backgroundColor: '#FFFBEB' }]}>
-      <View style={sc.body}>
+      <EntranceView style={sc.body}>
         <StatusIcon
           name="close"
           outerBg="rgba(245,158,11,0.25)"
@@ -239,7 +271,7 @@ export function WrongAnswerScreen({ operandA, operandB, correctAnswer, userAnswe
             </View>
           )}
         </View>
-      </View>
+      </EntranceView>
 
       <View style={sc.miloWrap}>
         <MiloBubble message={t('challenge.wrong.miloMessage')} tone="primary" />
@@ -292,7 +324,7 @@ export function BlockEndScreen({ correct, total, onRetry, onGoHome }: {
   const pct = Math.round((correct / total) * 100);
   return (
     <View style={[sc.root, { backgroundColor: '#FFFBEB' }]}>
-      <View style={sc.body}>
+      <EntranceView style={sc.body}>
         <StatusIcon
           name="radio-button-on-outline"
           outerBg="rgba(245,158,11,0.25)"
@@ -316,7 +348,7 @@ export function BlockEndScreen({ correct, total, onRetry, onGoHome }: {
             <Text style={[be.footerTxt, { color: '#F59E0B' }]}>★ Meta: 100%</Text>
           </View>
         </View>
-      </View>
+      </EntranceView>
 
       <View style={sc.miloWrap}>
         <MiloBubble message={t('challenge.blockIncomplete.miloMessage')} tone="warning" />

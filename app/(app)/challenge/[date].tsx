@@ -23,6 +23,10 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+// @ts-expect-error reanimated Easing named-export quirk
+import { Easing } from 'react-native-reanimated'; // eslint-disable-line
+// @ts-expect-error reanimated withDelay named-export quirk
+import { withDelay } from 'react-native-reanimated'; // eslint-disable-line
 import { Ionicons } from '@expo/vector-icons';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -60,43 +64,85 @@ function randomUUID(): string {
   });
 }
 
-// ─── Confetti ─────────────────────────────────────────────────────────────────
+// ─── Confetti animado (MilestoneScreen) ───────────────────────────────────────
 
 const CONFETTI_COLORS = ['#2B52E5', '#F5722A', '#22C55E', '#EF4444', '#F59E0B', '#8B5CF6', '#EC4899'];
-const CONFETTI_COUNT = 36;
+const CONFETTI_COUNT = 40;
 
-function Confetti() {
-  const pieces = useRef(
-    Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      color: CONFETTI_COLORS[i % CONFETTI_COLORS.length]!,
-      size: 6 + Math.random() * 8,
-      rotation: Math.random() * 360,
-      aspect: Math.random() > 0.5 ? 1 : 2.5,
-    })),
-  ).current;
+type MPiece = { x: number; startY: number; color: string; size: number; aspect: number; delay: number; dur: number };
+
+function buildMilestoneConfetti(n: number): MPiece[] {
+  let s = 77;
+  const r = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
+  return Array.from({ length: n }, (_, i) => ({
+    x:      r() * 94,
+    startY: -(10 + r() * 80),
+    color:  CONFETTI_COLORS[i % CONFETTI_COLORS.length]!,
+    size:   6 + r() * 9,
+    aspect: r() > 0.5 ? 1 : 2.5,
+    delay:  r() * 350,
+    dur:    1600 + r() * 900,
+  }));
+}
+
+const MILESTONE_CONFETTI = buildMilestoneConfetti(CONFETTI_COUNT);
+
+function MilestoneConfettoPiece({ piece }: { piece: MPiece }) {
+  const y       = useSharedValue(0);
+  const rot     = useSharedValue(0);
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    const run = () => {
+      y.value     = withTiming(900, { duration: piece.dur, easing: Easing.linear });
+      rot.value   = withTiming(720, { duration: piece.dur, easing: Easing.linear });
+      const fadeStart = Math.round(piece.dur * 0.65);
+      const fadeDur   = piece.dur - fadeStart;
+      opacity.value   = withDelay(fadeStart, withTiming(0, { duration: fadeDur, easing: Easing.linear }));
+    };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (piece.delay > 0) {
+      timer = setTimeout(run, piece.delay);
+    } else {
+      run();
+    }
+    return () => { if (timer !== undefined) clearTimeout(timer); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const anim = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [
+      { translateY: y.value },
+      { rotate: `${rot.value}deg` as unknown as number },
+    ],
+  }));
+
+  const isRound = piece.aspect <= 1.4;
 
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-      {pieces.map((p, i) => (
-        <View
-          key={i}
-          // eslint-disable-next-line react-native/no-inline-styles
-          style={[{
-            position: 'absolute',
-            width: p.size,
-            height: p.size * p.aspect,
-            borderRadius: p.aspect === 1 ? p.size / 2 : 2,
-            backgroundColor: p.color,
-            opacity: 0.85,
-          }, {
-            // RN0.85 DimensionValue — cast needed for TS
-            left: `${p.x}%` as unknown as number,
-            top: `${p.y}%` as unknown as number,
-            transform: [{ rotate: `${p.rotation}deg` as unknown as number }],
-          }]}
-        />
+    <Animated.View
+      style={[
+        {
+          position:        'absolute',
+          left:            `${piece.x}%` as unknown as number,
+          top:             piece.startY,
+          width:           piece.size,
+          height:          piece.size * piece.aspect,
+          borderRadius:    isRound ? piece.size / 2 : 3,
+          backgroundColor: piece.color,
+        },
+        anim,
+      ] as StyleProp<ViewStyle>}
+    />
+  );
+}
+
+function Confetti() {
+  return (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} pointerEvents="none">
+      {MILESTONE_CONFETTI.map((p, i) => (
+        <MilestoneConfettoPiece key={i} piece={p} />
       ))}
     </View>
   );
