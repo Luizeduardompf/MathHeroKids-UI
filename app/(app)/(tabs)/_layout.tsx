@@ -72,7 +72,7 @@ function ChallengeFAB({ focused }: { focused: boolean }): React.JSX.Element {
           end={{ x: 1, y: 1 }}
           style={styles.fab}
         >
-          <MaterialCommunityIcons name="sword-cross" size={28} color={colors.text.inverse} />
+          <MaterialCommunityIcons name="sword-cross" size={30} color={colors.text.inverse} />
         </LinearGradient>
       </Animated.View>
     </View>
@@ -177,8 +177,8 @@ const styles = StyleSheet.create({
 
   // ── FAB ─────────────────────────────────────────────────────────────────────
   fabItem: {
-    top: -20,
-    height: 80,
+    top: -18,
+    height: 84,
   },
   fabShadow: {
     borderRadius: radius.full,
@@ -193,13 +193,10 @@ const styles = StyleSheet.create({
     }),
   },
   fab: {
-    width: 56,
-    height: 56,
+    width: 60,
+    height: 60,
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: colors.tabBar.background,
-    overflow: 'hidden',
   },
 });

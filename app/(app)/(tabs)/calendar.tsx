@@ -621,7 +621,7 @@ export default function CalendarioScreen() {
           ].map((item) => (
             <View key={item.label} style={s.legendItem}>
               <View style={[s.legendDot, { backgroundColor: item.bg }]}>
-                <Ionicons name={item.icon as never} size={11} color={item.iconColor} />
+                <Ionicons name={item.icon as never} size={16} color={item.iconColor} />
               </View>
               <RNText style={s.legendLabel}>{item.label}</RNText>
             </View>
@@ -654,8 +654,9 @@ const s = StyleSheet.create({
 
   statsRow: { flexDirection: 'row', gap: 12 },
 
-  legend:     { flexDirection: 'row', flexWrap: 'wrap', gap: 14, justifyContent: 'center', paddingVertical: 4 },
+  // Legenda: uma única linha, círculos iguais aos dias do calendário
+  legend:     { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: 4 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot:  { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  legendDot:  { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   legendLabel:{ fontFamily: fontFamily.semiBold, fontSize: 12, color: colors.text.secondary },
 });

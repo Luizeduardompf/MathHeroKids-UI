@@ -195,8 +195,15 @@
       "weekDays": "{{done}}/7 dias",
       "monthlyTrophy": "Troféu mensal",
       "monthlyTrophyProgress": "{{done}} de {{total}} dias",
-      "xpThisMonth": "+{{xp}} XP no mês"
-    }
+      "xpThisMonth": "+{{xp}} XP no mês",
+      "msg90": "Você completou quase todos os dias. Incrível!",
+      "msg70": "Você completou seus desafios em quase todos os dias. Continue assim!",
+      "msg50": "Boa metade do mês! Continue o ritmo.",
+      "msg25": "Bom começo! Tenta completar mais dias.",
+      "msg0": "Vamos começar a marcar este mês!"
+    },
+    "streak": "Sequência",
+    "record": "Recorde"
   },
   "friends": {
     "title": "Amigos",
@@ -212,14 +219,35 @@
       "suggestions": "Sugestões para você",
       "addButton": "Adicionar",
       "requestSent": "Pedido enviado",
-      "noResults": "Nenhum resultado encontrado"
+      "noResults": "Nenhum resultado encontrado",
+      "sent": "Enviado",
+      "alreadyFriend": "Amigo",
+      "noSuggestions": "Sem sugestões por agora.",
+      "noSuggestionsDesc": "Busca por username acima!",
+      "result": "Resultado",
+      "notFound": "Nenhum utilizador encontrado",
+      "notFoundDesc": "Verifica se o username está correcto"
     },
     "ranking": {
       "title": "Ranking de amigos",
       "weekly": "Semanal",
       "monthly": "Mensal",
-      "you": "Você"
-    }
+      "you": "Você",
+      "empty": "Sem dados de ranking",
+      "emptyDesc": "Adiciona amigos e faz desafios para ver o ranking!"
+    },
+    "mathHeroKids": "Math Hero Kids",
+    "emptyRanking": "Sem ranking ainda",
+    "emptyRankingDesc": "Adiciona amigos e faz desafios para aparecer no ranking!",
+    "noFriends": "Nenhum amigo ainda",
+    "noFriendsDesc": "Adiciona amigos para ver o ranking!",
+    "addFriendBtn": "Adicionar amigo",
+    "viewRanking": "Ver ranking de amigos",
+    "friendsCount_one": "{{count}} amigo",
+    "friendsCount_other": "{{count}} amigos",
+    "searchResults": "Resultados ({{count}})",
+    "noResults": "Nenhum amigo encontrado",
+    "you": "Você"
   },
   "trophies": {
     "title": "Sala de Troféus",
@@ -285,7 +313,9 @@
     "multiplicationTitle": "Tabuada",
     "multiplicationLabel": "Multiplicar até",
     "parentArea": "Área dos pais",
-    "parentAreaSubtitle": "Controle parental"
+    "parentAreaSubtitle": "Controle parental",
+    "questionsTitle": "Questões por sessão",
+    "questionsAuto": "AUTO"
   },
   "parentArea": {
     "pin": {

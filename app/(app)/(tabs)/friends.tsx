@@ -23,10 +23,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { Text } from '@/components/ui';
+import { Avatar, Text } from '@/components/ui';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { socialService, type RankedFriend } from '@/services/social.service';
 import { colors, fontFamily, radius, shadows } from '@/theme';
+import type { AvatarId } from '@/constants/config';
 
 // ─── Avatar initials (exportado para reutilização) ───────────────────────────
 
@@ -55,13 +56,16 @@ export function FriendAvatar({ name, size = 44 }: { name: string; size?: number 
       borderRadius: size / 2,
       backgroundColor: colorFromName(name),
     }]}>
-      <Text style={[av.text, { fontSize: size * 0.35 }]}>{initials(name)}</Text>
+      {/* RNText evita quirks do Text customizado com fontes em círculos pequenos */}
+      <RNText style={[av.text, { fontSize: Math.round(size * 0.33) }]}>
+        {initials(name)}
+      </RNText>
     </View>
   );
 }
 const av = StyleSheet.create({
   circle: { alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  text:   { fontFamily: fontFamily.extraBold, color: '#fff' },
+  text:   { fontFamily: fontFamily.extraBold, color: '#fff', includeFontPadding: false },
 });
 
 // ─── Period toggle ────────────────────────────────────────────────────────────
@@ -103,16 +107,21 @@ function PodiumSpot({ ranked, position }: {
 }) {
   if (!ranked) return <View style={[pd.spot, pd[`spot${position}`]]} />;
 
-  const SIZE = position === 1 ? 80 : 64;
-  const mc   = MEDAL_COLORS[position];
+  const avatarSize = position === 1 ? 'xl' as const : 'lg' as const;
+  const mc = MEDAL_COLORS[position];
 
   return (
     <View style={[pd.spot, pd[`spot${position}`]]}>
       {position === 1 && (
-        <Ionicons name={'crown' as never} size={24} color="#F59E0B" style={{ marginBottom: 4 }} />
+        <RNText style={{ fontSize: 22, lineHeight: 28 }}>👑</RNText>
       )}
-      <View style={[pd.ring, { width: SIZE + 8, height: SIZE + 8, borderRadius: (SIZE + 8) / 2, borderColor: mc }]}>
-        <FriendAvatar name={ranked.child.display_name} size={SIZE} />
+      {/* Avatar real se disponível, senão iniciais */}
+      <View style={[pd.ring, { borderColor: mc }]}>
+        <Avatar
+          avatarId={ranked.child.avatar_id as AvatarId}
+          displayName={ranked.child.display_name}
+          size={avatarSize}
+        />
       </View>
       <View style={[pd.badge, { backgroundColor: mc }]}>
         <RNText style={pd.badgeNum}>{position}</RNText>
@@ -132,7 +141,7 @@ const pd = StyleSheet.create({
   spot1:   {},
   spot2:   { marginTop: 40 },
   spot3:   { marginTop: 40 },
-  ring:    { alignItems: 'center', justifyContent: 'center', borderWidth: 3 },
+  ring:    { alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderRadius: 999, padding: 3 },
   badge:   { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginTop: -10, borderWidth: 2, borderColor: '#fff', ...shadows.sm },
   badgeNum:{ fontFamily: fontFamily.extraBold, fontSize: 12, color: '#fff' },
   name:    { fontFamily: fontFamily.bold, fontSize: 13, color: colors.text.primary, textAlign: 'center', maxWidth: 88 },
@@ -147,7 +156,11 @@ function RankRow({ ranked }: { ranked: RankedFriend }) {
   return (
     <View style={[rr.row, hl ? rr.rowHl : null]}>
       <RNText style={[rr.pos, hl ? rr.posHl : null] as StyleProp<TextStyle>}>#{ranked.position}</RNText>
-      <FriendAvatar name={ranked.child.display_name} size={44} />
+      <Avatar
+        avatarId={ranked.child.avatar_id as AvatarId}
+        displayName={ranked.child.display_name}
+        size="md"
+      />
       <View style={rr.mid}>
         <RNText style={[rr.name, hl ? rr.nameHl : null]}>
           {ranked.isSelf ? 'Você' : ranked.child.display_name}

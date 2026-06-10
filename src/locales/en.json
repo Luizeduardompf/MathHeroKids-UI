@@ -146,9 +146,18 @@
       "goHome": "Go home"
     },
     "milestone": {
-      "q5": { "title": "Well done!", "subtitle": "You've completed 5 questions. Keep it up!" },
-      "q10": { "title": "Halfway there!", "subtitle": "10 questions done. Almost at the star!" },
-      "q15": { "title": "Almost done!", "subtitle": "15 questions! You're a true math hero." },
+      "q5": {
+        "title": "Well done!",
+        "subtitle": "You've completed 5 questions. Keep it up!"
+      },
+      "q10": {
+        "title": "Halfway there!",
+        "subtitle": "10 questions done. Almost at the star!"
+      },
+      "q15": {
+        "title": "Almost done!",
+        "subtitle": "15 questions! You're a true math hero."
+      },
       "continue": "Continue"
     },
     "completed": {
@@ -174,8 +183,15 @@
       "weekDays": "{{done}}/7 days",
       "monthlyTrophy": "Monthly trophy",
       "monthlyTrophyProgress": "{{done}} of {{total}} days",
-      "xpThisMonth": "+{{xp}} XP this month"
-    }
+      "xpThisMonth": "+{{xp}} XP this month",
+      "msg90": "You've completed almost every day. Incredible!",
+      "msg70": "You've completed your challenges on almost every day. Keep going!",
+      "msg50": "Good half of the month! Keep the pace.",
+      "msg25": "Good start! Try to complete more days.",
+      "msg0": "Let's start marking this month!"
+    },
+    "streak": "Streak",
+    "record": "Record"
   },
   "friends": {
     "title": "Friends",
@@ -191,14 +207,35 @@
       "suggestions": "Suggestions for you",
       "addButton": "Add",
       "requestSent": "Request sent",
-      "noResults": "No results found"
+      "noResults": "No results found",
+      "sent": "Sent",
+      "alreadyFriend": "Friend",
+      "noSuggestions": "No suggestions yet.",
+      "noSuggestionsDesc": "Search by username above!",
+      "result": "Result",
+      "notFound": "No user found",
+      "notFoundDesc": "Check if the username is correct"
     },
     "ranking": {
       "title": "Friends ranking",
       "weekly": "Weekly",
       "monthly": "Monthly",
-      "you": "You"
-    }
+      "you": "You",
+      "empty": "No ranking data",
+      "emptyDesc": "Add friends and complete challenges to see the ranking!"
+    },
+    "mathHeroKids": "Math Hero Kids",
+    "emptyRanking": "No ranking yet",
+    "emptyRankingDesc": "Add friends and complete challenges to appear in the ranking!",
+    "noFriends": "No friends yet",
+    "noFriendsDesc": "Add friends to see the ranking!",
+    "addFriendBtn": "Add friend",
+    "viewRanking": "View friends ranking",
+    "friendsCount_one": "{{count}} friend",
+    "friendsCount_other": "{{count}} friends",
+    "searchResults": "Results ({{count}})",
+    "noResults": "No friends found",
+    "you": "You"
   },
   "trophies": {
     "title": "Trophy Room",
@@ -264,14 +301,18 @@
     "multiplicationTitle": "Multiplication table",
     "multiplicationLabel": "Multiply up to",
     "parentArea": "Parent area",
-    "parentAreaSubtitle": "Parental controls"
+    "parentAreaSubtitle": "Parental controls",
+    "questionsTitle": "Questions per session",
+    "questionsAuto": "AUTO"
   },
   "parentArea": {
     "pin": {
       "title": "Parent area",
       "subtitle": "Enter PIN to continue"
     },
-    "controls": { "title": "Parental controls" },
+    "controls": {
+      "title": "Parental controls"
+    },
     "child": {
       "newTitle": "New child",
       "editTitle": "Edit profile",
