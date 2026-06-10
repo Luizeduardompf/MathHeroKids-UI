@@ -1,8 +1,8 @@
 /**
  * Trophy Room screen.
  *
- * Real data: child.current_streak from profileStore.
- * Trophies: TODO Phase 3 — wire to child_trophies via TanStack Query.
+ * Data ported from design/exports/08-gamification-trophy-levels.zip gamification-data.ts.
+ * Phase 3: wire to child_trophies via TanStack Query.
  */
 
 import { Ionicons } from '@expo/vector-icons';
@@ -15,31 +15,30 @@ import { MiloMessage } from '@/components/milo/MiloMessage';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { colors, fontFamily, radius, space } from '@/theme';
 
-// ─── Mock trophy data (Phase 3: replace with child_trophies query) ────────────
+// ─── Types & rarity config ────────────────────────────────────────────────────
 
-type TrophyRarity = 'bronze' | 'silver' | 'gold' | 'diamond';
+type Rarity = 'bronze' | 'prata' | 'ouro' | 'diamante';
 type TrophyCategory = 'diario' | 'semanal' | 'mensal' | 'sequencia' | 'especial';
 
 interface Trophy {
   id: string;
   name: string;
-  rarity: TrophyRarity;
   category: TrophyCategory;
+  rarity: Rarity;
+  description: string;
+  howToEarn: string;
   earned: boolean;
+  dateEarned?: string;
   progress?: { current: number; total: number };
 }
 
-const TROPHIES: Trophy[] = [
-  { id: 't1',  name: 'Troféu Diário',    rarity: 'bronze',  category: 'diario',    earned: true  },
-  { id: 't2',  name: 'Madrugador',       rarity: 'silver',  category: 'diario',    earned: false },
-  { id: 't3',  name: 'Dedicado',         rarity: 'gold',    category: 'diario',    earned: false, progress: { current: 18, total: 30 } },
-  { id: 't4',  name: 'Semana Perfeita',  rarity: 'silver',  category: 'semanal',   earned: false, progress: { current: 3, total: 7 }  },
-  { id: 't5',  name: 'Imparável',        rarity: 'gold',    category: 'semanal',   earned: false },
-  { id: 't6',  name: 'Mês Épico',        rarity: 'diamond', category: 'mensal',    earned: false },
-  { id: 't7',  name: '7 Dias Seguidos',  rarity: 'bronze',  category: 'sequencia', earned: true  },
-  { id: 't8',  name: '30 Dias Seguidos', rarity: 'gold',    category: 'sequencia', earned: false },
-  { id: 't9',  name: 'Herói da Tabuada', rarity: 'diamond', category: 'especial',  earned: false },
-];
+// Rarity config — matches design (Portuguese labels)
+const RARITY: Record<Rarity, { label: string; bg: string; icon: string; chip: string; chipText: string }> = {
+  bronze:   { label: 'Bronze',   bg: colors.accentLight,              icon: colors.accent,         chip: colors.accentLight,              chipText: colors.accent         },
+  prata:    { label: 'Prata',    bg: colors.background.cardAlt,       icon: colors.text.secondary, chip: colors.background.cardAlt,       chipText: colors.text.secondary },
+  ouro:     { label: 'Ouro',     bg: colors.trophy.goldLight,         icon: colors.trophy.gold,    chip: colors.trophy.goldLight,         chipText: colors.trophy.gold    },
+  diamante: { label: 'Diamante', bg: colors.primaryLight,             icon: colors.primary,        chip: colors.primaryLight,             chipText: colors.primary        },
+};
 
 const CATEGORY_LABELS: Record<TrophyCategory, string> = {
   diario:    'Diários',
@@ -51,48 +50,75 @@ const CATEGORY_LABELS: Record<TrophyCategory, string> = {
 
 const CATEGORY_ORDER: TrophyCategory[] = ['diario', 'semanal', 'mensal', 'sequencia', 'especial'];
 
-const RARITY_COLORS: Record<TrophyRarity, { bg: string; icon: string; border: string }> = {
-  bronze:  { bg: colors.trophy.bronzeLight,  icon: colors.trophy.bronze,  border: `${colors.trophy.bronze}40`  },
-  silver:  { bg: colors.trophy.silverLight,  icon: colors.trophy.silver,  border: `${colors.trophy.silver}50`  },
-  gold:    { bg: colors.trophy.goldLight,    icon: colors.trophy.gold,    border: `${colors.trophy.gold}50`    },
-  diamond: { bg: colors.trophy.diamondLight, icon: colors.trophy.diamond, border: `${colors.trophy.diamond}50` },
-};
+// Data from gamification-data.ts
+const TROPHIES: Trophy[] = [
+  {
+    id: 'diario-1', name: 'Troféu Diário', category: 'diario', rarity: 'bronze',
+    description: 'Complete o desafio do dia para ganhar este troféu.',
+    howToEarn: 'Termine 1 desafio diário com o Milo.', earned: true, dateEarned: '17 de junho de 2026',
+  },
+  {
+    id: 'diario-2', name: 'Madrugador', category: 'diario', rarity: 'bronze',
+    description: 'Comece o desafio bem cedinho.',
+    howToEarn: 'Complete um desafio antes das 9h.', earned: false, progress: { current: 0, total: 1 },
+  },
+  {
+    id: 'semanal-1', name: 'Troféu Semanal', category: 'semanal', rarity: 'prata',
+    description: 'Jogue todos os dias por 7 dias seguidos.',
+    howToEarn: 'Mantenha sua sequência por uma semana inteira.', earned: true, dateEarned: '15 de junho de 2026',
+  },
+  {
+    id: 'mensal-1', name: 'Troféu Mensal', category: 'mensal', rarity: 'ouro',
+    description: 'Um mês inteiro de matemática sem falhar!',
+    howToEarn: 'Complete os desafios todos os dias do mês.', earned: false, progress: { current: 18, total: 30 },
+  },
+  {
+    id: 'sequencia-1', name: 'Sequência de Fogo', category: 'sequencia', rarity: 'ouro',
+    description: 'Sua sequência está pegando fogo!',
+    howToEarn: 'Alcance uma sequência de 10 dias.', earned: false, progress: { current: 8, total: 10 },
+  },
+  {
+    id: 'especial-1', name: 'Semana Perfeita', category: 'especial', rarity: 'diamante',
+    description: '7 dias seguidos sem errar nenhuma resposta.',
+    howToEarn: 'Acerte 100% dos desafios por 7 dias.', earned: true, dateEarned: '10 de junho de 2026',
+  },
+  {
+    id: 'especial-2', name: 'Mês Perfeito', category: 'especial', rarity: 'diamante',
+    description: 'O troféu mais raro de todos: um mês impecável.',
+    howToEarn: 'Acerte 100% dos desafios o mês inteiro.', earned: false, progress: { current: 12, total: 30 },
+  },
+];
 
-// ─── Trophy card ──────────────────────────────────────────────────────────────
+// ─── Trophy card — 2-col, tall, icon centrado ─────────────────────────────────
 
-function TrophyCard({ trophy }: { trophy: Trophy }) {
-  const r = RARITY_COLORS[trophy.rarity];
+function TrophyCard({ trophy, onPress }: { trophy: Trophy; onPress: () => void }) {
+  const r = RARITY[trophy.rarity];
   return (
-    <TouchableOpacity style={styles.trophyCard} activeOpacity={0.75}>
-      <View style={[
-        styles.trophyIconCircle,
-        { backgroundColor: trophy.earned ? r.bg : colors.background.cardAlt },
-      ]}>
+    <TouchableOpacity style={styles.trophyCard} onPress={onPress} activeOpacity={0.75}>
+      {/* Icon circle */}
+      <View style={[styles.trophyIconWrap, { backgroundColor: trophy.earned ? r.bg : colors.background.cardAlt }]}>
         <Ionicons
           name={trophy.earned ? 'trophy' : 'lock-closed'}
-          size={26}
+          size={36}
           color={trophy.earned ? r.icon : colors.text.tertiary}
         />
       </View>
+
+      {/* Name */}
       <Text
-        variant="caption"
+        variant="label"
         align="center"
         color={trophy.earned ? colors.text.primary : colors.text.tertiary}
-        style={styles.trophyName}
         numberOfLines={2}
+        style={styles.trophyName}
       >
         {trophy.name}
       </Text>
-      <View style={[
-        styles.trophyRarityChip,
-        { backgroundColor: trophy.earned ? r.bg : colors.background.cardAlt,
-          borderColor: trophy.earned ? r.border : colors.border.default },
-      ]}>
-        <Text style={[
-          styles.trophyRarityText,
-          { color: trophy.earned ? r.icon : colors.text.tertiary },
-        ]}>
-          {trophy.rarity}
+
+      {/* Rarity chip */}
+      <View style={[styles.rarityChip, { backgroundColor: r.chip }]}>
+        <Text style={[styles.rarityChipText, { color: r.chipText }]}>
+          {r.label}
         </Text>
       </View>
     </TouchableOpacity>
@@ -118,8 +144,8 @@ export default function TrophyRoomScreen() {
 
       {/* ── Stats row ─────────────────────────────────────────────────────── */}
       <View style={styles.statsRow}>
-        <View style={styles.statPillGold}>
-          <View style={styles.statIcon}>
+        <View style={[styles.statPill, styles.statPillGold]}>
+          <View style={[styles.statIconWrap, { backgroundColor: `${colors.trophy.gold}25` }]}>
             <Ionicons name="trophy" size={22} color={colors.trophy.gold} />
           </View>
           <View>
@@ -127,8 +153,8 @@ export default function TrophyRoomScreen() {
             <Text variant="caption" color={colors.text.secondary}>Conquistados</Text>
           </View>
         </View>
-        <View style={styles.statPillOrange}>
-          <View style={styles.statIconOrange}>
+        <View style={[styles.statPill, styles.statPillOrange]}>
+          <View style={[styles.statIconWrap, { backgroundColor: `${colors.accent}20` }]}>
             <Ionicons name="flame" size={22} color={colors.accent} />
           </View>
           <View>
@@ -138,15 +164,15 @@ export default function TrophyRoomScreen() {
         </View>
       </View>
 
-      {/* ── Next trophy progress ───────────────────────────────────────────── */}
+      {/* ── Next trophy ───────────────────────────────────────────────────── */}
       {nextTrophy?.progress && (
         <Card border shadow="sm">
           <Text style={styles.nextLabel}>PRÓXIMO TROFÉU</Text>
           <View style={styles.nextRow}>
-            <View style={[styles.trophyIconCircle, { backgroundColor: colors.background.cardAlt }]}>
-              <Ionicons name="lock-closed" size={22} color={colors.text.tertiary} />
+            <View style={[styles.trophyIconWrapSm, { backgroundColor: colors.background.cardAlt }]}>
+              <Ionicons name="lock-closed" size={20} color={colors.text.tertiary} />
             </View>
-            <View style={styles.nextInfo}>
+            <View style={{ flex: 1 }}>
               <Text variant="label">{nextTrophy.name}</Text>
               <ProgressBar
                 value={nextTrophy.progress.current / nextTrophy.progress.total}
@@ -163,7 +189,7 @@ export default function TrophyRoomScreen() {
         </Card>
       )}
 
-      {/* ── Trophy categories ─────────────────────────────────────────────── */}
+      {/* ── Categories ────────────────────────────────────────────────────── */}
       {CATEGORY_ORDER.map((cat) => {
         const list = TROPHIES.filter((t) => t.category === cat);
         if (list.length === 0) return null;
@@ -171,7 +197,13 @@ export default function TrophyRoomScreen() {
           <View key={cat} style={styles.category}>
             <Text variant="h3">{CATEGORY_LABELS[cat]}</Text>
             <View style={styles.trophyGrid}>
-              {list.map((t) => <TrophyCard key={t.id} trophy={t} />)}
+              {list.map((t) => (
+                <TrophyCard
+                  key={t.id}
+                  trophy={t}
+                  onPress={() => router.push(`/(app)/trophy/${t.id}`)}
+                />
+              ))}
             </View>
           </View>
         );
@@ -185,41 +217,21 @@ export default function TrophyRoomScreen() {
 const styles = StyleSheet.create({
   // ── Stats ───────────────────────────────────────────────────────────────────
   statsRow: { flexDirection: 'row', gap: space.sm },
-  statPillGold: {
+  statPill: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    backgroundColor: colors.trophy.goldLight,
     borderRadius: radius['2xl'],
     padding: space.md,
     borderWidth: 1,
-    borderColor: `${colors.trophy.gold}30`,
   },
-  statPillOrange: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    backgroundColor: colors.accentLight,
-    borderRadius: radius['2xl'],
-    padding: space.md,
-    borderWidth: 1,
-    borderColor: `${colors.accent}25`,
-  },
-  statIcon: {
+  statPillGold:   { backgroundColor: colors.trophy.goldLight,  borderColor: `${colors.trophy.gold}30`  },
+  statPillOrange: { backgroundColor: colors.accentLight,        borderColor: `${colors.accent}25`       },
+  statIconWrap: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: `${colors.trophy.gold}25`,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statIconOrange: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: `${colors.accent}20`,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -240,20 +252,30 @@ const styles = StyleSheet.create({
     marginBottom: space.sm,
   } as import('react-native').TextStyle,
   nextRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  nextInfo: { flex: 1 },
+  trophyIconWrapSm: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
 
-  // ── Category grid ────────────────────────────────────────────────────────────
+  // ── Categories ───────────────────────────────────────────────────────────────
   category: { gap: space.sm },
   trophyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+
+  // ── Trophy card ──────────────────────────────────────────────────────────────
   trophyCard: {
-    width: '30%',
+    width: '47%',
     backgroundColor: colors.background.card,
     borderRadius: radius['2xl'],
     borderWidth: 1,
     borderColor: colors.border.default,
+    paddingVertical: space.lg,
+    paddingHorizontal: space.sm,
     alignItems: 'center',
-    padding: space.sm,
-    gap: space.xs,
+    gap: space.sm,
     ...({
       shadowColor: '#1A1F36',
       shadowOpacity: 0.06,
@@ -262,23 +284,21 @@ const styles = StyleSheet.create({
       elevation: 2,
     } as object),
   },
-  trophyIconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+  trophyIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  trophyName: { fontSize: 11, lineHeight: 15 },
-  trophyRarityChip: {
+  trophyName: { lineHeight: 18 },
+  rarityChip: {
     borderRadius: radius.full,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: space.sm,
+    paddingVertical: 4,
   },
-  trophyRarityText: {
+  rarityChipText: {
     fontFamily: fontFamily.extraBold,
-    fontSize: 10,
-    textTransform: 'capitalize',
+    fontSize: 11,
   } as import('react-native').TextStyle,
 });

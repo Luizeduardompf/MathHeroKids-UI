@@ -6,7 +6,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Avatar, AvatarPicker, Badge, Button, Card, ProgressBar, Text } from '@/components/ui';
 import { MiloMessage } from '@/components/milo/MiloMessage';
@@ -42,6 +42,8 @@ export default function HomeScreen() {
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [headerBottom, setHeaderBottom] = useState(0);
 
+  const queryClient = useQueryClient();
+
   const { data: children = [] } = useQuery({
     queryKey: ['children', parentId],
     queryFn: () => childService.listChildren(parentId!),
@@ -69,9 +71,13 @@ export default function HomeScreen() {
     try {
       const updated = await childService.updateChild(child!.id, { avatar_id: avatarId });
       setActiveChild(updated);
+      // Refresh children list so dropdown shows the new avatar
+      void queryClient.invalidateQueries({ queryKey: ['children', parentId] });
+      setEditingAvatar(false);
+    } catch {
+      // TODO: surface error toast in Phase 6
     } finally {
       setSavingAvatar(false);
-      setEditingAvatar(false);
     }
   }
 
