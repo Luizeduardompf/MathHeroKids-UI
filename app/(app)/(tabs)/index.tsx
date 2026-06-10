@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 
-import { Avatar, Badge, Button, Card, ProgressBar, Text } from '@/components/ui';
+import { Avatar, AvatarPicker, Badge, Button, Card, ProgressBar, Text } from '@/components/ui';
 import { MiloMessage } from '@/components/milo/MiloMessage';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
@@ -38,6 +38,8 @@ export default function HomeScreen() {
   const child    = useProfileStore(selectActiveChild);
   const setActiveChild = useProfileStore((s) => s.setActiveChild);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [editingAvatar, setEditingAvatar] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
   const [headerBottom, setHeaderBottom] = useState(0);
 
   const { data: children = [] } = useQuery({
@@ -55,8 +57,22 @@ export default function HomeScreen() {
   const todayDate  = new Date().toISOString().split('T')[0]!;
 
   function handleSelectChild(c: ChildProfile) {
+    if (c.id === child!.id) return; // already active — don't re-set
     setActiveChild(c);
+    setEditingAvatar(false);
     setDropdownOpen(false);
+  }
+
+  async function handleAvatarChange(avatarId: import('@/constants/config').AvatarId) {
+    if (savingAvatar || avatarId === child!.avatar_id) return;
+    setSavingAvatar(true);
+    try {
+      const updated = await childService.updateChild(child!.id, { avatar_id: avatarId });
+      setActiveChild(updated);
+    } finally {
+      setSavingAvatar(false);
+      setEditingAvatar(false);
+    }
   }
 
   return (
@@ -123,50 +139,74 @@ export default function HomeScreen() {
       </SafeAreaView>
 
       {/* ── Profile dropdown ──────────────────────────────────────────── */}
-      <Modal visible={dropdownOpen} transparent animationType="fade" onRequestClose={() => setDropdownOpen(false)}>
-        <Pressable style={styles.dropdownBackdrop} onPress={() => setDropdownOpen(false)} />
+      <Modal
+        visible={dropdownOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { setDropdownOpen(false); setEditingAvatar(false); }}
+      >
+        <Pressable
+          style={styles.dropdownBackdrop}
+          onPress={() => { setDropdownOpen(false); setEditingAvatar(false); }}
+        />
         <View style={[styles.dropdown, { top: headerBottom + 8 }]}>
           {children.map((c) => {
-            const selected = c.id === child.id;
+            const isActive = c.id === child.id;
             return (
-              <TouchableOpacity
-                key={c.id}
-                style={[styles.dropdownRow, selected ? styles.dropdownRowSelected : null]}
-                onPress={() => handleSelectChild(c)}
-                activeOpacity={0.75}
-              >
-                <Avatar
-                  avatarId={c.avatar_id}
-                  displayName={c.display_name}
-                  size="sm"
-                  ringColor={selected ? colors.primary : undefined}
-                />
-                <View style={styles.dropdownInfo}>
-                  <Text style={styles.dropdownName}>{c.display_name}</Text>
-                  <Text variant="caption" color={colors.text.secondary}>
-                    {t('common.level', { level: c.level })}
-                  </Text>
-                </View>
-                {selected && (
-                  <View style={styles.checkCircle}>
-                    <Ionicons name="checkmark" size={14} color="#fff" />
+              <View key={c.id}>
+                <TouchableOpacity
+                  style={[styles.dropdownRow, isActive ? styles.dropdownRowSelected : null]}
+                  onPress={() => handleSelectChild(c)}
+                  activeOpacity={isActive ? 1 : 0.75}
+                >
+                  <Avatar
+                    avatarId={c.avatar_id}
+                    displayName={c.display_name}
+                    size="sm"
+                    ringColor={isActive ? colors.primary : undefined}
+                  />
+                  <View style={styles.dropdownInfo}>
+                    <Text style={styles.dropdownName}>{c.display_name}</Text>
+                    <Text variant="caption" color={colors.text.secondary}>
+                      {t('common.level', { level: c.level })}
+                    </Text>
+                  </View>
+
+                  {isActive ? (
+                    /* Edit avatar button — only visible on active child */
+                    <TouchableOpacity
+                      style={styles.editAvatarBtn}
+                      onPress={() => setEditingAvatar((v) => !v)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Ionicons
+                        name={editingAvatar ? 'close' : 'create-outline'}
+                        size={16}
+                        color={colors.primary}
+                      />
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.checkCircleGhost} />
+                  )}
+                </TouchableOpacity>
+
+                {/* Inline avatar picker — only for active child */}
+                {isActive && editingAvatar && (
+                  <View style={styles.avatarPickerWrap}>
+                    <AvatarPicker
+                      selected={child.avatar_id as import('@/constants/config').AvatarId}
+                      onSelect={handleAvatarChange}
+                    />
+                    {savingAvatar && (
+                      <Text variant="caption" color={colors.text.secondary} style={styles.savingText}>
+                        A guardar…
+                      </Text>
+                    )}
                   </View>
                 )}
-              </TouchableOpacity>
+              </View>
             );
           })}
-
-          {/* Add child button */}
-          <TouchableOpacity
-            style={styles.addChildBtn}
-            onPress={() => { setDropdownOpen(false); router.push('/(profile-select)/add-child'); }}
-            activeOpacity={0.75}
-          >
-            <View style={styles.addChildIcon}>
-              <Ionicons name="add" size={20} color={colors.primary} />
-            </View>
-            <Text style={styles.addChildText}>Add Child</Text>
-          </TouchableOpacity>
         </View>
       </Modal>
 
@@ -423,30 +463,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addChildBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    borderRadius: radius.xl,
-    borderWidth: 2,
-    borderColor: colors.primaryLight,
-    borderStyle: 'dashed',
-    padding: space.sm,
-    marginTop: space.xs,
-  },
-  addChildIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.lg,
+  checkCircleGhost: { width: 24, height: 24 },
+  editAvatarBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addChildText: {
-    fontFamily: fontFamily.extraBold,
-    fontSize: 14,
-    color: colors.primary,
-  } as import('react-native').TextStyle,
+  avatarPickerWrap: {
+    paddingHorizontal: space.sm,
+    paddingBottom: space.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.default,
+    marginTop: space.xs,
+    paddingTop: space.sm,
+  },
+  savingText: { marginTop: space.xs, textAlign: 'center' },
 
   scroll: { flex: 1 },
   content: { padding: space.md, gap: space.md, paddingBottom: space['2xl'] },
