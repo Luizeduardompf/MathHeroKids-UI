@@ -14,15 +14,16 @@
  * - Fallback: challenge_sessions para quando a EF não está deployada
  */
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -378,15 +379,27 @@ function streakMessage(streak: number): string {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function CalendarioScreen() {
-  const child = useProfileStore(selectActiveChild);
-  const today = useMemo(() => toISO(new Date()), []);
-  const months = useMemo(() => monthsToShow(), []);
+  const child        = useProfileStore(selectActiveChild);
+  const insets       = useSafeAreaInsets();
+  const queryClient  = useQueryClient();
+  const today        = useMemo(() => toISO(new Date()), []);
+  const months       = useMemo(() => monthsToShow(), []);
+
+  // Refetch sempre que o ecrã fica em foco — garante que o dia de hoje
+  // aparece como completo após o utilizador terminar o desafio
+  useFocusEffect(
+    useCallback(() => {
+      if (child?.id) {
+        void queryClient.invalidateQueries({ queryKey: ['calendar_data', child.id] });
+      }
+    }, [queryClient, child?.id]),
+  );
 
   const { data, isLoading } = useQuery<CalendarData>({
     queryKey: ['calendar_data', child?.id],
     queryFn:  () => fetchCalendarData(child!.id),
     enabled:  !!child?.id,
-    staleTime: 60_000,
+    staleTime: 30_000,
   });
 
   if (!child) return null;
@@ -401,10 +414,11 @@ export default function CalendarioScreen() {
     : 1;
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
+    // View root branca — cobre safe area do status bar com a mesma cor do header
+    <View style={s.safe}>
 
-      {/* ── Fixed header ──────────────────────────────────────────────── */}
-      <View style={s.header}>
+      {/* ── Fixed header — inclui o inset do status bar ────────────────── */}
+      <View style={[s.header, { paddingTop: insets.top + 12 }]}>
         <Avatar
           avatarId={child.avatar_id}
           displayName={child.display_name}
@@ -485,7 +499,7 @@ export default function CalendarioScreen() {
         </View>
 
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -494,7 +508,9 @@ export default function CalendarioScreen() {
 const s = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    // Branco — cobre o safe area do status bar com a mesma cor do header
+    // (evita a barra cinza que aparece quando SafeAreaView tem background diferente)
+    backgroundColor: '#fff',
   },
 
   // ── Fixed header ──────────────────────────────────────────────────────────
@@ -532,7 +548,7 @@ const s = StyleSheet.create({
   },
 
   // ── Scroll content ────────────────────────────────────────────────────────
-  scroll: { flex: 1 },
+  scroll: { flex: 1, backgroundColor: colors.background.primary },
   content: {
     paddingHorizontal: 20,
     paddingTop: 16,
