@@ -72,6 +72,7 @@ function shuffleWithSeed<T>(arr: T[], seed: number): T[] {
 export function generateQuestions(
   seed: string,
   multiplicationMax: MultiplicationRange,
+  count: number = CHALLENGE.TOTAL_QUESTIONS,
 ): Question[] {
   const prngSeed = hashSeed(seed);
 
@@ -86,8 +87,8 @@ export function generateQuestions(
   // Shuffle deterministically
   const shuffled = shuffleWithSeed(pool, prngSeed);
 
-  // Take first TOTAL_QUESTIONS
-  return shuffled.slice(0, CHALLENGE.TOTAL_QUESTIONS).map(([a, b], i) => ({
+  // Take first `count` questions
+  return shuffled.slice(0, count).map(([a, b], i) => ({
     index: i,
     operand_a: a,
     operand_b: b,

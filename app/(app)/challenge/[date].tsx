@@ -48,8 +48,9 @@ import {
   selectUniqueCorrectCount,
 } from '@/stores/challenge.store';
 import { challengeService } from '@/services/challenge.service';
+import { getChildLocalSettings } from '@/services/child.service';
 import { generateQuestions, buildQuestionSeed } from '@/lib/question-generator';
-import { MODULE_ID, CHALLENGE } from '@/constants/config';
+import { MODULE_ID, CHALLENGE, resolveQuestionCount } from '@/constants/config';
 
 // ─── Milo celebrate asset ─────────────────────────────────────────────────────
 const MILO_CELEBRATE = require('../../../assets/images/milo-celebrate.png') as number;
@@ -204,7 +205,7 @@ function MilestoneScreen({
   const cfg = MILESTONE_CFG[variant];
   const xp = xpOverride ?? cfg.xp;
   const qs = questionsCorrect ?? cfg.questions;
-  const pct = Math.round((qs / CHALLENGE.TOTAL_QUESTIONS) * 100);
+  const pct = Math.round((qs / (useChallengeStore.getState().totalQuestions || CHALLENGE.TOTAL_QUESTIONS)) * 100);
 
   return (
     <View style={[msStyles.root, { backgroundColor: cfg.bg }]}>
@@ -254,7 +255,7 @@ function MilestoneScreen({
         <View style={msStyles.progressSection}>
           <View style={msStyles.progressRow}>
             <Text style={msStyles.progressCount}>
-              {qs} / {CHALLENGE.TOTAL_QUESTIONS} questões
+              {qs} / {useChallengeStore.getState().totalQuestions || CHALLENGE.TOTAL_QUESTIONS} questões
             </Text>
             <Text style={msStyles.progressPct}>{pct}%</Text>
           </View>
@@ -645,6 +646,7 @@ export default function ChallengeScreen() {
   const challengeDate = useChallengeStore((s) => s.challengeDate);
   const moduleId = useChallengeStore((s) => s.moduleId);
   const currentQuestionIndex = useChallengeStore((s) => s.currentQuestionIndex);
+  const totalQuestions = useChallengeStore((s) => s.totalQuestions);
   const lastCorrectAnswer = useChallengeStore((s) => s.lastCorrectAnswer);
   const lastUserAnswer = useChallengeStore((s) => s.lastUserAnswer);
   const lastAnsweredQuestion = useChallengeStore((s) => s.lastAnsweredQuestion);
@@ -695,9 +697,13 @@ export default function ChallengeScreen() {
       if (!child || !date) return;
       storeActions.setPhase('loading');
 
+      // Ler número de questões das settings locais
+      const localSettings = await getChildLocalSettings(child.id);
+      const questionCount  = resolveQuestionCount(localSettings.questions_count, child.level);
+
       const sid = randomUUID();
       const seed = buildQuestionSeed(child.id, date, MODULE_ID.MULTIPLICATION);
-      const questions = generateQuestions(seed, child.multiplication_max);
+      const questions = generateQuestions(seed, child.multiplication_max, questionCount);
 
       // Backend é best-effort — questões geradas localmente sempre funcionam.
       // Se a EF falhar (offline, deploy pendente), a sessão local inicia igualmente
@@ -727,6 +733,7 @@ export default function ChallengeScreen() {
           moduleId: MODULE_ID.MULTIPLICATION,
           questions,
           timerSeconds: child.timer_seconds,
+          totalQuestions: questionCount,
           resumeFromIndex,
         });
       } catch (e) {
@@ -809,7 +816,7 @@ export default function ChallengeScreen() {
 
     // Guardar completion local sempre — garante que o calendário mostra o estado
     // correcto mesmo quando a Edge Function complete_challenge não está deployada.
-    const isPerfectLocal = uniqueCorrect === CHALLENGE.TOTAL_QUESTIONS;
+    const isPerfectLocal = uniqueCorrect === useChallengeStore.getState().totalQuestions;
     await challengeService.storeLocalCompletion(child.id, challengeDate!, isPerfectLocal);
 
     try {
@@ -973,7 +980,7 @@ export default function ChallengeScreen() {
           <Text style={gs.headerTitle}>
             {t('challenge.question', {
               current: String(currentQuestionIndex + 1),
-              total: String(CHALLENGE.TOTAL_QUESTIONS),
+              total: String(totalQuestions),
             })}
           </Text>
           <View style={{ height: 6 }} />

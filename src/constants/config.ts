@@ -18,9 +18,20 @@ export const CHALLENGE = {
   RETROACTIVE_WINDOW_DAYS: 7,
 } as const;
 
-export const TIMER_OPTIONS = [10, 15, 20, 30, 0] as const; // 0 = unlimited
+export const TIMER_OPTIONS = [10, 15, 20, 30, 0] as const;
+// 0 = AUTO (futuramente ajustado ao nível; por agora = sem limite de tempo)
 export type TimerOption = (typeof TIMER_OPTIONS)[number];
 export const DEFAULT_TIMER = 15 satisfies TimerOption;
+
+// Número de questões por sessão. 0 = AUTO (ajustado ao nível, default = 20)
+export const QUESTION_COUNT_OPTIONS = [5, 10, 15, 20, 25, 0] as const;
+export type QuestionCountOption = (typeof QUESTION_COUNT_OPTIONS)[number];
+export const DEFAULT_QUESTION_COUNT = 20 satisfies QuestionCountOption;
+
+/** Resolve o número real de questões (0 = AUTO → default 20 para MVP) */
+export function resolveQuestionCount(opt: QuestionCountOption, _level = 1): number {
+  return opt === 0 ? CHALLENGE.TOTAL_QUESTIONS : opt;
+}
 
 export const MULTIPLICATION_RANGES = [10, 12, 15, 20] as const;
 export type MultiplicationRange = (typeof MULTIPLICATION_RANGES)[number];

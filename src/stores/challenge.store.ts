@@ -46,7 +46,8 @@ interface ChallengeState {
 
   // Questions
   questions: Question[];
-  currentQuestionIndex: number; // 0–19
+  currentQuestionIndex: number; // 0–(totalQuestions-1)
+  totalQuestions: number;       // configurable per session (default 20)
 
   // Answers collected this session (all attempts including retries)
   answers: AnswerDraft[];
@@ -76,6 +77,7 @@ interface ChallengeState {
     moduleId: string;
     questions: Question[];
     timerSeconds: number;
+    totalQuestions?: number;  // defaults to questions.length
     resumeFromIndex?: number;
   }) => void;
 
@@ -99,7 +101,7 @@ export const selectCurrentQuestion = (s: ChallengeState): Question | null =>
   s.questions[s.currentQuestionIndex] ?? null;
 
 export const selectProgressFraction = (s: ChallengeState): number =>
-  s.questions.length > 0 ? s.currentQuestionIndex / CHALLENGE.TOTAL_QUESTIONS : 0;
+  s.totalQuestions > 0 ? s.currentQuestionIndex / s.totalQuestions : 0;
 
 export const selectBlockQuestions = (s: ChallengeState): Question[] => {
   const start = (s.currentBlock - 1) * CHALLENGE.QUESTIONS_PER_BLOCK;
@@ -136,6 +138,7 @@ const initialState = {
   challengeDate: null,
   moduleId: 'multiplication',
   questions: [] as Question[],
+  totalQuestions: CHALLENGE.TOTAL_QUESTIONS,
   currentQuestionIndex: 0,
   answers: [] as AnswerDraft[],
   currentBlock: 1,
@@ -154,7 +157,8 @@ const initialState = {
 export const useChallengeStore = create<ChallengeState>()((set, get) => ({
   ...initialState,
 
-  startSession: ({ sessionId, childId, challengeDate, moduleId, questions, timerSeconds, resumeFromIndex = 0 }) => {
+  startSession: ({ sessionId, childId, challengeDate, moduleId, questions, timerSeconds, totalQuestions, resumeFromIndex = 0 }) => {
+    const total = totalQuestions ?? questions.length;
     const block = Math.floor(resumeFromIndex / CHALLENGE.QUESTIONS_PER_BLOCK) + 1;
     set({
       sessionId,
@@ -162,6 +166,7 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
       challengeDate,
       moduleId,
       questions,
+      totalQuestions: total,
       currentQuestionIndex: resumeFromIndex,
       answers: [],
       currentBlock: block,
@@ -207,8 +212,13 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
     const newAnswers = [...state.answers, draft];
     const nextIndex = state.currentQuestionIndex + 1;
     const isLastInBlock = nextIndex % CHALLENGE.QUESTIONS_PER_BLOCK === 0;
-    const isMilestone = nextIndex === 5 || nextIndex === 10 || nextIndex === 15;
-    const isLast = nextIndex >= CHALLENGE.TOTAL_QUESTIONS;
+    const total = state.totalQuestions;
+    // Milestones at 25%, 50%, 75% of totalQuestions
+    const q25 = Math.floor(total * 0.25);
+    const q50 = Math.floor(total * 0.5);
+    const q75 = Math.floor(total * 0.75);
+    const isMilestone = (nextIndex === q25 || nextIndex === q50 || nextIndex === q75) && nextIndex > 0 && nextIndex < total;
+    const isLast = nextIndex >= total;
 
     if (!isCorrect) {
       // Wrong or timeout — store for display in overlay
@@ -301,13 +311,16 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
     const state = get();
     const nextIndex = state.currentQuestionIndex + 1;
 
-    if (nextIndex >= CHALLENGE.TOTAL_QUESTIONS) {
+    if (nextIndex >= state.totalQuestions) {
       set({ currentQuestionIndex: nextIndex, phase: 'completed' });
       return;
     }
 
     const isLastInBlock = nextIndex % CHALLENGE.QUESTIONS_PER_BLOCK === 0;
-    const isMilestone = nextIndex === 5 || nextIndex === 10 || nextIndex === 15;
+    const q25 = Math.floor(state.totalQuestions * 0.25);
+    const q50 = Math.floor(state.totalQuestions * 0.5);
+    const q75 = Math.floor(state.totalQuestions * 0.75);
+    const isMilestone = (nextIndex === q25 || nextIndex === q50 || nextIndex === q75) && nextIndex > 0 && nextIndex < state.totalQuestions;
 
     set({
       currentQuestionIndex: nextIndex,

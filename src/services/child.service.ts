@@ -1,7 +1,41 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import type { ChildProfile } from '@/types';
-import type { AvatarId, TimerOption, MultiplicationRange } from '@/constants/config';
-import { DEFAULT_TIMER, DEFAULT_MULTIPLICATION_MAX } from '@/constants/config';
+import type { AvatarId, TimerOption, MultiplicationRange, QuestionCountOption } from '@/constants/config';
+import { DEFAULT_TIMER, DEFAULT_MULTIPLICATION_MAX, DEFAULT_QUESTION_COUNT } from '@/constants/config';
+
+// ─── Local child settings (persisted while DB column não existe) ──────────────
+
+const LOCAL_SETTINGS_KEY = 'math-hero-child-local-settings-v1';
+
+export interface ChildLocalSettings {
+  questions_count: QuestionCountOption; // 0 = AUTO
+}
+
+const DEFAULT_LOCAL_SETTINGS: ChildLocalSettings = {
+  questions_count: DEFAULT_QUESTION_COUNT,
+};
+
+async function readAllLocalSettings(): Promise<Record<string, ChildLocalSettings>> {
+  try {
+    const raw = await AsyncStorage.getItem(LOCAL_SETTINGS_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, ChildLocalSettings>) : {};
+  } catch { return {}; }
+}
+
+export async function getChildLocalSettings(childId: string): Promise<ChildLocalSettings> {
+  const all = await readAllLocalSettings();
+  return { ...DEFAULT_LOCAL_SETTINGS, ...(all[childId] ?? {}) };
+}
+
+export async function setChildLocalSettings(
+  childId: string,
+  settings: Partial<ChildLocalSettings>,
+): Promise<void> {
+  const all = await readAllLocalSettings();
+  all[childId] = { ...DEFAULT_LOCAL_SETTINGS, ...(all[childId] ?? {}), ...settings };
+  await AsyncStorage.setItem(LOCAL_SETTINGS_KEY, JSON.stringify(all));
+}
 
 // ─── Input types ──────────────────────────────────────────────────────────────
 

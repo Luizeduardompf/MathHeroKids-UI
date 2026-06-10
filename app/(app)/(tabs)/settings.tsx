@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -17,12 +17,12 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 
 import { Avatar, Button, Card, ConfirmDialog, Text } from '@/components/ui';
-import { childService } from '@/services/child.service';
+import { childService, getChildLocalSettings, setChildLocalSettings } from '@/services/child.service';
 import { authService } from '@/services/auth.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { useProfileStore } from '@/stores/profile.store';
-import { SUPPORTED_LOCALES, TIMER_OPTIONS, MULTIPLICATION_RANGES } from '@/constants/config';
-import type { SupportedLocale, TimerOption, MultiplicationRange } from '@/constants/config';
+import { SUPPORTED_LOCALES, TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT_OPTIONS } from '@/constants/config';
+import type { SupportedLocale, TimerOption, MultiplicationRange, QuestionCountOption } from '@/constants/config';
 import type { ChildProfile } from '@/types';
 import { changeLocale, LOCALE_STORAGE_KEY } from '@/lib/i18n';
 import { colors, fontFamily, radius, space } from '@/theme';
@@ -210,9 +210,25 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
   const router = useRouter();
   const setActiveChild = useProfileStore((s) => s.setActiveChild);
   const activeChild    = useProfileStore((s) => s.activeChild);
-  const [savingTimer, setSavingTimer] = useState(false);
-  const [savingMult, setSavingMult]   = useState(false);
-  const [localChild, setLocalChild]   = useState(child);
+  const [savingTimer,     setSavingTimer]     = useState(false);
+  const [savingMult,      setSavingMult]      = useState(false);
+  const [savingQuestions, setSavingQuestions] = useState(false);
+  const [localChild,      setLocalChild]      = useState(child);
+  const [questionsCount,  setQuestionsCount]  = useState<QuestionCountOption>(20);
+
+  // Carregar setting local de questões ao montar
+  useEffect(() => {
+    void getChildLocalSettings(child.id).then((s) => setQuestionsCount(s.questions_count));
+  }, [child.id]);
+
+  async function handleQuestions(value: QuestionCountOption) {
+    if (value === questionsCount || savingQuestions) return;
+    setSavingQuestions(true);
+    try {
+      await setChildLocalSettings(child.id, { questions_count: value });
+      setQuestionsCount(value);
+    } finally { setSavingQuestions(false); }
+  }
 
   async function handleTimer(value: TimerOption) {
     if (value === localChild.timer_seconds || savingTimer) return;
@@ -253,6 +269,37 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
         </TouchableOpacity>
       </View>
 
+      {/* Nº de questões */}
+      <View style={styles.subSection}>
+        <View style={styles.subSectionHeader}>
+          <View style={styles.subSectionTitle}>
+            <SectionIcon name="list-outline" bg={colors.primaryLight} color={colors.primary} />
+            <Text variant="label">Questões por sessão</Text>
+          </View>
+          {savingQuestions && <ActivityIndicator size="small" color={colors.primary} />}
+        </View>
+        <View style={styles.chipRow}>
+          {QUESTION_COUNT_OPTIONS.map((val) => {
+            const selected = questionsCount === val;
+            return (
+              <TouchableOpacity
+                key={val}
+                style={[styles.chip, selected ? styles.chipSelected : null]}
+                onPress={() => void handleQuestions(val)}
+              >
+                <Text
+                  variant="caption"
+                  color={selected ? colors.text.inverse : colors.text.primary}
+                  style={selected ? styles.chipTextSelected : null}
+                >
+                  {val === 0 ? 'AUTO' : String(val)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
       {/* Timer */}
       <View style={styles.subSection}>
         <View style={styles.subSectionHeader}>
@@ -276,7 +323,7 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
                   color={selected ? colors.text.inverse : colors.text.primary}
                   style={selected ? styles.chipTextSelected : null}
                 >
-                  {val === 0 ? t('settings.timerUnlimited') : `${val}s`}
+                  {val === 0 ? 'AUTO' : `${val}s`}
                 </Text>
               </TouchableOpacity>
             );

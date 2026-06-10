@@ -1,11 +1,9 @@
 /**
- * Friends screen — Tab principal de Amigos
+ * Amigos — Tab principal
  *
- * Layout (pixel-faithful ao design 06-friends.zip):
- * - Header azul gradient: "Math Hero Kids" + "Amigos" + botões ranking + person+
- * - Search bar inline (filtra lista de amigos)
- * - Secção "Pedidos pendentes" com badge de count + accept/reject
- * - Lista de amigos ordenada por XP
+ * A tela principal é o RANKING de amigos.
+ * Header: "Math Hero Kids" + "Amigos" + botão 👥 → lista de amigos
+ * Layout pixel-faithful ao design 06-friends.zip (screenshots 1 + 3)
  */
 
 import React, { useCallback, useState } from 'react';
@@ -14,23 +12,23 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
+  Text as RNText,
   View,
+  type StyleProp,
+  type TextStyle,
 } from 'react-native';
-// @ts-expect-error RN 0.85 quirk — Alert present at runtime
-import { Alert } from 'react-native'; // eslint-disable-line
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Text } from '@/components/ui';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
-import { socialService, type FriendProfile, type PendingRequest } from '@/services/social.service';
+import { socialService, type RankedFriend } from '@/services/social.service';
 import { colors, fontFamily, radius, shadows } from '@/theme';
 
-// ─── Avatar initials ──────────────────────────────────────────────────────────
+// ─── Avatar initials (exportado para reutilização) ───────────────────────────
 
 const AVATAR_COLORS = [
   '#2B52E5','#F5722A','#22C55E','#EF4444',
@@ -52,7 +50,11 @@ function initials(name: string): string {
 
 export function FriendAvatar({ name, size = 44 }: { name: string; size?: number }) {
   return (
-    <View style={[av.circle, { width: size, height: size, borderRadius: size / 2, backgroundColor: colorFromName(name) }]}>
+    <View style={[av.circle, {
+      width: size, height: size,
+      borderRadius: size / 2,
+      backgroundColor: colorFromName(name),
+    }]}>
       <Text style={[av.text, { fontSize: size * 0.35 }]}>{initials(name)}</Text>
     </View>
   );
@@ -62,95 +64,142 @@ const av = StyleSheet.create({
   text:   { fontFamily: fontFamily.extraBold, color: '#fff' },
 });
 
-// ─── Request card ─────────────────────────────────────────────────────────────
+// ─── Period toggle ────────────────────────────────────────────────────────────
 
-function RequestCard({
-  request, onAccept, onReject, loading,
-}: {
-  request: PendingRequest; onAccept: () => void; onReject: () => void; loading: boolean;
+function PeriodToggle({ value, onChange }: {
+  value: 'weekly' | 'monthly';
+  onChange: (v: 'weekly' | 'monthly') => void;
 }) {
   return (
-    <View style={rc.card}>
-      <FriendAvatar name={request.from_child.display_name} size={48} />
-      <View style={rc.mid}>
-        <Text style={rc.name}>{request.from_child.display_name}</Text>
-        <Text style={rc.sub}>Nível {request.from_child.level}</Text>
-      </View>
-      {loading ? (
-        <ActivityIndicator color={colors.primary} size="small" style={{ marginHorizontal: 12 }} />
-      ) : (
-        <View style={rc.actions}>
-          <Pressable style={rc.acceptBtn} onPress={onAccept} hitSlop={6}>
-            <Ionicons name="checkmark" size={20} color="#fff" />
-          </Pressable>
-          <Pressable style={rc.rejectBtn} onPress={onReject} hitSlop={6}>
-            <Ionicons name="close" size={20} color="#6B7280" />
-          </Pressable>
-        </View>
-      )}
+    <View style={pt.wrap}>
+      {(['weekly', 'monthly'] as const).map((p) => (
+        <Pressable
+          key={p}
+          style={[pt.btn, value === p ? pt.btnActive : null]}
+          onPress={() => onChange(p)}
+        >
+          <RNText style={[pt.label, value === p ? pt.labelActive : null]}>
+            {p === 'weekly' ? 'Semanal' : 'Mensal'}
+          </RNText>
+        </Pressable>
+      ))}
     </View>
   );
 }
-const rc = StyleSheet.create({
-  card:      { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.xl, padding: 14, ...shadows.sm },
-  mid:       { flex: 1 },
-  name:      { fontFamily: fontFamily.extraBold, fontSize: 15, color: colors.text.primary },
-  sub:       { fontFamily: fontFamily.regular,   fontSize: 12, color: colors.text.secondary, marginTop: 1 },
-  actions:   { flexDirection: 'row', gap: 8 },
-  acceptBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#22C55E', alignItems: 'center', justifyContent: 'center', ...shadows.sm },
-  rejectBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+const pt = StyleSheet.create({
+  wrap:       { flexDirection: 'row', backgroundColor: '#DDDFF0', borderRadius: 999, padding: 4 },
+  btn:        { flex: 1, borderRadius: 999, paddingVertical: 10, alignItems: 'center' },
+  btnActive:  { backgroundColor: '#fff', ...shadows.sm },
+  label:      { fontFamily: fontFamily.bold, fontSize: 15, color: '#6B7280' },
+  labelActive:{ fontFamily: fontFamily.bold, fontSize: 15, color: colors.primary },
 });
 
-// ─── Friend row ───────────────────────────────────────────────────────────────
+// ─── Podium spot ──────────────────────────────────────────────────────────────
 
-function FriendRow({ friend, rank }: { friend: FriendProfile; rank: number }) {
+const MEDAL_COLORS: Record<1|2|3, string> = { 1: '#F59E0B', 2: '#9CA3AF', 3: '#CD7C2F' };
+
+function PodiumSpot({ ranked, position }: {
+  ranked: RankedFriend | undefined; position: 1|2|3;
+}) {
+  if (!ranked) return <View style={[pd.spot, pd[`spot${position}`]]} />;
+
+  const SIZE = position === 1 ? 80 : 64;
+  const mc   = MEDAL_COLORS[position];
+
   return (
-    <View style={fr.row}>
-      <Text style={fr.rank}>#{rank}</Text>
-      <FriendAvatar name={friend.display_name} size={44} />
-      <View style={fr.mid}>
-        <Text style={fr.name}>{friend.display_name}</Text>
-        <Text style={fr.sub}>@{friend.username} · Nível {friend.level}</Text>
+    <View style={[pd.spot, pd[`spot${position}`]]}>
+      {position === 1 && (
+        <Ionicons name={'crown' as never} size={24} color="#F59E0B" style={{ marginBottom: 4 }} />
+      )}
+      <View style={[pd.ring, { width: SIZE + 8, height: SIZE + 8, borderRadius: (SIZE + 8) / 2, borderColor: mc }]}>
+        <FriendAvatar name={ranked.child.display_name} size={SIZE} />
       </View>
-      <View style={fr.xpCol}>
-        <Ionicons name="flash" size={13} color="#F59E0B" />
-        <Text style={fr.xp}>{friend.xp_total.toLocaleString('pt-BR')}</Text>
+      <View style={[pd.badge, { backgroundColor: mc }]}>
+        <RNText style={pd.badgeNum}>{position}</RNText>
+      </View>
+      <RNText style={pd.name} numberOfLines={1}>
+        {ranked.isSelf ? 'Você' : ranked.child.display_name}
+      </RNText>
+      <View style={pd.xpRow}>
+        <Ionicons name="flash" size={12} color="#F59E0B" />
+        <RNText style={pd.xp}>{ranked.xp.toLocaleString('pt-BR')}</RNText>
       </View>
     </View>
   );
 }
-const fr = StyleSheet.create({
+const pd = StyleSheet.create({
+  spot:    { alignItems: 'center', gap: 4, width: 100 },
+  spot1:   {},
+  spot2:   { marginTop: 40 },
+  spot3:   { marginTop: 40 },
+  ring:    { alignItems: 'center', justifyContent: 'center', borderWidth: 3 },
+  badge:   { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginTop: -10, borderWidth: 2, borderColor: '#fff', ...shadows.sm },
+  badgeNum:{ fontFamily: fontFamily.extraBold, fontSize: 12, color: '#fff' },
+  name:    { fontFamily: fontFamily.bold, fontSize: 13, color: colors.text.primary, textAlign: 'center', maxWidth: 88 },
+  xpRow:   { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  xp:      { fontFamily: fontFamily.bold, fontSize: 12, color: '#F59E0B' },
+});
+
+// ─── Rank row ─────────────────────────────────────────────────────────────────
+
+function RankRow({ ranked }: { ranked: RankedFriend }) {
+  const hl = ranked.isSelf;
+  return (
+    <View style={[rr.row, hl ? rr.rowHl : null]}>
+      <RNText style={[rr.pos, hl ? rr.posHl : null] as StyleProp<TextStyle>}>#{ranked.position}</RNText>
+      <FriendAvatar name={ranked.child.display_name} size={44} />
+      <View style={rr.mid}>
+        <RNText style={[rr.name, hl ? rr.nameHl : null]}>
+          {ranked.isSelf ? 'Você' : ranked.child.display_name}
+        </RNText>
+        <RNText style={[rr.sub, hl ? rr.subHl : null]}>
+          @{ranked.child.username} · Nível {ranked.child.level}
+        </RNText>
+      </View>
+      <View style={rr.xpCol}>
+        <Ionicons name="flash" size={13} color={hl ? '#FDE68A' : '#F59E0B'} />
+        <RNText style={[rr.xp, hl ? rr.xpHl : null]}>{ranked.xp.toLocaleString('pt-BR')}</RNText>
+      </View>
+    </View>
+  );
+}
+const rr = StyleSheet.create({
   row:   { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.xl, padding: 14, ...shadows.sm },
-  rank:  { fontFamily: fontFamily.bold, fontSize: 13, color: colors.text.secondary, width: 24, textAlign: 'center' },
+  rowHl: { backgroundColor: colors.primary },
+  pos:   { fontFamily: fontFamily.bold, fontSize: 14, color: colors.text.secondary, width: 28, textAlign: 'center' },
+  posHl: { color: 'rgba(255,255,255,0.7)' },
   mid:   { flex: 1 },
   name:  { fontFamily: fontFamily.extraBold, fontSize: 15, color: colors.text.primary },
+  nameHl:{ color: '#fff' },
   sub:   { fontFamily: fontFamily.regular,   fontSize: 12, color: colors.text.secondary, marginTop: 1 },
+  subHl: { color: 'rgba(255,255,255,0.7)' },
   xpCol: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   xp:    { fontFamily: fontFamily.bold, fontSize: 13, color: '#F59E0B' },
+  xpHl:  { color: '#FDE68A' },
 });
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
-function EmptyFriends({ onAdd }: { onAdd: () => void }) {
+function EmptyRanking({ onAdd }: { onAdd: () => void }) {
   return (
-    <View style={es.wrap}>
-      <Text style={es.emoji}>👥</Text>
-      <Text style={es.title}>Nenhum amigo ainda</Text>
-      <Text style={es.sub}>Adiciona amigos para ver o ranking!</Text>
-      <Pressable style={es.btn} onPress={onAdd}>
-        <Ionicons name="person-add" size={18} color="#fff" />
-        <Text style={es.btnText}>Adicionar amigo</Text>
+    <View style={em.wrap}>
+      <Text style={em.emoji}>🏆</Text>
+      <Text style={em.title}>Sem ranking ainda</Text>
+      <Text style={em.sub}>Adiciona amigos e faz desafios para aparecer no ranking!</Text>
+      <Pressable style={em.btn} onPress={onAdd}>
+        <Ionicons name="person-add-outline" size={18} color="#fff" />
+        <Text style={em.btnText}>Adicionar amigo</Text>
       </Pressable>
     </View>
   );
 }
-const es = StyleSheet.create({
-  wrap:    { alignItems: 'center', paddingVertical: 40, gap: 8 },
-  emoji:   { fontSize: 48 },
-  title:   { fontFamily: fontFamily.extraBold, fontSize: 18, color: colors.text.primary },
-  sub:     { fontFamily: fontFamily.regular, fontSize: 14, color: colors.text.secondary, textAlign: 'center' },
-  btn:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 20, paddingVertical: 12, marginTop: 8 },
-  btnText: { fontFamily: fontFamily.bold, fontSize: 15, color: '#fff' },
+const em = StyleSheet.create({
+  wrap:   { alignItems: 'center', paddingVertical: 40, gap: 8 },
+  emoji:  { fontSize: 48 },
+  title:  { fontFamily: fontFamily.extraBold, fontSize: 18, color: colors.text.primary },
+  sub:    { fontFamily: fontFamily.regular, fontSize: 14, color: colors.text.secondary, textAlign: 'center', maxWidth: 280 },
+  btn:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 20, paddingVertical: 12, marginTop: 8 },
+  btnText:{ fontFamily: fontFamily.bold, fontSize: 15, color: '#fff' },
 });
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
@@ -161,154 +210,108 @@ export default function AmigosScreen() {
   const queryClient = useQueryClient();
   const child       = useProfileStore(selectActiveChild);
 
-  const [search, setSearch]             = useState('');
-  const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [period, setPeriod] = useState<'weekly' | 'monthly'>('weekly');
 
-  useFocusEffect(
-    useCallback(() => {
-      if (child?.id) {
-        void queryClient.invalidateQueries({ queryKey: ['friends',         child.id] });
-        void queryClient.invalidateQueries({ queryKey: ['friend_requests', child.id] });
-      }
-    }, [queryClient, child?.id]),
-  );
-
-  const { data: friends  = [], isLoading: lf } = useQuery({
-    queryKey: ['friends',         child?.id],
-    queryFn:  () => socialService.getFriends(child!.id),
-    enabled:  !!child?.id,
-    staleTime: 30_000,
-  });
-
-  const { data: requests = [], isLoading: lr } = useQuery({
+  // Badge: pedidos pendentes
+  const { data: requests = [] } = useQuery({
     queryKey: ['friend_requests', child?.id],
     queryFn:  () => socialService.getPendingRequests(child!.id),
     enabled:  !!child?.id,
     staleTime: 30_000,
   });
 
-  const respondMutation = useMutation({
-    mutationFn: ({ requestId, accept }: { requestId: string; accept: boolean }) =>
-      socialService.respondToRequest(requestId, accept),
-    onMutate:   ({ requestId }) => setRespondingId(requestId),
-    onSettled:  () => {
-      setRespondingId(null);
-      void queryClient.invalidateQueries({ queryKey: ['friends',         child?.id] });
-      void queryClient.invalidateQueries({ queryKey: ['friend_requests', child?.id] });
-    },
-    onError: (e) => Alert.alert('Erro', (e as Error).message),
+  useFocusEffect(
+    useCallback(() => {
+      if (child?.id) {
+        void queryClient.invalidateQueries({ queryKey: ['friends_ranking', child.id] });
+        void queryClient.invalidateQueries({ queryKey: ['friend_requests', child.id] });
+      }
+    }, [queryClient, child?.id]),
+  );
+
+  const selfProfile = child ? {
+    id: child.id, display_name: child.display_name,
+    username: (child as typeof child & { username?: string }).username ?? '',
+    avatar_id: child.avatar_id, level: child.level,
+    xp_total: child.xp_total, current_streak: child.current_streak,
+  } : null;
+
+  const { data: ranked = [], isLoading } = useQuery({
+    queryKey: ['friends_ranking', child?.id, period],
+    queryFn:  () => socialService.getFriendsRanking(child!.id, selfProfile!, period),
+    enabled:  !!child?.id && !!selfProfile,
+    staleTime: 60_000,
   });
 
   if (!child) return null;
 
-  const filtered = search.trim()
-    ? friends.filter((f) =>
-        f.display_name.toLowerCase().includes(search.toLowerCase()) ||
-        f.username.toLowerCase().includes(search.toLowerCase()),
-      )
-    : friends;
+  const top3 = ranked.slice(0, 3);
+  const rest = ranked.slice(3);
+  const first  = top3.find((r) => r.position === 1);
+  const second = top3.find((r) => r.position === 2);
+  const third  = top3.find((r) => r.position === 3);
 
   return (
     <View style={s.root}>
 
-      {/* ── Header ─────────────────────────────────────────────────── */}
+      {/* ── Header — pixel-faithful ao design ─────────────────────── */}
       <LinearGradient
         colors={['#2B52E5', '#1A3DB8']}
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={[s.header, { paddingTop: insets.top + 16 }]}
       >
-        <View style={s.headerTop}>
+        <View style={s.headerRow}>
           <View>
             <Text style={s.headerSub}>Math Hero Kids</Text>
             <Text style={s.headerTitle}>Amigos</Text>
           </View>
-          <View style={s.headerBtns}>
-            <Pressable style={s.iconBtn} onPress={() => router.push('/(app)/friends/ranking')} hitSlop={8}>
-              <Ionicons name="podium" size={20} color="#fff" />
-            </Pressable>
-            <Pressable style={s.iconBtn} onPress={() => router.push('/(app)/friends/add')} hitSlop={8}>
-              <Ionicons name="person-add-outline" size={20} color="#fff" />
-            </Pressable>
-          </View>
-        </View>
-        <View style={s.searchBar}>
-          <Ionicons name="search" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
-          <TextInput
-            style={s.searchInput}
-            placeholder="Buscar por nome de usuário"
-            placeholderTextColor="#9CA3AF"
-            value={search}
-            onChangeText={setSearch}
-            autoCorrect={false}
-            autoCapitalize="none"
-            returnKeyType="search"
-          />
-          {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')} hitSlop={8}>
-              <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-            </Pressable>
-          )}
+
+          {/* Botão: ir para lista de amigos (com badge de pedidos pendentes) */}
+          <Pressable
+            style={s.iconBtn}
+            onPress={() => router.push('/(app)/friends/list')}
+            hitSlop={8}
+          >
+            <Ionicons name="people-outline" size={22} color="#fff" />
+            {requests.length > 0 && (
+              <View style={s.notifBadge}>
+                <RNText style={s.notifBadgeText}>{requests.length}</RNText>
+              </View>
+            )}
+          </Pressable>
         </View>
       </LinearGradient>
 
       {/* ── Content ────────────────────────────────────────────────── */}
-      {lf || lr ? (
-        <View style={s.loadingWrap}>
-          <ActivityIndicator color={colors.primary} size="large" />
-        </View>
-      ) : (
-        <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-          {/* Pedidos pendentes */}
-          {requests.length > 0 && (
-            <View style={s.section}>
-              <View style={s.sectionHeader}>
-                <Text style={s.sectionTitle}>Pedidos pendentes</Text>
-                <View style={s.badge}>
-                  <Text style={s.badgeText}>{requests.length}</Text>
-                </View>
-              </View>
-              {requests.map((req) => (
-                <RequestCard
-                  key={req.id}
-                  request={req}
-                  loading={respondingId === req.id}
-                  onAccept={() => respondMutation.mutate({ requestId: req.id, accept: true })}
-                  onReject={() => respondMutation.mutate({ requestId: req.id, accept: false })}
-                />
-              ))}
+        {/* Period toggle */}
+        <PeriodToggle value={period} onChange={setPeriod} />
+
+        {isLoading ? (
+          <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 40 }} />
+        ) : ranked.length === 0 ? (
+          <EmptyRanking onAdd={() => router.push('/(app)/friends/add')} />
+        ) : (
+          <>
+            {/* Pódio */}
+            <View style={s.podium}>
+              <PodiumSpot ranked={second} position={2} />
+              <PodiumSpot ranked={first}  position={1} />
+              <PodiumSpot ranked={third}  position={3} />
             </View>
-          )}
 
-          {/* Friends list */}
-          <View style={s.section}>
-            {filtered.length === 0 && !search ? (
-              <EmptyFriends onAdd={() => router.push('/(app)/friends/add')} />
-            ) : filtered.length === 0 ? (
-              <View style={s.noResults}>
-                <Text style={s.noResultsText}>Nenhum amigo encontrado</Text>
-              </View>
-            ) : (
+            {/* Lista restante */}
+            {rest.length > 0 && (
               <>
-                <Text style={s.sectionTitle}>
-                  {search ? `Resultados (${filtered.length})` : `${friends.length} amigo${friends.length !== 1 ? 's' : ''}`}
-                </Text>
-                {filtered.map((f, i) => <FriendRow key={f.id} friend={f} rank={i + 1} />)}
+                <View style={s.divider} />
+                {rest.map((r) => <RankRow key={r.child.id} ranked={r} />)}
               </>
             )}
-          </View>
+          </>
+        )}
 
-          {/* Ranking shortcut */}
-          {friends.length > 0 && (
-            <Pressable style={s.rankingBtn} onPress={() => router.push('/(app)/friends/ranking')}>
-              <Ionicons name="podium" size={20} color={colors.primary} />
-              <Text style={s.rankingBtnText}>Ver ranking de amigos</Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.primary} />
-            </Pressable>
-          )}
-
-        </ScrollView>
-      )}
+      </ScrollView>
     </View>
   );
 }
@@ -318,28 +321,34 @@ export default function AmigosScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background.primary },
 
-  header:     { paddingHorizontal: 20, paddingBottom: 20 },
-  headerTop:  { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 },
-  headerSub:  { fontFamily: fontFamily.semiBold, fontSize: 12, color: 'rgba(255,255,255,0.75)', marginBottom: 2 },
-  headerTitle:{ fontFamily: fontFamily.extraBold, fontSize: 32, color: '#fff' },
-  headerBtns: { flexDirection: 'row', gap: 10, marginTop: 6 },
-  iconBtn:    { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  // Header — igual ao design: gradient azul, sem border radius no rodapé
+  header:    { paddingHorizontal: 20, paddingBottom: 24 },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  headerSub: { fontFamily: fontFamily.semiBold, fontSize: 13, color: 'rgba(255,255,255,0.75)', marginBottom: 2 },
+  headerTitle:{ fontFamily: fontFamily.extraBold, fontSize: 36, color: '#fff' },
+  iconBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center', justifyContent: 'center',
+    marginTop: 4,
+  },
+  notifBadge: {
+    position: 'absolute', top: -4, right: -4,
+    minWidth: 18, height: 18, borderRadius: 9,
+    backgroundColor: '#F5722A',
+    alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2, borderColor: '#1A3DB8',
+  },
+  notifBadgeText: { fontFamily: fontFamily.extraBold, fontSize: 10, color: '#fff' },
 
-  searchBar:   { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 16, paddingVertical: 12 },
-  searchInput: { flex: 1, fontFamily: fontFamily.regular, fontSize: 15, color: colors.text.primary, padding: 0 },
+  scroll:  { flex: 1 },
+  content: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, gap: 16 },
 
-  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  scroll:      { flex: 1 },
-  content:     { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 36, gap: 8 },
-
-  section:      { gap: 10 },
-  sectionHeader:{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 2 },
-  sectionTitle: { fontFamily: fontFamily.extraBold, fontSize: 18, color: colors.text.primary },
-  badge:        { backgroundColor: '#F5722A', borderRadius: 999, minWidth: 26, height: 26, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 7 },
-  badgeText:    { fontFamily: fontFamily.extraBold, fontSize: 13, color: '#fff' },
-  noResults:    { alignItems: 'center', paddingVertical: 20 },
-  noResultsText:{ fontFamily: fontFamily.semiBold, fontSize: 14, color: colors.text.secondary },
-
-  rankingBtn:    { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.xl, padding: 16, ...shadows.sm, marginTop: 8 },
-  rankingBtnText:{ flex: 1, fontFamily: fontFamily.bold, fontSize: 15, color: colors.primary },
+  podium:  {
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end',
+    gap: 8, paddingVertical: 24, backgroundColor: '#fff',
+    borderRadius: radius['2xl'], ...shadows.md,
+  },
+  divider: { height: 1, backgroundColor: '#E4E5EF' },
 });

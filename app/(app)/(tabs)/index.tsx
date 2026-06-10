@@ -13,9 +13,92 @@ import { MiloMessage } from '@/components/milo/MiloMessage';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { childService } from '@/services/child.service';
+import { challengeService } from '@/services/challenge.service';
+import { supabase } from '@/lib/supabase';
 import { LEVEL_THRESHOLDS } from '@/constants/config';
 import { colors, fontFamily, radius, space } from '@/theme';
 import type { ChildProfile } from '@/types';
+
+// ─── Stats query ──────────────────────────────────────────────────────────────
+
+interface ChildStats {
+  perfectDays:   number;
+  perfectWeeks:  number;
+  perfectMonths: number;
+  challengesDone: number;
+}
+
+function isoWeekKey(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  // ISO week: Mon=1, shift so Mon=0
+  const day = (d.getDay() + 6) % 7;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - day);
+  return monday.toISOString().split('T')[0]!;
+}
+
+function monthKey(dateStr: string): string {
+  return dateStr.slice(0, 7); // YYYY-MM
+}
+
+async function fetchStats(childId: string): Promise<ChildStats> {
+  const [calResult, sessResult, localComps] = await Promise.all([
+    supabase
+      .from('calendar_days')
+      .select('day_date, is_perfect, state')
+      .eq('child_id', childId),
+    supabase
+      .from('challenge_sessions')
+      .select('id', { count: 'exact', head: true })
+      .eq('child_id', childId)
+      .eq('status', 'completed'),
+    challengeService.getLocalCompletions(childId),
+  ]);
+
+  // Merge calendar_days + local completions
+  const perfectDates  = new Set<string>();
+  const completedDates = new Set<string>();
+
+  for (const d of ((calResult.data ?? []) as Array<{ day_date: string; is_perfect: boolean; state: string }>)) {
+    if (d.is_perfect)        perfectDates.add(d.day_date);
+    if (d.state === 'completed') completedDates.add(d.day_date);
+  }
+  for (const lc of localComps) {
+    completedDates.add(lc.challengeDate);
+    if (lc.isPerfect) perfectDates.add(lc.challengeDate);
+  }
+
+  const challengesDone = Math.max(sessResult.count ?? 0, completedDates.size);
+
+  // Perfect weeks: group by ISO week-start, count weeks with 7 perfect days
+  const weekMap = new Map<string, number>();
+  for (const d of perfectDates) {
+    const k = isoWeekKey(d);
+    weekMap.set(k, (weekMap.get(k) ?? 0) + 1);
+  }
+  let perfectWeeks = 0;
+  for (const [, cnt] of weekMap) { if (cnt >= 7) perfectWeeks++; }
+
+  // Perfect months: group by YYYY-MM, count months with ≥28 perfect days
+  const monthMap = new Map<string, number>();
+  for (const d of perfectDates) {
+    const k = monthKey(d);
+    monthMap.set(k, (monthMap.get(k) ?? 0) + 1);
+  }
+  let perfectMonths = 0;
+  for (const [k, cnt] of monthMap) {
+    const [y, m] = k.split('-').map(Number);
+    const daysInMonth = new Date(y!, m!, 0).getDate();
+    if (cnt >= daysInMonth) perfectMonths++;
+  }
+
+  return {
+    perfectDays:   perfectDates.size,
+    perfectWeeks,
+    perfectMonths,
+    challengesDone,
+  };
+}
 
 /** XP required for the next level, or last threshold if max level. */
 function getXpNextLevel(level: number): number {
@@ -48,6 +131,13 @@ export default function HomeScreen() {
     queryKey: ['children', parentId],
     queryFn: () => childService.listChildren(parentId!),
     enabled: !!parentId,
+    staleTime: 60_000,
+  });
+
+  const { data: stats } = useQuery<ChildStats>({
+    queryKey: ['child_stats', child?.id],
+    queryFn:  () => fetchStats(child!.id),
+    enabled:  !!child?.id,
     staleTime: 60_000,
   });
 
@@ -333,22 +423,24 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {/* Section 5 — Statistics (Phase 3 will wire real queries) */}
+        {/* Section 5 — Statistics */}
         <Text variant="h3">{t('home.statistics')}</Text>
         <View style={styles.statsGrid}>
           {(
             [
-              { key: 'home.perfectDays',    icon: 'calendar-outline' as const,   iconBg: colors.primaryLight,  iconColor: colors.primary  },
-              { key: 'home.perfectWeeks',   icon: 'calendar-outline' as const,   iconBg: colors.accentLight,   iconColor: colors.accent   },
-              { key: 'home.perfectMonths',  icon: 'ribbon-outline'   as const,   iconBg: colors.successLight,  iconColor: colors.success  },
-              { key: 'home.challengesDone', icon: 'trophy-outline'   as const,   iconBg: colors.warningLight,  iconColor: colors.warning  },
+              { key: 'home.perfectDays',    icon: 'calendar-outline' as const, iconBg: colors.primaryLight, iconColor: colors.primary,  value: stats?.perfectDays    },
+              { key: 'home.perfectWeeks',   icon: 'calendar-outline' as const, iconBg: colors.accentLight,  iconColor: colors.accent,   value: stats?.perfectWeeks   },
+              { key: 'home.perfectMonths',  icon: 'ribbon-outline'   as const, iconBg: colors.successLight, iconColor: colors.success,  value: stats?.perfectMonths  },
+              { key: 'home.challengesDone', icon: 'trophy-outline'   as const, iconBg: colors.warningLight, iconColor: colors.warning,  value: stats?.challengesDone },
             ] as const
-          ).map(({ key, icon, iconBg, iconColor }) => (
+          ).map(({ key, icon, iconBg, iconColor, value }) => (
             <Card key={key} style={styles.statCard} padding={space.md}>
               <View style={[styles.statIconWrap, { backgroundColor: iconBg }]}>
                 <Ionicons name={icon} size={20} color={iconColor} />
               </View>
-              <Text variant="h2" style={styles.statValue}>—</Text>
+              <Text variant="h2" style={styles.statValue}>
+                {value !== undefined ? String(value) : '—'}
+              </Text>
               <Text variant="caption" color={colors.text.secondary}>
                 {t(key)}
               </Text>
