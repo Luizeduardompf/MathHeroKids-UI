@@ -4,12 +4,12 @@
 
 ---
 
-## Estado actual — 2026-06-10 23:30
+## Estado actual — 2026-06-10 22:44 (checkpoint)
 
 ### 🟢 Em curso
 ```
 ESTADO: LIVRE
-ÚLTIMO COMMIT: a2abf6b
+ÚLTIMO COMMIT: af29a10
 ```
 
 ### ✅ Concluído nesta sessão (2026-06-10 — continuação)
