@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
 import type React from 'react';
@@ -28,7 +28,7 @@ function TabIcon({ outlineName, solidName, focused }: TabIconProps): React.JSX.E
 function ChallengeFAB({ focused }: { focused: boolean }): React.JSX.Element {
   return (
     <View style={[styles.fab, focused ? styles.fabActive : null] as import('react-native').StyleProp<import('react-native').ViewStyle>}>
-      <Ionicons name="close" size={26} color={colors.text.inverse} />
+      <MaterialCommunityIcons name="sword-cross" size={28} color={colors.text.inverse} />
     </View>
   );
 }
@@ -71,6 +71,7 @@ export default function TabsLayout() {
           tabBarLabel: 'Desafio',
           tabBarIcon: ({ focused }: { focused: boolean }) => <ChallengeFAB focused={focused} />,
           tabBarLabelStyle: styles.tabLabelAccent,
+          tabBarItemStyle: styles.fabItem,
         }}
       />
       <Tabs.Screen
@@ -107,14 +108,19 @@ const styles = StyleSheet.create({
   },
   tabLabel: { fontSize: 11, fontWeight: '600' },
   tabLabelAccent: { fontSize: 11, fontWeight: '700', color: colors.accent },
+  fabItem: {
+    top: -20,
+    height: 80,
+  },
   fab: {
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     borderRadius: radius.full,
     backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    borderWidth: 3,
+    borderColor: colors.tabBar.background,
     ...shadows.md,
   },
   fabActive: { backgroundColor: colors.accentDark },
