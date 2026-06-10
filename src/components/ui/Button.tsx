@@ -1,6 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   StyleSheet,
   View,
@@ -16,10 +18,11 @@ import type { StyleProp as RNStyleProp } from 'react-native';
 import { Text } from './Text';
 import { colors, radius, space } from '@/theme';
 import type { ButtonVariant, ButtonSize } from '@/types';
+import type { IoniconsName } from './index';
 
-// Animated.View wrapping Pressable — mais fiável que createAnimatedComponent(Pressable)
-// no Reanimated 4 + React 19 onde o onPress pode não propagar.
 const AnimatedView = Animated.View;
+
+// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface ButtonProps extends Omit<PressableProps, 'style'> {
   variant?: ButtonVariant;
@@ -27,24 +30,64 @@ interface ButtonProps extends Omit<PressableProps, 'style'> {
   loading?: boolean;
   fullWidth?: boolean;
   label: string;
+  icon?: IoniconsName;
   style?: RNStyleProp<ViewStyle>;
 }
 
-const variantStyles: Record<
+// ─── Variant config ───────────────────────────────────────────────────────────
+
+const variantConfig: Record<
   ButtonVariant,
-  { bg: string; textColor: string; borderColor?: string }
+  {
+    bg: string;
+    textColor: string;
+    borderColor?: string;
+    shadowColor: string;
+    shadowOpacity: number;
+  }
 > = {
-  primary:     { bg: colors.primary,          textColor: colors.text.inverse },
-  secondary:   { bg: colors.background.card,  textColor: colors.primary, borderColor: colors.primary },
-  ghost:       { bg: colors.transparent,       textColor: colors.primary },
-  destructive: { bg: colors.error,             textColor: colors.text.inverse },
+  primary: {
+    bg: colors.primary,
+    textColor: colors.text.inverse,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.35,
+  },
+  secondary: {
+    bg: colors.background.card,
+    textColor: colors.primary,
+    borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.12,
+  },
+  ghost: {
+    bg: colors.transparent,
+    textColor: colors.primary,
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+  },
+  destructive: {
+    bg: colors.error,
+    textColor: colors.text.inverse,
+    shadowColor: colors.error,
+    shadowOpacity: 0.30,
+  },
 };
 
-const sizeStyles: Record<ButtonSize, { height: number; paddingH: number; textVariant: 'button' | 'buttonSm' }> = {
-  sm: { height: 36, paddingH: space.md,  textVariant: 'buttonSm' },
-  md: { height: 52, paddingH: space.lg,  textVariant: 'button'   },
-  lg: { height: 60, paddingH: space.xl,  textVariant: 'button'   },
+const sizeConfig: Record<
+  ButtonSize,
+  { height: number; paddingH: number; textVariant: 'button' | 'buttonSm'; iconSize: number }
+> = {
+  sm: { height: 36, paddingH: space.md,  textVariant: 'buttonSm', iconSize: 16 },
+  md: { height: 52, paddingH: space.lg,  textVariant: 'button',   iconSize: 20 },
+  lg: { height: 60, paddingH: space.xl,  textVariant: 'button',   iconSize: 22 },
 };
+
+// ─── Spring config ────────────────────────────────────────────────────────────
+
+const SPRING_IN  = { damping: 14, stiffness: 300 };
+const SPRING_OUT = { damping: 12, stiffness: 200 };
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export function Button({
   variant = 'primary',
@@ -52,34 +95,62 @@ export function Button({
   loading = false,
   fullWidth = true,
   label,
+  icon,
   disabled,
   style,
   onPress,
   ...rest
 }: ButtonProps) {
-  const scale = useSharedValue(1);
+  const scale     = useSharedValue(1);
+  const translateY = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [
+      { scale: scale.value },
+      { translateY: translateY.value },
+    ],
   }));
 
-  const v = variantStyles[variant];
-  const s = sizeStyles[size];
+  const v = variantConfig[variant];
+  const s = sizeConfig[size];
   const isDisabled = disabled ?? loading;
+
+  const shadow = Platform.select({
+    ios: {
+      shadowColor: v.shadowColor,
+      shadowOpacity: isDisabled ? 0 : v.shadowOpacity,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 4 },
+    },
+    android: { elevation: isDisabled ? 0 : 4 },
+    default: {},
+  });
 
   return (
     <AnimatedView
-      style={[animatedStyle, fullWidth ? styles.fullWidth : null, style] as StyleProp<ViewStyle>}
+      style={[
+        animatedStyle,
+        shadow,
+        fullWidth ? styles.fullWidth : null,
+        style,
+      ] as StyleProp<ViewStyle>}
     >
       {/* @ts-expect-error — accessibilityState.busy type divergence in RN 0.85 */}
       <Pressable
         disabled={isDisabled}
-        onPressIn={() => { scale.value = withSpring(0.97, { damping: 15 }); }}
-        onPressOut={() => { scale.value = withSpring(1,    { damping: 15 }); }}
+        onPressIn={() => {
+          scale.value      = withSpring(0.96, SPRING_IN);
+          translateY.value = withSpring(2,    SPRING_IN);
+        }}
+        onPressOut={() => {
+          scale.value      = withSpring(1, SPRING_OUT);
+          translateY.value = withSpring(0, SPRING_OUT);
+        }}
         onPress={onPress as PressableProps['onPress']}
         accessibilityRole="button"
         accessibilityState={{ disabled: isDisabled }}
         style={styles.pressable}
+        {...rest}
       >
         <View
           style={[
@@ -98,9 +169,19 @@ export function Button({
           {loading ? (
             <ActivityIndicator color={v.textColor} size="small" />
           ) : (
-            <Text variant={s.textVariant} color={v.textColor}>
-              {label}
-            </Text>
+            <>
+              {icon && (
+                <Ionicons
+                  name={icon}
+                  size={s.iconSize}
+                  color={v.textColor}
+                  style={styles.icon}
+                />
+              )}
+              <Text variant={s.textVariant} color={v.textColor}>
+                {label}
+              </Text>
+            </>
           )}
         </View>
       </Pressable>
@@ -109,12 +190,13 @@ export function Button({
 }
 
 const styles = StyleSheet.create({
-  fullWidth:  { width: '100%' },
-  pressable:  { width: '100%' },
+  fullWidth: { width: '100%' },
+  pressable: { width: '100%' },
   inner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.sm,
   },
+  icon: { marginRight: 2 },
 });

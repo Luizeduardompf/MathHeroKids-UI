@@ -144,12 +144,12 @@ export default function HomeScreen() {
           <View style={styles.challengeDecoBL} pointerEvents="none" />
 
           <View style={styles.challengeHeader}>
-            <View style={styles.challengeStatusBadge}>
-              <Ionicons name="sparkles" size={12} color={colors.text.inverse} />
-              <Text variant="caption" style={styles.challengeStatusText}>
-                {t('home.challenge.notStarted')}
-              </Text>
-            </View>
+            <Badge
+              label={t('home.challenge.notStarted')}
+              variant="neutral"
+              icon="sparkles"
+              style={styles.challengeStatusBadge}
+            />
             <View style={styles.xpBadge}>
               <Text variant="caption" style={styles.xpBadgeText}>+150 XP</Text>
             </View>
@@ -344,21 +344,9 @@ const styles = StyleSheet.create({
   },
   challengeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   challengeStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
     backgroundColor: 'rgba(255,255,255,0.22)',
-    borderRadius: radius.full,
-    paddingHorizontal: space.sm,
-    paddingVertical: 4,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
-  challengeStatusText: {
-    color: colors.text.inverse,
-    fontWeight: '800',
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  } as import('react-native').TextStyle,
   xpBadge: {
     backgroundColor: colors.warning,
     borderRadius: radius.full,
