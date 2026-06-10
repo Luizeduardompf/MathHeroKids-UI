@@ -4,8 +4,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Input, Text } from '@/components/ui';
-import { Screen } from '@/components/layout/Screen';
+import { Button, Card, Input, Text } from '@/components/ui';
+import { AuthScreen } from '@/components/layout/AuthScreen';
 import { MiloMessage } from '@/components/milo/MiloMessage';
 import { authService } from '@/services/auth.service';
 import { colors, radius, space } from '@/theme';
@@ -58,87 +58,85 @@ export default function RegisterParentScreen() {
   }
 
   return (
-    <Screen scrollable padded>
-      <View style={styles.header}>
-        <Text variant="caption">{t('auth.register.parent.stepIndicator')}</Text>
-        <Text variant="h1">{t('auth.register.parent.title')}</Text>
-      </View>
+    <AuthScreen
+      title={t('auth.register.parent.title')}
+      subtitle={t('auth.register.parent.stepIndicator')}
+      onBack={() => router.back()}
+    >
+      <MiloMessage message={t('auth.register.parent.miloMessage')} />
 
-      <MiloMessage message={t('auth.register.parent.miloMessage')} style={styles.milo} />
+      <Card border shadow="sm">
+        <View style={styles.form}>
+          <Input
+            label={t('auth.register.parent.nameLabel')}
+            placeholder={t('auth.register.parent.namePlaceholder')}
+            value={name}
+            onChangeText={(v: string) => { setName(v); setError(null); }}
+            autoComplete="name"
+            autoCapitalize="words"
+            leftIcon={<Ionicons name="person-outline" size={20} color={colors.text.tertiary} />}
+          />
+          <Input
+            label={t('auth.register.parent.emailLabel')}
+            placeholder={t('auth.register.parent.emailPlaceholder')}
+            value={email}
+            onChangeText={(v: string) => { setEmail(v); setError(null); }}
+            keyboardType="email-address"
+            autoComplete="email"
+            autoCapitalize="none"
+            leftIcon={<Ionicons name="mail-outline" size={20} color={colors.text.tertiary} />}
+          />
+          <Input
+            label={t('auth.register.parent.passwordLabel')}
+            placeholder={t('auth.register.parent.passwordPlaceholder')}
+            hint={t('auth.register.parent.passwordHint')}
+            value={password}
+            onChangeText={(v: string) => { setPassword(v); setError(null); }}
+            isPassword
+            autoComplete="new-password"
+            leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.text.tertiary} />}
+          />
 
-      <View style={styles.form}>
-        <Input
-          label={t('auth.register.parent.nameLabel')}
-          placeholder={t('auth.register.parent.namePlaceholder')}
-          value={name}
-          onChangeText={(v: string) => { setName(v); setError(null); }}
-          autoComplete="name"
-          autoCapitalize="words"
-          leftIcon={<Ionicons name="person-outline" size={20} color={colors.text.tertiary} />}
-        />
-        <Input
-          label={t('auth.register.parent.emailLabel')}
-          placeholder={t('auth.register.parent.emailPlaceholder')}
-          value={email}
-          onChangeText={(v: string) => { setEmail(v); setError(null); }}
-          keyboardType="email-address"
-          autoComplete="email"
-          autoCapitalize="none"
-          leftIcon={<Ionicons name="mail-outline" size={20} color={colors.text.tertiary} />}
-        />
-        <Input
-          label={t('auth.register.parent.passwordLabel')}
-          placeholder={t('auth.register.parent.passwordPlaceholder')}
-          hint={t('auth.register.parent.passwordHint')}
-          value={password}
-          onChangeText={(v: string) => { setPassword(v); setError(null); }}
-          isPassword
-          autoComplete="new-password"
-          leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.text.tertiary} />}
-        />
+          {/* Terms checkbox */}
+          <Pressable
+            style={styles.termsRow}
+            onPress={() => { setTermsAccepted((v) => !v); setError(null); }}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: termsAccepted }}
+          >
+            <View style={[styles.checkbox, termsAccepted ? styles.checkboxChecked : null] as import("react-native").StyleProp<import("react-native").ViewStyle>}>
+              {termsAccepted && (
+                <Text variant="bodySmall" color={colors.text.inverse}>✓</Text>
+              )}
+            </View>
+            <Text variant="bodySmall" style={styles.termsText}>
+              {t('auth.register.parent.termsAccept')}
+            </Text>
+          </Pressable>
 
-        {/* Terms checkbox */}
-        <Pressable
-          style={styles.termsRow}
-          onPress={() => { setTermsAccepted((v) => !v); setError(null); }}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: termsAccepted }}
-        >
-          <View style={[styles.checkbox, termsAccepted ? styles.checkboxChecked : null] as import("react-native").StyleProp<import("react-native").ViewStyle>}>
-            {termsAccepted && (
-              <Text variant="bodySmall" color={colors.text.inverse}>✓</Text>
-            )}
-          </View>
-          <Text variant="bodySmall" style={styles.termsText}>
-            {t('auth.register.parent.termsAccept')}
-          </Text>
-        </Pressable>
+          {error ? (
+            <Text variant="bodySmall" color={colors.error}>{error}</Text>
+          ) : null}
 
-        {error ? (
-          <Text variant="bodySmall" color={colors.error}>{error}</Text>
-        ) : null}
-      </View>
-
-      <View style={styles.actions}>
-        <Button
-          label={t('auth.register.parent.submit')}
-          loading={loading}
-          onPress={handleSignUp}
-        />
-        <View style={styles.row}>
-          <Text variant="body">{t('auth.register.parent.hasAccount')}{' '}</Text>
-          <Text variant="body" color={colors.primary} onPress={() => router.push('/(auth)/login')}>
-            {t('auth.register.parent.signIn')}
-          </Text>
+          <Button
+            label={t('auth.register.parent.submit')}
+            loading={loading}
+            onPress={handleSignUp}
+          />
         </View>
+      </Card>
+
+      <View style={styles.row}>
+        <Text variant="body">{t('auth.register.parent.hasAccount')}{' '}</Text>
+        <Text variant="body" color={colors.primary} onPress={() => router.push('/(auth)/login')}>
+          {t('auth.register.parent.signIn')}
+        </Text>
       </View>
-    </Screen>
+    </AuthScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingTop: space.lg, paddingBottom: space.md, gap: space.xs },
-  milo: { marginBottom: space.lg },
   form: { gap: space.md },
   termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
   checkbox: {
@@ -157,6 +155,5 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   termsText: { flex: 1 },
-  actions: { marginTop: space.xl, gap: space.md, paddingBottom: space.lg },
   row: { flexDirection: 'row', justifyContent: 'center' },
 });

@@ -4,8 +4,8 @@ import { Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Input, Text } from '@/components/ui';
-import { Screen } from '@/components/layout/Screen';
+import { Button, Card, Input, Text } from '@/components/ui';
+import { AuthScreen } from '@/components/layout/AuthScreen';
 import { MiloMessage } from '@/components/milo/MiloMessage';
 import { childService } from '@/services/child.service';
 import { AVATAR_IDS } from '@/constants/config';
@@ -84,83 +84,78 @@ export default function RegisterChildScreen() {
   }
 
   return (
-    <Screen scrollable padded>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
-          <RNText style={styles.backArrow}>‹ Voltar</RNText>
-        </Pressable>
-        <Text variant="caption">{t('auth.register.child.stepIndicator')}</Text>
-        <Text variant="h1">{t('auth.register.child.title')}</Text>
-      </View>
-
-      <MiloMessage message={t('auth.register.child.miloMessage')} variant="orange" style={styles.milo} />
+    <AuthScreen
+      title={t('auth.register.child.title')}
+      subtitle={t('auth.register.child.stepIndicator')}
+      onBack={() => router.back()}
+    >
+      <MiloMessage message={t('auth.register.child.miloMessage')} variant="orange" />
 
       {/* Avatar selector */}
-      <Text variant="label" style={styles.sectionLabel}>{t('auth.register.child.avatarLabel')}</Text>
-      <View style={styles.avatarGrid}>
-        {AVATAR_IDS.map((id) => (
-          <Pressable
-            key={id}
-            onPress={() => setSelectedAvatar(id)}
-            style={[styles.avatarItem, selectedAvatar === id ? styles.avatarSelected : null] as import("react-native").StyleProp<import("react-native").ViewStyle>}
-          >
-            {/* RNText sem Nunito para emoji renderizar correctamente no iOS */}
-            <RNText style={styles.avatarEmoji}>{AVATAR_ICONS[id]}</RNText>
-          </Pressable>
-        ))}
-      </View>
+      <Card border shadow="sm">
+        <Text variant="label" style={styles.sectionLabel}>{t('auth.register.child.avatarLabel')}</Text>
+        <View style={styles.avatarGrid}>
+          {AVATAR_IDS.map((id) => (
+            <Pressable
+              key={id}
+              onPress={() => setSelectedAvatar(id)}
+              style={[styles.avatarItem, selectedAvatar === id ? styles.avatarSelected : null] as import("react-native").StyleProp<import("react-native").ViewStyle>}
+            >
+              {/* RNText sem Nunito para emoji renderizar correctamente no iOS */}
+              <RNText style={styles.avatarEmoji}>{AVATAR_ICONS[id]}</RNText>
+            </Pressable>
+          ))}
+        </View>
+      </Card>
 
-      <View style={styles.form}>
-        <Input
-          label={t('auth.register.child.nameLabel')}
-          placeholder={t('auth.register.child.namePlaceholder')}
-          value={name}
-          onChangeText={(v: string) => { setName(v); setError(null); }}
-          autoCapitalize="words"
-          leftIcon={<Ionicons name="person-outline" size={20} color={colors.text.tertiary} />}
-        />
-        <Input
-          label={t('auth.register.child.usernameLabel')}
-          placeholder={t('auth.register.child.usernamePlaceholder')}
-          hint={t('auth.register.child.usernameHint')}
-          value={username}
-          onChangeText={(v: string) => { setUsername(v); setError(null); }}
-          autoCapitalize="none"
-          autoCorrect={false}
-          leftIcon={<Ionicons name="at-outline" size={20} color={colors.text.tertiary} />}
-        />
-        <Input
-          label={t('auth.register.child.birthDateLabel')}
-          placeholder="dd/mm/yyyy"
-          hint={t('auth.register.child.birthDateHint')}
-          value={birthDate}
-          onChangeText={(v: string) => { setBirthDate(applyDateMask(v)); setError(null); }}
-          keyboardType="number-pad"
-          maxLength={10}
-        />
+      <Card border shadow="sm">
+        <View style={styles.form}>
+          <Input
+            label={t('auth.register.child.nameLabel')}
+            placeholder={t('auth.register.child.namePlaceholder')}
+            value={name}
+            onChangeText={(v: string) => { setName(v); setError(null); }}
+            autoCapitalize="words"
+            leftIcon={<Ionicons name="person-outline" size={20} color={colors.text.tertiary} />}
+          />
+          <Input
+            label={t('auth.register.child.usernameLabel')}
+            placeholder={t('auth.register.child.usernamePlaceholder')}
+            hint={t('auth.register.child.usernameHint')}
+            value={username}
+            onChangeText={(v: string) => { setUsername(v); setError(null); }}
+            autoCapitalize="none"
+            autoCorrect={false}
+            leftIcon={<Ionicons name="at-outline" size={20} color={colors.text.tertiary} />}
+          />
+          <Input
+            label={t('auth.register.child.birthDateLabel')}
+            placeholder="dd/mm/yyyy"
+            hint={t('auth.register.child.birthDateHint')}
+            value={birthDate}
+            onChangeText={(v: string) => { setBirthDate(applyDateMask(v)); setError(null); }}
+            keyboardType="number-pad"
+            maxLength={10}
+          />
 
-        {error ? (
-          <Text variant="bodySmall" color={colors.error}>{error}</Text>
-        ) : null}
-      </View>
+          {error ? (
+            <Text variant="bodySmall" color={colors.error}>{error}</Text>
+          ) : null}
 
-      <View style={styles.actions}>
-        <Button
-          label={t('auth.register.child.submit')}
-          loading={loading}
-          onPress={handleCreate}
-        />
-        <Text variant="bodySmall" align="center">{t('auth.register.child.addMoreLater')}</Text>
-      </View>
-    </Screen>
+          <Button
+            label={t('auth.register.child.submit')}
+            loading={loading}
+            onPress={handleCreate}
+          />
+        </View>
+      </Card>
+
+      <Text variant="bodySmall" align="center">{t('auth.register.child.addMoreLater')}</Text>
+    </AuthScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingTop: space.lg, paddingBottom: space.md, gap: space.xs },
-  backBtn: { marginBottom: space.xs },
-  backArrow: { fontSize: 16, color: colors.primary, fontWeight: '600' },
-  milo: { marginBottom: space.lg },
   sectionLabel: { marginBottom: space.sm },
   avatarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginBottom: space.lg },
   avatarItem: {
@@ -179,5 +174,4 @@ const styles = StyleSheet.create({
   },
   avatarEmoji: { fontSize: 36 },
   form: { gap: space.md },
-  actions: { marginTop: space.xl, gap: space.md, paddingBottom: space.lg },
 });

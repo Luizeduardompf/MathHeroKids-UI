@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.background.card,
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     borderWidth: 1.5,
     paddingHorizontal: space.md,
     height: 56,
