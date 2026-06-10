@@ -1,4 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -23,14 +25,65 @@ import { SUPPORTED_LOCALES, TIMER_OPTIONS, MULTIPLICATION_RANGES } from '@/const
 import type { SupportedLocale, TimerOption, MultiplicationRange } from '@/constants/config';
 import type { ChildProfile } from '@/types';
 import { changeLocale, LOCALE_STORAGE_KEY } from '@/lib/i18n';
-import { colors, space, radius } from '@/theme';
+import { colors, fontFamily, radius, space } from '@/theme';
 
-const LOCALE_LABEL: Record<SupportedLocale, string> = {
-  pt: '🇧🇷  PT',
-  en: '🇺🇸  EN',
-  es: '🇪🇸  ES',
-  fr: '🇫🇷  FR',
+// ─── Locale labels ────────────────────────────────────────────────────────────
+
+const LOCALE_LABEL: Record<SupportedLocale, { flag: string; code: string }> = {
+  pt: { flag: '🇧🇷', code: 'PT' },
+  en: { flag: '🇺🇸', code: 'EN' },
+  es: { flag: '🇪🇸', code: 'ES' },
+  fr: { flag: '🇫🇷', code: 'FR' },
 };
+
+// ─── Section header row ───────────────────────────────────────────────────────
+
+import type { IoniconsName } from '@/components/ui';
+
+function SectionIcon({
+  name,
+  bg,
+  color,
+}: {
+  name: IoniconsName;
+  bg: string;
+  color: string;
+}) {
+  return (
+    <View style={[sectionIconStyles.wrap, { backgroundColor: bg }]}>
+      <Ionicons name={name} size={18} color={color} />
+    </View>
+  );
+}
+
+const sectionIconStyles = StyleSheet.create({
+  wrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
+// ─── Settings header ──────────────────────────────────────────────────────────
+
+function SettingsHeader({ title }: { title: string }) {
+  return (
+    <LinearGradient
+      colors={[colors.primary, colors.primaryDark]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <SafeAreaView edges={['top']}>
+        <View style={styles.header}>
+          <Text variant="caption" style={styles.appName}>Math Hero Kids</Text>
+          <Text variant="h1" color={colors.text.inverse}>{title}</Text>
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
+  );
+}
 
 // ─── PIN Gate ─────────────────────────────────────────────────────────────────
 
@@ -42,16 +95,13 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [loggingOut, setLoggingOut]       = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const hasPinSet = !!parentProfile?.pin_hash;
-
-  // Dados do pai
   const rawName = (parentProfile?.name as string | undefined)
     ?? (user?.user_metadata?.name as string | undefined)
-    ?? user?.email?.split('@')[0]
-    ?? '—';
+    ?? user?.email?.split('@')[0] ?? '—';
   const email   = user?.email ?? '—';
   const initials = rawName.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
 
@@ -93,37 +143,28 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
         layout="stack"
       />
 
-      <SafeAreaView edges={['top']} style={styles.safeHeader}>
-        <View style={styles.header}>
-          <Text variant="caption" color="rgba(255,255,255,0.8)" style={styles.appName}>
-            Math Hero Kids
-          </Text>
-          <Text variant="h1" color={colors.text.inverse}>{t('settings.title')}</Text>
-        </View>
-      </SafeAreaView>
+      <SettingsHeader title={t('settings.title')} />
 
       <ScrollView
         contentContainerStyle={styles.pinGateScroll}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Dados do responsável */}
-        <Card style={styles.parentCard}>
-          <View style={styles.parentAvatarCircle}>
+        {/* Parent info card */}
+        <Card border shadow="sm" style={styles.parentCard}>
+          <View style={styles.parentAvatar}>
             <Text style={styles.parentInitials}>{initials}</Text>
           </View>
-          <View style={{ flex: 1, gap: 2 }}>
+          <View style={styles.parentInfo}>
             <Text variant="h3">{rawName}</Text>
             <Text variant="caption" color={colors.text.secondary}>{email}</Text>
           </View>
         </Card>
 
-        <View style={styles.divider} />
-
         {/* PIN gate */}
-        <View style={styles.pinCenter}>
+        <Card border shadow="sm" style={styles.pinCard}>
           <Text style={styles.pinLock}>🔒</Text>
-          <Text variant="h2">{t('parentArea.pin.title')}</Text>
+          <Text variant="h2" align="center">{t('parentArea.pin.title')}</Text>
           <Text variant="body" color={colors.text.secondary} align="center">
             {hasPinSet ? t('parentArea.pin.subtitle') : 'PIN não configurado — acesso direto.'}
           </Text>
@@ -142,25 +183,20 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
             />
           )}
 
-          {error && (
-            <Text variant="bodySmall" color={colors.error} align="center">{error}</Text>
-          )}
+          {error && <Text variant="bodySmall" color={colors.error} align="center">{error}</Text>}
 
           <Button
             label={hasPinSet ? 'Confirmar' : 'Entrar nas configurações'}
             loading={loading}
             onPress={handleVerify}
-            style={styles.pinBtn}
           />
-        </View>
+        </Card>
 
-        {/* Botão de logout */}
         <Button
           variant="destructive"
           label={loggingOut ? 'Saindo...' : 'Sair da conta'}
           loading={loggingOut}
           onPress={() => setShowLogoutModal(true)}
-          style={styles.logoutBtnGate}
         />
       </ScrollView>
     </View>
@@ -173,11 +209,10 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
   const { t } = useTranslation();
   const router = useRouter();
   const setActiveChild = useProfileStore((s) => s.setActiveChild);
-  const activeChild = useProfileStore((s) => s.activeChild);
+  const activeChild    = useProfileStore((s) => s.activeChild);
   const [savingTimer, setSavingTimer] = useState(false);
-  const [savingMult, setSavingMult] = useState(false);
-  // Local state to reflect optimistic updates within this card
-  const [localChild, setLocalChild] = useState(child);
+  const [savingMult, setSavingMult]   = useState(false);
+  const [localChild, setLocalChild]   = useState(child);
 
   async function handleTimer(value: TimerOption) {
     if (value === localChild.timer_seconds || savingTimer) return;
@@ -186,9 +221,7 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
       const updated = await childService.updateChild(localChild.id, { timer_seconds: value });
       setLocalChild(updated);
       if (activeChild?.id === updated.id) setActiveChild(updated);
-    } finally {
-      setSavingTimer(false);
-    }
+    } finally { setSavingTimer(false); }
   }
 
   async function handleMultiplication(value: MultiplicationRange) {
@@ -198,14 +231,11 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
       const updated = await childService.updateChild(localChild.id, { multiplication_max: value });
       setLocalChild(updated);
       if (activeChild?.id === updated.id) setActiveChild(updated);
-    } finally {
-      setSavingMult(false);
-    }
+    } finally { setSavingMult(false); }
   }
 
   return (
-    <Card style={styles.childCard}>
-      {/* Child header */}
+    <Card border shadow="sm" style={styles.childCard}>
       <View style={styles.childHeader}>
         <Avatar avatarId={localChild.avatar_id} displayName={localChild.display_name} size="md" />
         <View style={styles.childInfo}>
@@ -216,16 +246,20 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
         </View>
         <TouchableOpacity
           onPress={() => router.push(`/(app)/parent-area/child/${localChild.id}`)}
-          style={styles.editBtn}
+          style={styles.editChildBtn}
         >
-          <Text variant="caption" color={colors.primary}>✏️ Editar</Text>
+          <Ionicons name="create-outline" size={16} color={colors.primary} />
+          <Text variant="caption" color={colors.primary}>Editar</Text>
         </TouchableOpacity>
       </View>
 
       {/* Timer */}
       <View style={styles.subSection}>
         <View style={styles.subSectionHeader}>
-          <Text variant="label" color={colors.text.secondary}>{t('settings.timerTitle')}</Text>
+          <View style={styles.subSectionTitle}>
+            <SectionIcon name="timer-outline" bg={colors.accentLight} color={colors.accent} />
+            <Text variant="label">{t('settings.timerTitle')}</Text>
+          </View>
           {savingTimer && <ActivityIndicator size="small" color={colors.primary} />}
         </View>
         <View style={styles.chipRow}>
@@ -234,10 +268,14 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
             return (
               <TouchableOpacity
                 key={val}
-                style={[styles.chip, selected && styles.chipSelected]}
+                style={[styles.chip, selected ? styles.chipSelected : null]}
                 onPress={() => handleTimer(val)}
               >
-                <Text variant="caption" color={selected ? colors.text.inverse : colors.text.primary}>
+                <Text
+                  variant="caption"
+                  color={selected ? colors.text.inverse : colors.text.primary}
+                  style={selected ? styles.chipTextSelected : null}
+                >
                   {val === 0 ? t('settings.timerUnlimited') : `${val}s`}
                 </Text>
               </TouchableOpacity>
@@ -249,7 +287,10 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
       {/* Multiplication */}
       <View style={styles.subSection}>
         <View style={styles.subSectionHeader}>
-          <Text variant="label" color={colors.text.secondary}>{t('settings.multiplicationTitle')}</Text>
+          <View style={styles.subSectionTitle}>
+            <SectionIcon name="close-outline" bg={colors.successLight} color={colors.success} />
+            <Text variant="label">{t('settings.multiplicationTitle')}</Text>
+          </View>
           {savingMult && <ActivityIndicator size="small" color={colors.primary} />}
         </View>
         <View style={styles.chipRow}>
@@ -258,10 +299,14 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
             return (
               <TouchableOpacity
                 key={val}
-                style={[styles.chip, selected && styles.chipSelected]}
+                style={[styles.chip, selected ? styles.chipSelected : null]}
                 onPress={() => handleMultiplication(val)}
               >
-                <Text variant="caption" color={selected ? colors.text.inverse : colors.text.primary}>
+                <Text
+                  variant="caption"
+                  color={selected ? colors.text.inverse : colors.text.primary}
+                  style={selected ? styles.chipTextSelected : null}
+                >
                   ×{val}
                 </Text>
               </TouchableOpacity>
@@ -276,54 +321,35 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
 // ─── Parent card ──────────────────────────────────────────────────────────────
 
 function ParentCard() {
+  const router        = useRouter();
   const user          = useAuthStore((s) => s.user);
   const parentProfile = useAuthStore((s) => s.parentProfile);
 
-  // Nome: parentProfile.name > user_metadata.name > email prefix
   const rawName = (parentProfile?.name as string | undefined)
     ?? (user?.user_metadata?.name as string | undefined)
-    ?? user?.email?.split('@')[0]
-    ?? '—';
+    ?? user?.email?.split('@')[0] ?? '—';
   const email   = user?.email ?? '—';
   const initials = rawName.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
 
   return (
-    <Card style={pc.card}>
-      {/* Avatar com iniciais */}
-      <View style={pc.avatarCircle}>
-        <Text style={pc.initials}>{initials}</Text>
+    <Card border shadow="sm" style={styles.parentCardMain}>
+      <View style={styles.parentAvatar}>
+        <Text style={styles.parentInitials}>{initials}</Text>
       </View>
-      <View style={pc.info}>
+      <View style={styles.parentInfo}>
         <Text variant="h3">{rawName}</Text>
         <Text variant="caption" color={colors.text.secondary}>{email}</Text>
       </View>
+      <TouchableOpacity
+        onPress={() => router.push('/(app)/parent-area/edit-profile')}
+        style={styles.editParentBtn}
+        accessibilityLabel="Editar dados do responsável"
+      >
+        <Ionicons name="create-outline" size={18} color={colors.primary} />
+      </TouchableOpacity>
     </Card>
   );
 }
-
-const pc = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    marginBottom: space.xs,
-  },
-  avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initials: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#fff',
-    lineHeight: 24,
-  },
-  info: { flex: 1, gap: 2 },
-});
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
@@ -332,12 +358,8 @@ export default function SettingsScreen() {
   const router      = useRouter();
   const parentId    = useAuthStore(selectParentId);
   const [pinVerified, setPinVerified] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
 
-  // Reset PIN gate every time the tab comes into focus
-  useFocusEffect(useCallback(() => {
-    setPinVerified(false);
-  }, []));
+  useFocusEffect(useCallback(() => { setPinVerified(false); }, []));
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ['children', parentId],
@@ -352,121 +374,92 @@ export default function SettingsScreen() {
     await AsyncStorage.setItem(LOCALE_STORAGE_KEY, locale);
   }
 
-  if (!pinVerified) {
-    return <PinGate onUnlock={() => setPinVerified(true)} />;
-  }
+  if (!pinVerified) return <PinGate onUnlock={() => setPinVerified(true)} />;
 
   return (
     <View style={styles.root}>
-      <SafeAreaView edges={['top']} style={styles.safeHeader}>
-        <View style={styles.header}>
-          <Text variant="caption" color="rgba(255,255,255,0.8)" style={styles.appName}>
-            Math Hero Kids
-          </Text>
-          <Text variant="h1" color={colors.text.inverse}>{t('settings.title')}</Text>
-        </View>
-      </SafeAreaView>
+      <SettingsHeader title={t('settings.title')} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* ── Dados do pai ──────────────────────────────────────── */}
+        {/* ── Parent card ──────────────────────────────────────────── */}
         <ParentCard />
 
-        {/* ── Language (global) ─────────────────────────────────── */}
-        <Card style={styles.section}>
-          <Text variant="h3" style={styles.sectionLabel}>{t('settings.language')}</Text>
+        {/* ── Language ─────────────────────────────────────────────── */}
+        <Card border shadow="sm" style={styles.section}>
+          <View style={styles.sectionTitle}>
+            <SectionIcon name="globe-outline" bg={colors.primaryLight} color={colors.primary} />
+            <Text variant="h3">{t('settings.language')}</Text>
+          </View>
           <View style={styles.localeGrid}>
             {SUPPORTED_LOCALES.map((locale) => {
               const selected = currentLocale === locale;
+              const { flag, code } = LOCALE_LABEL[locale];
               return (
                 <TouchableOpacity
                   key={locale}
-                  style={[styles.localeBtn, selected && styles.localeBtnSelected]}
+                  style={[styles.localeBtn, selected ? styles.localeBtnSelected : null]}
                   onPress={() => handleLocale(locale)}
                 >
-                  <Text variant="label" color={selected ? colors.primary : colors.text.primary}>
-                    {LOCALE_LABEL[locale]}
-                  </Text>
-                  {selected && <Text style={styles.checkmark}>✓</Text>}
+                  <View style={styles.localeBtnLeft}>
+                    <Text style={styles.localeFlag}>{flag}</Text>
+                    <Text
+                      variant="label"
+                      color={selected ? colors.primary : colors.text.primary}
+                    >
+                      {code}
+                    </Text>
+                  </View>
+                  {selected && (
+                    <View style={styles.localeCheck}>
+                      <Ionicons name="checkmark" size={12} color="#fff" />
+                    </View>
+                  )}
                 </TouchableOpacity>
               );
             })}
           </View>
         </Card>
 
-        {/* ── Per-child settings ────────────────────────────────── */}
-        <Text variant="h3" style={styles.childrenLabel}>{t('profileSelect.title')}</Text>
+        {/* ── Per-child settings ────────────────────────────────────── */}
+        <View style={styles.sectionTitle}>
+          <SectionIcon name="people-outline" bg={colors.primaryLight} color={colors.primary} />
+          <Text variant="h3">{t('profileSelect.title')}</Text>
+        </View>
 
         {isLoading && <ActivityIndicator color={colors.primary} />}
-
-        {children.map((child) => (
-          <ChildSettingsCard key={child.id} child={child} />
-        ))}
-
-        {/* Logout removido da tela principal — fica só no PinGate */}
+        {children.map((child) => <ChildSettingsCard key={child.id} child={child} />)}
 
       </ScrollView>
     </View>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background.primary },
-  safeHeader: { backgroundColor: colors.primary },
+
   header: {
-    backgroundColor: colors.primary,
     paddingHorizontal: space.md,
     paddingTop: space.sm,
     paddingBottom: space.lg,
     gap: space.xs,
   },
-  appName: { opacity: 0.8, letterSpacing: 0.5 },
+  appName: {
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.5,
+  } as import('react-native').TextStyle,
 
-  // PIN gate scroll container
-  pinGateScroll: {
-    padding: space.md,
-    paddingBottom: space['2xl'],
-    gap: space.md,
-  },
-
-  // Parent card no topo do gate
-  parentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-  },
-  parentAvatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  parentInitials: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#fff',
-    lineHeight: 24,
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: colors.border.default,
-    marginVertical: space.sm,
-  },
-
-  // Área centralizada do PIN
-  pinCenter: {
-    alignItems: 'center',
-    gap: space.md,
-    paddingVertical: space.lg,
-  },
-  pinLock: { fontSize: 48 },
+  // ── PIN gate ────────────────────────────────────────────────────────────────
+  pinGateScroll: { padding: space.md, paddingBottom: space['2xl'], gap: space.md },
+  parentCard: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  pinCard: { alignItems: 'center', gap: space.md, paddingVertical: space.xl },
+  pinLock: { fontSize: 44 },
   pinInput: {
     width: 160,
     height: 52,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1.5,
     borderColor: colors.border.focus,
     backgroundColor: colors.background.card,
@@ -475,17 +468,42 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
   },
-  pinBtn: { width: '100%', marginTop: space.sm },
-  logoutBtnGate: { marginTop: space.sm },
 
-  // Content
+  // ── Parent card ─────────────────────────────────────────────────────────────
+  parentCardMain: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  parentAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  parentInitials: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#fff',
+    lineHeight: 24,
+    fontFamily: fontFamily.extraBold,
+  } as import('react-native').TextStyle,
+  parentInfo: { flex: 1, gap: 2 },
+  editParentBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+
+  // ── Content ─────────────────────────────────────────────────────────────────
   content: { padding: space.md, gap: space.md, paddingBottom: space['2xl'] },
   section: { gap: space.md },
-  sectionLabel: { marginBottom: space.xs },
-  childrenLabel: { marginTop: space.xs },
-  logoutBtn: { marginTop: space.md },
+  sectionTitle: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
 
-  // Locale grid
+  // ── Language grid ────────────────────────────────────────────────────────────
   localeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   localeBtn: {
     flexDirection: 'row',
@@ -494,29 +512,50 @@ const styles = StyleSheet.create({
     width: '47%',
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1.5,
     borderColor: colors.border.default,
     backgroundColor: colors.background.cardAlt,
   },
-  localeBtnSelected: { borderColor: colors.primary, backgroundColor: colors.background.card },
-  checkmark: { color: colors.primary, fontSize: 16, fontWeight: '700' },
+  localeBtnSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  localeBtnLeft: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  localeFlag: { fontSize: 20 },
+  localeCheck: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
-  // Child card
+  // ── Child card ───────────────────────────────────────────────────────────────
   childCard: { gap: space.md },
   childHeader: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   childInfo: { flex: 1, gap: 2 },
-  editBtn: {
+  editChildBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingVertical: space.xs,
     paddingHorizontal: space.sm,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border.default,
+    backgroundColor: colors.primaryLight,
   },
 
-  // Sub-sections (timer / multiplication)
+  // ── Sub-sections ─────────────────────────────────────────────────────────────
   subSection: { gap: space.sm },
-  subSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  subSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  subSectionTitle: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {
     paddingVertical: space.xs,
@@ -527,4 +566,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.cardAlt,
   },
   chipSelected: { borderColor: colors.primary, backgroundColor: colors.primary },
+  chipTextSelected: { fontFamily: fontFamily.bold } as import('react-native').TextStyle,
 });
