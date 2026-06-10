@@ -32,6 +32,7 @@ import { MiloMessage } from '@/components/milo/MiloMessage';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { LEVEL_THRESHOLDS } from '@/constants/config';
 import { supabase } from '@/lib/supabase';
+import { challengeService, type LocalCompletion } from '@/services/challenge.service';
 import { colors, fontFamily, radius, shadows } from '@/theme';
 import type { CalendarDay } from '@/types';
 
@@ -83,8 +84,9 @@ interface SessionFallback {
 }
 
 interface CalendarData {
-  calDays:  CalendarDay[];
-  sessions: SessionFallback[];
+  calDays:    CalendarDay[];
+  sessions:   SessionFallback[];
+  localComps: LocalCompletion[];
 }
 
 async function fetchCalendarData(childId: string): Promise<CalendarData> {
@@ -92,7 +94,7 @@ async function fetchCalendarData(childId: string): Promise<CalendarData> {
   const rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0); // last day of current month
   const rangeStart = new Date(now.getFullYear(), now.getMonth() - (MONTHS_TO_SHOW - 1), 1);
 
-  const [calResult, sessResult] = await Promise.all([
+  const [calResult, sessResult, localComps] = await Promise.all([
     supabase
       .from('calendar_days')
       .select('*')
@@ -106,11 +108,13 @@ async function fetchCalendarData(childId: string): Promise<CalendarData> {
       .eq('status', 'completed')
       .gte('challenge_date', toISO(rangeStart))
       .lte('challenge_date', toISO(rangeEnd)),
+    challengeService.getLocalCompletions(childId, toISO(rangeStart), toISO(rangeEnd)),
   ]);
 
   return {
-    calDays:  (calResult.data ?? []) as CalendarDay[],
-    sessions: (sessResult.data ?? []) as SessionFallback[],
+    calDays:    (calResult.data ?? []) as CalendarDay[],
+    sessions:   (sessResult.data ?? []) as SessionFallback[],
+    localComps,
   };
 }
 
@@ -125,38 +129,40 @@ interface DayInfo {
 }
 
 function buildDayGrid(
-  year:    number,
-  month:   number,
-  calDays: CalendarDay[],
-  sessions: SessionFallback[],
-  today:   string,
+  year:       number,
+  month:      number,
+  calDays:    CalendarDay[],
+  sessions:   SessionFallback[],
+  localComps: LocalCompletion[],
+  today:      string,
 ): Array<DayInfo | null> {
-  const byDate    = new Map<string, CalendarDay>(calDays.map((d) => [d.day_date, d]));
-  const sessByDate = new Map<string, SessionFallback>(sessions.map((s) => [s.challenge_date, s]));
+  const byDate      = new Map<string, CalendarDay>(calDays.map((d) => [d.day_date, d]));
+  const sessByDate  = new Map<string, SessionFallback>(sessions.map((s) => [s.challenge_date, s]));
+  const localByDate = new Map<string, LocalCompletion>(localComps.map((c) => [c.challengeDate, c]));
+
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startDow    = new Date(year, month, 1).getDay(); // 0 = Sun
 
   const cells: Array<DayInfo | null> = Array(startDow).fill(null);
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const calDay  = byDate.get(dateStr);
-    const session = sessByDate.get(dateStr);
+    const dateStr  = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const calDay   = byDate.get(dateStr);
+    const session  = sessByDate.get(dateStr);
+    const localComp = localByDate.get(dateStr);
 
     let variant: DayVariant;
 
-    // Priority: calDay data > session fallback > today > future > missed
+    // Priority: calendar_days (EF) > challenge_sessions (EF) > AsyncStorage local > today > future > missed
     if (calDay) {
-      if (calDay.state === 'completed' && calDay.is_perfect) {
-        variant = 'perfect';
-      } else if (calDay.state === 'completed') {
-        variant = 'completed';
-      } else {
-        variant = 'failed';
-      }
+      if (calDay.state === 'completed' && calDay.is_perfect) variant = 'perfect';
+      else if (calDay.state === 'completed') variant = 'completed';
+      else variant = 'failed';
     } else if (session) {
-      // Fallback: Edge Function not yet deployed — use challenge_sessions directly
       variant = session.is_perfect ? 'perfect' : 'completed';
+    } else if (localComp) {
+      // Fallback local: EF não deployada — dados guardados no AsyncStorage ao completar
+      variant = localComp.isPerfect ? 'perfect' : 'completed';
     } else if (dateStr === today) {
       variant = 'today';
     } else if (dateStr > today) {
@@ -233,12 +239,13 @@ const dc = StyleSheet.create({
 // ─── Month calendar ───────────────────────────────────────────────────────────
 
 function MonthCalendar({
-  year, month, calDays, sessions, today,
+  year, month, calDays, sessions, localComps, today,
 }: {
   year: number; month: number;
-  calDays: CalendarDay[]; sessions: SessionFallback[]; today: string;
+  calDays: CalendarDay[]; sessions: SessionFallback[];
+  localComps: LocalCompletion[]; today: string;
 }) {
-  const grid = buildDayGrid(year, month, calDays, sessions, today);
+  const grid = buildDayGrid(year, month, calDays, sessions, localComps, today);
 
   return (
     <View style={mc.card}>
@@ -404,8 +411,9 @@ export default function CalendarioScreen() {
 
   if (!child) return null;
 
-  const calDays  = data?.calDays  ?? [];
-  const sessions = data?.sessions ?? [];
+  const calDays   = data?.calDays    ?? [];
+  const sessions  = data?.sessions   ?? [];
+  const localComps = data?.localComps ?? [];
 
   const xpFloor    = getXpFloor(child.level);
   const xpCeil     = getXpCeil(child.level);
@@ -476,6 +484,7 @@ export default function CalendarioScreen() {
               month={month}
               calDays={calDays}
               sessions={sessions}
+              localComps={localComps}
               today={today}
             />
           ))

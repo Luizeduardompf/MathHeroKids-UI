@@ -806,6 +806,12 @@ export default function ChallengeScreen() {
     if (!child || !sessionId) return;
     setIsSubmitting(true);
     storeActions.setPhase('submitting');
+
+    // Guardar completion local sempre — garante que o calendário mostra o estado
+    // correcto mesmo quando a Edge Function complete_challenge não está deployada.
+    const isPerfectLocal = uniqueCorrect === CHALLENGE.TOTAL_QUESTIONS;
+    await challengeService.storeLocalCompletion(child.id, challengeDate!, isPerfectLocal);
+
     try {
       const result = await challengeService.completeChallenge({
         childId: child.id,
@@ -830,7 +836,7 @@ export default function ChallengeScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [child, sessionId, challengeDate, moduleId, allAnswers, router, t, storeActions]);
+  }, [child, sessionId, challengeDate, moduleId, allAnswers, uniqueCorrect, router, t, storeActions]);
 
   // ─── Loading ─────────────────────────────────────────────────────────────
 

@@ -12,7 +12,19 @@ import type { CompleteChallengeResponse } from '@/types/database.types';
 import type { AnswerDraft } from '@/stores/challenge.store';
 import type { ModuleId, TimerOption, MultiplicationRange } from '@/constants/config';
 
-const OFFLINE_QUEUE_KEY = 'math-hero-offline-challenge-queue-v1';
+const OFFLINE_QUEUE_KEY      = 'math-hero-offline-challenge-queue-v1';
+const LOCAL_COMPLETIONS_KEY  = 'math-hero-local-completions-v1';
+
+// ─── Local completion record ─────────────────────────────────────────────────
+// Gravado no AsyncStorage sempre que um desafio é concluído localmente.
+// Serve como fallback para o calendário quando a Edge Function não está deployada.
+
+export interface LocalCompletion {
+  childId:       string;
+  challengeDate: string;   // YYYY-MM-DD
+  isPerfect:     boolean;
+  completedAt:   string;   // ISO timestamp
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -159,6 +171,55 @@ export const challengeService = {
       }
     } catch {
       // Non-fatal
+    }
+  },
+
+  // ─── Local completion fallback ───────────────────────────────────────────────
+
+  /**
+   * Persiste um completion local no AsyncStorage.
+   * Chamado ao concluir o desafio, independentemente de a EF ter sucesso ou não.
+   * Deduplica por (childId, challengeDate) — uma entrada por dia.
+   */
+  async storeLocalCompletion(
+    childId:       string,
+    challengeDate: string,
+    isPerfect:     boolean,
+  ): Promise<void> {
+    try {
+      const raw      = await AsyncStorage.getItem(LOCAL_COMPLETIONS_KEY);
+      const existing = raw ? (JSON.parse(raw) as LocalCompletion[]) : [];
+      // Remove entrada anterior do mesmo dia/criança (pode ter mudado isPerfect)
+      const filtered = existing.filter(
+        (c) => !(c.childId === childId && c.challengeDate === challengeDate),
+      );
+      filtered.push({ childId, challengeDate, isPerfect, completedAt: new Date().toISOString() });
+      await AsyncStorage.setItem(LOCAL_COMPLETIONS_KEY, JSON.stringify(filtered));
+    } catch {
+      // Non-fatal — calendar fallback simplesmente não funcionará
+    }
+  },
+
+  /**
+   * Retorna as completions locais para um child dentro de um intervalo de datas.
+   */
+  async getLocalCompletions(
+    childId:   string,
+    dateFrom?: string,  // YYYY-MM-DD inclusive
+    dateTo?:   string,  // YYYY-MM-DD inclusive
+  ): Promise<LocalCompletion[]> {
+    try {
+      const raw  = await AsyncStorage.getItem(LOCAL_COMPLETIONS_KEY);
+      if (!raw) return [];
+      const all  = JSON.parse(raw) as LocalCompletion[];
+      return all.filter((c) => {
+        if (c.childId !== childId) return false;
+        if (dateFrom && c.challengeDate < dateFrom) return false;
+        if (dateTo   && c.challengeDate > dateTo)   return false;
+        return true;
+      });
+    } catch {
+      return [];
     }
   },
 
