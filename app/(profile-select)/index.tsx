@@ -99,7 +99,7 @@ export default function ProfileSelectScreen() {
 
             <Pressable
               style={styles.addChild}
-              onPress={() => router.push('/(auth)/register/child')}
+              onPress={() => router.push('/(profile-select)/add-child')}
             >
               <Text variant="body" color="rgba(255,255,255,0.8)">
                 ＋ {t('profileSelect.addChild')}

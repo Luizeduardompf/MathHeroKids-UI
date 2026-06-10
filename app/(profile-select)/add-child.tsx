@@ -1,0 +1,191 @@
+/**
+ * Add child screen — accessible to authenticated parents from profile-select.
+ *
+ * Kept outside (auth) group because AuthGuard redirects authenticated users
+ * away from that group. Logic is identical to register/child.tsx.
+ */
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, Text as RNText, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
+
+import { Ionicons } from '@expo/vector-icons';
+import { Button, Card, Input, Text } from '@/components/ui';
+import { AuthScreen } from '@/components/layout/AuthScreen';
+import { MiloMessage } from '@/components/milo/MiloMessage';
+import { childService } from '@/services/child.service';
+import { AVATAR_IDS } from '@/constants/config';
+import { AVATAR_ICONS } from '@/constants/icons';
+import { useAuthStore, selectParentId } from '@/stores/auth.store';
+import { colors, radius, space } from '@/theme';
+import type { AvatarId } from '@/constants/config';
+
+const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
+
+function applyDateMask(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+function parseBirthDate(raw: string): string | null {
+  const parts = raw.split('/');
+  if (parts.length !== 3) return null;
+  const [dd, mm, yyyy] = parts;
+  if (!dd || !mm || !yyyy || yyyy.length !== 4) return null;
+  const date = new Date(`${yyyy}-${mm}-${dd}`);
+  if (isNaN(date.getTime())) return null;
+  return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+}
+
+export default function AddChildScreen() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const parentId = useAuthStore(selectParentId);
+
+  const [selectedAvatar, setSelectedAvatar] = useState<AvatarId>('sofia');
+  const [name, setName]           = useState('');
+  const [username, setUsername]   = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState<string | null>(null);
+
+  function validate(): string | null {
+    if (!name.trim()) return t('errors.validation.required');
+    if (name.trim().length < 2) return t('errors.validation.nameTooShort');
+    if (!username.trim()) return t('errors.validation.required');
+    if (!USERNAME_REGEX.test(username.trim())) return t('errors.validation.usernameFormat');
+    if (!birthDate.trim()) return t('errors.validation.required');
+    if (!parseBirthDate(birthDate.trim())) return t('errors.validation.invalidDate');
+    return null;
+  }
+
+  async function handleCreate() {
+    setError(null);
+    if (!parentId) return;
+
+    const validationError = validate();
+    if (validationError) { setError(validationError); return; }
+
+    setLoading(true);
+    try {
+      await childService.createChild(parentId, {
+        display_name: name.trim(),
+        username:     username.trim(),
+        birth_date:   parseBirthDate(birthDate),
+        avatar_id:    selectedAvatar,
+      });
+      // Invalidate so profile-select refetches the updated list
+      await queryClient.invalidateQueries({ queryKey: ['children', parentId] });
+      router.back();
+    } catch (e) {
+      setError(t((e as Error).message));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <AuthScreen
+      title="Adicionar criança"
+      subtitle="Math Hero Kids"
+      onBack={() => router.back()}
+    >
+      <MiloMessage
+        message="Vamos criar o perfil do novo herói da matemática! Escolha um avatar e preencha os dados."
+        variant="orange"
+      />
+
+      {/* Avatar selector */}
+      <Card border shadow="sm">
+        <Text variant="label" style={styles.sectionLabel}>
+          {t('auth.register.child.avatarLabel')}
+        </Text>
+        <View style={styles.avatarGrid}>
+          {AVATAR_IDS.map((id) => (
+            <Pressable
+              key={id}
+              onPress={() => setSelectedAvatar(id)}
+              style={[
+                styles.avatarItem,
+                selectedAvatar === id ? styles.avatarSelected : null,
+              ] as import('react-native').StyleProp<import('react-native').ViewStyle>}
+            >
+              <RNText style={styles.avatarEmoji}>{AVATAR_ICONS[id]}</RNText>
+            </Pressable>
+          ))}
+        </View>
+      </Card>
+
+      <Card border shadow="sm">
+        <View style={styles.form}>
+          <Input
+            label={t('auth.register.child.nameLabel')}
+            placeholder={t('auth.register.child.namePlaceholder')}
+            value={name}
+            onChangeText={(v: string) => { setName(v); setError(null); }}
+            autoCapitalize="words"
+            leftIcon={<Ionicons name="person-outline" size={20} color={colors.text.tertiary} />}
+          />
+          <Input
+            label={t('auth.register.child.usernameLabel')}
+            placeholder={t('auth.register.child.usernamePlaceholder')}
+            hint={t('auth.register.child.usernameHint')}
+            value={username}
+            onChangeText={(v: string) => { setUsername(v); setError(null); }}
+            autoCapitalize="none"
+            autoCorrect={false}
+            leftIcon={<Ionicons name="at-outline" size={20} color={colors.text.tertiary} />}
+          />
+          <Input
+            label={t('auth.register.child.birthDateLabel')}
+            placeholder="dd/mm/yyyy"
+            hint={t('auth.register.child.birthDateHint')}
+            value={birthDate}
+            onChangeText={(v: string) => { setBirthDate(applyDateMask(v)); setError(null); }}
+            keyboardType="number-pad"
+            maxLength={10}
+          />
+
+          {error ? (
+            <Text variant="bodySmall" color={colors.error}>{error}</Text>
+          ) : null}
+
+          <Button
+            label="Adicionar criança"
+            loading={loading}
+            onPress={handleCreate}
+          />
+        </View>
+      </Card>
+    </AuthScreen>
+  );
+}
+
+const styles = StyleSheet.create({
+  sectionLabel: { marginBottom: space.sm },
+  avatarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+  },
+  avatarItem: {
+    width: 60,
+    height: 60,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    backgroundColor: colors.background.cardAlt,
+  },
+  avatarSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.background.card,
+  },
+  avatarEmoji: { fontSize: 36 },
+  form: { gap: space.md },
+});
