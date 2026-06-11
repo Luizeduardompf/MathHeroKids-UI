@@ -77,8 +77,8 @@ export default function ProgressionScreen() {
   const levelName   = t(getThreshold(child.level)?.nameKey ?? 'levels.explorador');
 
   const miloMsg = xpRemaining < 300
-    ? 'Você está super perto do próximo nível! Bora lá?'
-    : 'Continue fazendo desafios para subir de nível!';
+    ? t('progression.miloNearLevel')
+    : t('progression.miloContinue');
 
   function getMilestoneStatus(m: Milestone): MilestoneStatus {
     if (m.level < child!.level)  return 'unlocked';
@@ -88,7 +88,7 @@ export default function ProgressionScreen() {
 
   return (
     <AuthScreen
-      title="Progressão"
+      title={t('progression.title')}
       subtitle="Math Hero Kids"
       onBack={() => router.back()}
     >
@@ -109,7 +109,7 @@ export default function ProgressionScreen() {
           </View>
         </View>
 
-        <Text style={styles.levelLabel}>NÍVEL ATUAL</Text>
+        <Text style={styles.levelLabel}>{t('progression.currentLevel')}</Text>
         <Text style={styles.levelName}>{levelName}</Text>
 
         <View style={styles.xpRow}>
@@ -124,7 +124,7 @@ export default function ProgressionScreen() {
           style={{ width: '100%' }}
         />
         <Text style={styles.xpHint}>
-          Faltam {xpRemaining.toLocaleString()} XP para o nível {child.level + 1}
+          {t('progression.xpToNext', { xp: xpRemaining.toLocaleString(), level: child.level + 1 })}
         </Text>
       </LinearGradient>
 
@@ -132,7 +132,7 @@ export default function ProgressionScreen() {
       <MiloMessage message={miloMsg} variant="orange" />
 
       {/* ── Milestones ────────────────────────────────────────────────────── */}
-      <Text variant="h3">Marcos e recompensas</Text>
+      <Text variant="h3">{t('progression.milestonesTitle')}</Text>
 
       <View style={styles.timeline}>
         <View style={styles.timelineLine} />
@@ -166,7 +166,7 @@ export default function ProgressionScreen() {
                 <View style={styles.milestoneCardInner}>
                   <View style={styles.milestoneCardTexts}>
                     <Text variant="caption" color={colors.text.secondary}>
-                      Nível {m.level} · {m.title}
+                      {t('common.level', { level: m.level })} · {m.title}
                     </Text>
                     <Text variant="label">{m.reward.name}</Text>
                   </View>

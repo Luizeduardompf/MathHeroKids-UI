@@ -41,12 +41,13 @@ function RequestCard({
 }: {
   request: PendingRequest; onAccept: () => void; onReject: () => void; loading: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <View style={rc.card}>
       <FriendAvatar name={request.from_child.display_name} size={48} />
       <View style={rc.mid}>
         <Text style={rc.name}>{request.from_child.display_name}</Text>
-        <Text style={rc.sub}>Nível {request.from_child.level}</Text>
+        <Text style={rc.sub}>{t('common.level', { level: request.from_child.level })}</Text>
       </View>
       {loading ? (
         <ActivityIndicator color={colors.primary} size="small" style={{ marginHorizontal: 12 }} />
@@ -92,7 +93,7 @@ function FriendRow({
       <FriendAvatar name={friend.display_name} size={44} />
       <View style={fr.mid}>
         <Text style={fr.name}>{friend.display_name}</Text>
-        <Text style={fr.sub}>@{friend.username} · Nível {friend.level}</Text>
+        <Text style={fr.sub}>@{friend.username} · {t('common.level', { level: friend.level })}</Text>
       </View>
       {/* Chat button */}
       <Pressable onPress={onChat} hitSlop={8} style={fr.chatBtn}>
@@ -211,7 +212,7 @@ export default function FriendsListScreen() {
       void queryClient.invalidateQueries({ queryKey: ['friend_requests', child?.id] });
       void queryClient.invalidateQueries({ queryKey: ['friends_ranking', child?.id] });
     },
-    onError: (e) => Alert.alert('Erro', (e as Error).message),
+    onError: (e) => Alert.alert(t('common.error'), (e as Error).message),
   });
 
   if (!child) return null;
@@ -313,7 +314,7 @@ export default function FriendsListScreen() {
               <>
                 <Text style={s.sectionTitle}>
                   {search
-                    ? `Resultados (${filtered.length})`
+                    ? t('friends.results', { count: filtered.length })
                     : `${friends.length} amigo${friends.length !== 1 ? 's' : ''}`}
                 </Text>
                 {filtered.map((f, i) => (

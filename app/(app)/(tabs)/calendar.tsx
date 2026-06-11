@@ -582,6 +582,7 @@ function LegendRow() {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function CalendarioScreen() {
+  const { t } = useTranslation();
   const child        = useProfileStore(selectActiveChild);
   const insets       = useSafeAreaInsets();
   const queryClient  = useQueryClient();
@@ -638,7 +639,7 @@ export default function CalendarioScreen() {
         <Avatar avatarId={child.avatar_id} displayName={child.display_name} size="md" />
         <View style={s.headerMid}>
           <Text style={s.childName}>{child.display_name}</Text>
-          <Text style={s.levelLabel}>Nível {child.level}</Text>
+          <Text style={s.levelLabel}>{t('common.level', { level: child.level })}</Text>
           <ProgressBar value={xpProgress} color={colors.primary} trackColor="#E4E5EF" height={6} style={{ marginTop: 4 }} />
           <View style={s.xpRow}>
             <Text style={s.xpCurrent}>{child.xp_total.toLocaleString()} XP</Text>

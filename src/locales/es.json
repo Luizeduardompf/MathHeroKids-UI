@@ -15,7 +15,14 @@
     "ok": "OK",
     "seeAll": "Ver todo",
     "level": "Nivel {{level}}",
-    "edit": "Editar"
+    "edit": "Editar",
+    "timeAgo": {
+      "days": "hace {{n}}d",
+      "hours": "hace {{n}}h",
+      "mins": "hace {{n}}min",
+      "now": "ahora"
+    },
+    "self": "Tú"
   },
   "nav": {
     "home": "Inicio",
@@ -285,8 +292,14 @@
     },
     "notifications": {
       "empty": "Sin notificaciones",
-      "emptyDesc": "No tienes notificaciones por ahora."
-    }
+      "emptyDesc": "Cuando alguien te envíe una solicitud de amistad, aparecerá aquí."
+    },
+    "wantsToBeYourFriend": "@{{username}} quiere ser tu amigo",
+    "acceptedYourRequest": "@{{username}} aceptó tu solicitud ✓",
+    "results": "Resultados ({{count}})",
+    "noBlockedUsers": "Ningún usuario bloqueado",
+    "noBlockedDesc": "Los usuarios bloqueados aparecerán aquí.",
+    "unblock": "Desbloquear"
   },
   "calendar": {
     "title": "Calendario",
@@ -343,7 +356,10 @@
   "parentArea": {
     "pin": {
       "forgotPin": "Olvidé el PIN",
-      "noPin": "Sin PIN — acceso directo."
+      "noPin": "Sin PIN — acceso directo.",
+      "wrongPin": "PIN incorrecto. Inténtalo de nuevo.",
+      "emailSentTitle": "Correo enviado",
+      "emailSentMsg": "Enviamos instrucciones de restablecimiento a {{email}}. Después de iniciar sesión, podrás cambiar el PIN en tu perfil."
     },
     "passwordSection": "Contraseña",
     "title": "Área de padres",
@@ -358,5 +374,12 @@
       "registeredSince": "Miembro desde",
       "lastAccess": "Último acceso"
     }
+  },
+  "progression": {
+    "xpToLevel": "Faltan {{xp}} XP para el nivel {{level}}",
+    "miloNearLevel": "¡Estás muy cerca del siguiente nivel! ¡Vamos!",
+    "miloContinue": "¡Sigue completando desafíos para subir de nivel!",
+    "milestonesTitle": "Hitos y recompensas",
+    "milestoneLabel": "Nivel {{level}} · {{title}}"
   }
 }

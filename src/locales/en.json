@@ -15,7 +15,14 @@
     "ok": "OK",
     "seeAll": "See all",
     "level": "Level {{level}}",
-    "edit": "Edit"
+    "edit": "Edit",
+    "timeAgo": {
+      "days": "{{n}}d ago",
+      "hours": "{{n}}h ago",
+      "mins": "{{n}}m ago",
+      "now": "just now"
+    },
+    "self": "You"
   },
   "nav": {
     "home": "Home",
@@ -302,8 +309,14 @@
     },
     "notifications": {
       "empty": "No notifications",
-      "emptyDesc": "You don't have any notifications yet."
-    }
+      "emptyDesc": "When someone sends you a friend request, it'll appear here."
+    },
+    "wantsToBeYourFriend": "@{{username}} wants to be your friend",
+    "acceptedYourRequest": "@{{username}} accepted your request ✓",
+    "results": "Results ({{count}})",
+    "noBlockedUsers": "No blocked users",
+    "noBlockedDesc": "Blocked users will appear here.",
+    "unblock": "Unblock"
   },
   "trophies": {
     "title": "Trophy Room",
@@ -358,7 +371,11 @@
         "trophy_variant": "Trophy Variant",
         "celebration": "Celebration"
       }
-    }
+    },
+    "xpToLevel": "{{xp}} XP to level {{level}}",
+    "miloNearLevel": "You're so close to the next level! Let's go!",
+    "miloContinue": "Keep completing challenges to level up!",
+    "milestoneLabel": "Level {{level}} · {{title}}"
   },
   "settings": {
     "title": "Settings",
@@ -382,7 +399,10 @@
       "title": "Parent area",
       "subtitle": "Enter PIN to continue",
       "forgotPin": "Forgot PIN",
-      "noPin": "No PIN set — direct access."
+      "noPin": "No PIN set — direct access.",
+      "wrongPin": "Incorrect PIN. Try again.",
+      "emailSentTitle": "Email sent",
+      "emailSentMsg": "We sent reset instructions to {{email}}. After logging in again, you can change the PIN in your profile."
     },
     "controls": {
       "title": "Parental controls"

@@ -147,7 +147,7 @@ function PinGate({ onUnlock, onCancel }: { onUnlock: () => void; onCancel?: () =
     if (!parentId) return;
     const ok = await pinService.verify(parentId, pin);
     if (ok) { onUnlock(); }
-    else    { setDigits([]); setError('PIN incorreto. Tente novamente.'); }
+    else    { setDigits([]); setError(t('parentArea.pin.wrongPin')); }
   }
 
   async function handleForgotPin() {
@@ -156,9 +156,13 @@ function PinGate({ onUnlock, onCancel }: { onUnlock: () => void; onCancel?: () =
     setSending(true);
     try {
       await pinService.sendForgotPinEmail(email);
-      Alert.alert('E-mail enviado', `Enviamos instruções de redefinição para ${email}.`, [{ text: 'OK' }]);
+      Alert.alert(
+        t('parentArea.pin.emailSentTitle'),
+        t('parentArea.pin.emailSentMsg', { email }),
+        [{ text: t('common.ok') }],
+      );
     } catch (e) {
-      Alert.alert('Erro', (e as Error).message);
+      Alert.alert(t('common.error'), (e as Error).message);
     } finally { setSending(false); }
   }
 

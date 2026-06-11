@@ -29,6 +29,7 @@ import { colors, fontFamily, radius, shadows } from '@/theme';
 // ─── Blocked row ──────────────────────────────────────────────────────────────
 
 function BlockedRow({ profile, onUnblock }: { profile: FriendProfile; onUnblock: () => void }) {
+  const { t } = useTranslation();
   return (
     <View style={row.card}>
       <FriendAvatar name={profile.display_name} size={44} />
@@ -37,7 +38,7 @@ function BlockedRow({ profile, onUnblock }: { profile: FriendProfile; onUnblock:
         <Text style={row.sub}>@{profile.username}</Text>
       </View>
       <Pressable style={row.unblockBtn} onPress={onUnblock} hitSlop={8}>
-        <Text style={row.unblockText}>Desbloquear</Text>
+        <Text style={row.unblockText}>{t('friends.unblock')}</Text>
       </Pressable>
     </View>
   );
@@ -106,8 +107,8 @@ export default function BlockedFriendsScreen() {
       ) : blocked.length === 0 ? (
         <View style={s.empty}>
           <Ionicons name="shield-checkmark-outline" size={52} color="#D1D5DB" />
-          <Text style={s.emptyTitle}>Nenhum utilizador bloqueado</Text>
-          <Text style={s.emptySub}>Utilizadores que bloqueares aparecem aqui.</Text>
+          <Text style={s.emptyTitle}>{t('friends.noBlockedUsers')}</Text>
+          <Text style={s.emptySub}>{t('friends.noBlockedDesc')}</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>

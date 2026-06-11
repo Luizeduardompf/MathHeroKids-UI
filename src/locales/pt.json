@@ -15,7 +15,14 @@
     "ok": "OK",
     "seeAll": "Ver tudo",
     "level": "Nível {{level}}",
-    "edit": "Editar"
+    "edit": "Editar",
+    "timeAgo": {
+      "days": "{{n}}d atrás",
+      "hours": "{{n}}h atrás",
+      "mins": "{{n}}min atrás",
+      "now": "agora"
+    },
+    "self": "Você"
   },
   "nav": {
     "home": "Início",
@@ -313,8 +320,14 @@
     },
     "notifications": {
       "empty": "Sem notificações",
-      "emptyDesc": "Não tens notificações por agora."
-    }
+      "emptyDesc": "Quando alguém te enviar um pedido de amizade, aparece aqui."
+    },
+    "wantsToBeYourFriend": "@{{username}} quer ser teu amigo",
+    "acceptedYourRequest": "@{{username}} aceitou o teu pedido ✓",
+    "results": "Resultados ({{count}})",
+    "noBlockedUsers": "Nenhum utilizador bloqueado",
+    "noBlockedDesc": "Utilizadores que bloqueares aparecem aqui.",
+    "unblock": "Desbloquear"
   },
   "trophies": {
     "title": "Sala de Troféus",
@@ -369,7 +382,11 @@
         "trophy_variant": "Variante de Troféu",
         "celebration": "Comemoração"
       }
-    }
+    },
+    "xpToLevel": "Faltam {{xp}} XP para o nível {{level}}",
+    "miloNearLevel": "Você está super perto do próximo nível! Bora lá?",
+    "miloContinue": "Continue fazendo desafios para subir de nível!",
+    "milestoneLabel": "Nível {{level}} · {{title}}"
   },
   "settings": {
     "title": "Ajustes",
@@ -393,7 +410,10 @@
       "title": "Área dos pais",
       "subtitle": "Digite o PIN para continuar",
       "forgotPin": "Esqueci o PIN",
-      "noPin": "PIN não configurado — acesso direto."
+      "noPin": "PIN não configurado — acesso direto.",
+      "wrongPin": "PIN incorreto. Tente novamente.",
+      "emailSentTitle": "E-mail enviado",
+      "emailSentMsg": "Enviamos instruções de redefinição para {{email}}. Após fazer login, poderás alterar o PIN no perfil."
     },
     "controls": {
       "title": "Controle dos pais"

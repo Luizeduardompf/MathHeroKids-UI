@@ -56,7 +56,7 @@ function FriendCard({
           <Ionicons name="flame" size={13} color="#F5722A" />
           <Text style={fc.streak}>{profile.current_streak}</Text>
           <Text style={fc.dot}>·</Text>
-          <Text style={fc.level}>Nível {profile.level}</Text>
+          <Text style={fc.level}>{t('common.level', { level: profile.level })}</Text>
         </View>
       </View>
       {state === 'already_friend' ? (
@@ -141,7 +141,7 @@ export default function AddFriendScreen() {
       setSentIds((prev) => new Set(prev).add(toId));
       void queryClient.invalidateQueries({ queryKey: ['friends', child?.id] });
     },
-    onError: (e) => Alert.alert('Erro', (e as Error).message),
+    onError: (e) => Alert.alert(t('common.error'), (e as Error).message),
   });
 
   async function handleSearch() {

@@ -15,7 +15,14 @@
     "ok": "OK",
     "seeAll": "Voir tout",
     "level": "Niveau {{level}}",
-    "edit": "Modifier"
+    "edit": "Modifier",
+    "timeAgo": {
+      "days": "il y a {{n}}j",
+      "hours": "il y a {{n}}h",
+      "mins": "il y a {{n}}min",
+      "now": "maintenant"
+    },
+    "self": "Vous"
   },
   "nav": {
     "home": "Accueil",
@@ -195,7 +202,7 @@
       "monthly": "Mensuel",
       "you": "Vous",
       "empty": "Pas de données",
-      "emptyDesc": "Ajoutez des amis et relevez des défis pour voir le classement !",
+      "emptyDesc": "Ajoute des amis et complète des défis pour voir le classement !",
       "global": "Mondial"
     },
     "block": "Bloquer",
@@ -210,8 +217,14 @@
     },
     "notifications": {
       "empty": "Aucune notification",
-      "emptyDesc": "Vous n'avez pas encore de notifications."
-    }
+      "emptyDesc": "Quand quelqu'un t'envoie une demande d'amitié, elle apparaît ici."
+    },
+    "wantsToBeYourFriend": "@{{username}} veut être ton ami",
+    "acceptedYourRequest": "@{{username}} a accepté ta demande ✓",
+    "results": "Résultats ({{count}})",
+    "noBlockedUsers": "Aucun utilisateur bloqué",
+    "noBlockedDesc": "Les utilisateurs bloqués apparaîtront ici.",
+    "unblock": "Débloquer"
   },
   "calendar": {
     "title": "Calendrier",
@@ -290,7 +303,10 @@
   "parentArea": {
     "pin": {
       "forgotPin": "PIN oublié",
-      "noPin": "Aucun PIN — accès direct."
+      "noPin": "Aucun PIN — accès direct.",
+      "wrongPin": "PIN incorrect. Réessayez.",
+      "emailSentTitle": "E-mail envoyé",
+      "emailSentMsg": "Nous avons envoyé des instructions de réinitialisation à {{email}}. Après reconnexion, vous pourrez modifier le PIN dans votre profil."
     },
     "passwordSection": "Mot de passe",
     "title": "Espace parents",
@@ -305,5 +321,12 @@
       "registeredSince": "Membre depuis",
       "lastAccess": "Dernier accès"
     }
+  },
+  "progression": {
+    "xpToLevel": "Il manque {{xp}} XP pour le niveau {{level}}",
+    "miloNearLevel": "Tu es si proche du prochain niveau ! Allez !",
+    "miloContinue": "Continue les défis pour monter de niveau !",
+    "milestonesTitle": "Jalons et récompenses",
+    "milestoneLabel": "Niveau {{level}} · {{title}}"
   }
 }

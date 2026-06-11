@@ -41,6 +41,7 @@ function PodiumSpot({
   ranked:   RankedFriend | undefined;
   position: 1 | 2 | 3;
 }) {
+  const { t } = useTranslation();
   if (!ranked) return <View style={[pd.spot, pd[`spot${position}`]]} />;
 
   const SIZE  = position === 1 ? 80 : 64;
@@ -69,10 +70,10 @@ function PodiumSpot({
       <View style={[pd.posBadge, { backgroundColor: medalColors[position] }]}>
         <Text style={pd.posNum}>{position}</Text>
       </View>
-      <Text style={pd.podName} numberOfLines={1}>{ranked.isSelf ? 'Você' : ranked.child.display_name}</Text>
+      <Text style={pd.podName} numberOfLines={1}>{ranked.isSelf ? t('common.self') : ranked.child.display_name}</Text>
       <View style={pd.xpRow}>
         <Ionicons name="flash" size={12} color="#F59E0B" />
-        <Text style={pd.xpText}>{ranked.xp.toLocaleString('pt-BR')}</Text>
+        <Text style={pd.xpText}>{ranked.xp.toLocaleString()}</Text>
       </View>
     </View>
   );
@@ -104,6 +105,7 @@ const pd = StyleSheet.create({
 // ─── Ranking row ──────────────────────────────────────────────────────────────
 
 function RankRow({ ranked }: { ranked: RankedFriend }) {
+  const { t } = useTranslation();
   const highlight = ranked.isSelf;
 
   return (
@@ -112,15 +114,15 @@ function RankRow({ ranked }: { ranked: RankedFriend }) {
       <FriendAvatar name={ranked.child.display_name} size={44} />
       <View style={rr.mid}>
         <RNText style={[rr.name, highlight ? rr.nameHighlight : null]}>
-          {ranked.isSelf ? 'Você' : ranked.child.display_name}
+          {ranked.isSelf ? t('common.self') : ranked.child.display_name}
         </RNText>
         <RNText style={[rr.sub, highlight ? rr.subHighlight : null]}>
-          @{ranked.child.username} · Nível {ranked.child.level}
+          @{ranked.child.username} · {t('common.level', { level: ranked.child.level })}
         </RNText>
       </View>
       <View style={rr.xpCol}>
         <Ionicons name="flash" size={13} color={highlight ? '#fff' : '#F59E0B'} />
-        <RNText style={[rr.xp, highlight ? rr.xpHighlight : null]}>{ranked.xp.toLocaleString('pt-BR')}</RNText>
+        <RNText style={[rr.xp, highlight ? rr.xpHighlight : null]}>{ranked.xp.toLocaleString()}</RNText>
       </View>
     </View>
   );
@@ -149,6 +151,7 @@ function PeriodToggle({
   value: 'weekly' | 'monthly';
   onChange: (v: 'weekly' | 'monthly') => void;
 }) {
+  const { t } = useTranslation();
   return (
     <View style={pt.wrap}>
       {(['weekly', 'monthly'] as const).map((p) => (
@@ -158,7 +161,7 @@ function PeriodToggle({
           onPress={() => onChange(p)}
         >
           <RNText style={[pt.label, value === p ? pt.labelActive : null]}>
-            {p === 'weekly' ? 'Semanal' : 'Mensal'}
+            {p === 'weekly' ? t('friends.ranking.weekly') : t('friends.ranking.monthly')}
           </RNText>
         </Pressable>
       ))}
@@ -182,7 +185,7 @@ function EmptyRanking() {
     <View style={emp.wrap}>
       <Text style={emp.emoji}>🏆</Text>
       <Text style={emp.title}>{t('friends.ranking.empty')}</Text>
-      <Text style={emp.sub}>Adiciona amigos e faz desafios para ver o ranking!</Text>
+      <Text style={emp.sub}>{t('friends.ranking.emptyDesc')}</Text>
     </View>
   );
 }

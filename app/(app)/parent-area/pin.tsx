@@ -7,6 +7,7 @@
  */
 
 import React, { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Pressable,
@@ -106,6 +107,7 @@ interface Props {
 }
 
 export default function PinScreen({ onSuccess }: Props) {
+  const { t }    = useTranslation();
   const router   = useRouter();
   const parentId = useAuthStore(selectParentId);
   const user     = useAuthStore((s) => s.user);
@@ -139,7 +141,7 @@ export default function PinScreen({ onSuccess }: Props) {
       onSuccess();
     } else {
       setDigits([]);
-      setError('PIN incorreto. Tente novamente.');
+      setError(t('parentArea.pin.wrongPin'));
     }
   }
 
@@ -150,12 +152,12 @@ export default function PinScreen({ onSuccess }: Props) {
     try {
       await pinService.sendForgotPinEmail(email);
       Alert.alert(
-        'E-mail enviado',
-        `Enviamos instruções de redefinição para ${email}. Após fazer login novamente, poderás alterar o PIN no perfil.`,
-        [{ text: 'OK' }],
+        t('parentArea.pin.emailSentTitle'),
+        t('parentArea.pin.emailSentMsg', { email }),
+        [{ text: t('common.ok') }],
       );
     } catch (e) {
-      Alert.alert('Erro', (e as Error).message);
+      Alert.alert(t('common.error'), (e as Error).message);
     } finally {
       setSending(false);
     }

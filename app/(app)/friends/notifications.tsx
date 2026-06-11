@@ -33,15 +33,15 @@ import { colors, fontFamily, radius, shadows } from '@/theme';
 
 // ─── Time ago helper ──────────────────────────────────────────────────────────
 
-function timeAgo(isoDate: string): string {
+function timeAgo(isoDate: string, t: (k: string, o?: Record<string, unknown>) => string): string {
   const diff = Date.now() - new Date(isoDate).getTime();
   const mins  = Math.floor(diff / 60000);
   const hours = Math.floor(mins / 60);
   const days  = Math.floor(hours / 24);
-  if (days  > 0)  return `${days}d atrás`;
-  if (hours > 0)  return `${hours}h atrás`;
-  if (mins  > 1)  return `${mins}min atrás`;
-  return 'agora';
+  if (days  > 0)  return t('common.timeAgo.days',  { n: days });
+  if (hours > 0)  return t('common.timeAgo.hours', { n: hours });
+  if (mins  > 1)  return t('common.timeAgo.mins',  { n: mins });
+  return t('common.timeAgo.now');
 }
 
 // ─── Notification card ────────────────────────────────────────────────────────
@@ -57,6 +57,7 @@ function NotifCard({
   onReject: () => void;
   loading:  boolean;
 }) {
+  const { t } = useTranslation();
   const isRequest = notif.type === 'friend_request';
   return (
     <View style={nc.card}>
@@ -65,11 +66,11 @@ function NotifCard({
         <Text style={nc.name}>{notif.profile.display_name}</Text>
         <Text style={nc.sub}>
           {isRequest
-            ? `@${notif.profile.username} quer ser teu amigo`
-            : `@${notif.profile.username} aceitou o teu pedido ✓`
+            ? t('friends.wantsToBeYourFriend', { username: notif.profile.username })
+            : t('friends.acceptedYourRequest', { username: notif.profile.username })
           }
         </Text>
-        <Text style={nc.time}>{timeAgo(notif.at)}</Text>
+        <Text style={nc.time}>{timeAgo(notif.at, t)}</Text>
       </View>
       {isRequest && (
         loading ? (
@@ -114,7 +115,7 @@ function EmptyNotifs() {
     <View style={en_.wrap}>
       <Ionicons name="notifications-outline" size={52} color="#D1D5DB" />
       <Text style={en_.title}>{t('friends.notifications.empty')}</Text>
-      <Text style={en_.sub}>Quando alguém te enviar um pedido de amizade, aparece aqui.</Text>
+      <Text style={en_.sub}>{t('friends.notifications.emptyDesc')}</Text>
     </View>
   );
 }
@@ -128,7 +129,6 @@ const en_ = StyleSheet.create({
 
 export default function NotificationsScreen() {
   const { t }       = useTranslation();
-  void t;
   const router      = useRouter();
   const insets      = useSafeAreaInsets();
   const queryClient = useQueryClient();
@@ -160,7 +160,7 @@ export default function NotificationsScreen() {
       void queryClient.invalidateQueries({ queryKey: ['friend_requests', child?.id] });
       void queryClient.invalidateQueries({ queryKey: ['friends_ranking', child?.id] });
     },
-    onError: (e) => Alert.alert('Erro', (e as Error).message),
+    onError: (e) => Alert.alert(t('common.error'), (e as Error).message),
   });
 
   if (!child) return null;

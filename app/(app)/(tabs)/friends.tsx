@@ -191,7 +191,7 @@ function PodiumSpot({ ranked, position }: {
       </RNText>
       <View style={pd.xpRow}>
         <Ionicons name="flash" size={12} color="#F59E0B" />
-        <RNText style={pd.xp}>{ranked.xp.toLocaleString('pt-BR')}</RNText>
+        <RNText style={pd.xp}>{ranked.xp.toLocaleString()}</RNText>
       </View>
     </View>
   );
@@ -212,6 +212,7 @@ const pd = StyleSheet.create({
 // ─── Rank row (ranking) ───────────────────────────────────────────────────────
 
 function RankRow({ ranked }: { ranked: RankedFriend }) {
+  const { t } = useTranslation();
   const hl = ranked.isSelf;
   return (
     <View style={[rr.row, hl ? rr.rowHl : null]}>
@@ -223,15 +224,15 @@ function RankRow({ ranked }: { ranked: RankedFriend }) {
       />
       <View style={rr.mid}>
         <RNText style={[rr.name, hl ? rr.nameHl : null]}>
-          {ranked.isSelf ? 'Você' : ranked.child.display_name}
+          {ranked.isSelf ? t('common.self') : ranked.child.display_name}
         </RNText>
         <RNText style={[rr.sub, hl ? rr.subHl : null]}>
-          @{ranked.child.username} · Nível {ranked.child.level}
+          @{ranked.child.username} · {t('common.level', { level: ranked.child.level })}
         </RNText>
       </View>
       <View style={rr.xpCol}>
         <Ionicons name="flash" size={13} color={hl ? '#FDE68A' : '#F59E0B'} />
-        <RNText style={[rr.xp, hl ? rr.xpHl : null]}>{ranked.xp.toLocaleString('pt-BR')}</RNText>
+        <RNText style={[rr.xp, hl ? rr.xpHl : null]}>{ranked.xp.toLocaleString()}</RNText>
       </View>
     </View>
   );
@@ -256,12 +257,13 @@ const rr = StyleSheet.create({
 function RequestCard({ request, onAccept, onReject, loading }: {
   request: PendingRequest; onAccept: () => void; onReject: () => void; loading: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <View style={rc.card}>
       <FriendAvatar name={request.from_child.display_name} size={48} />
       <View style={rc.mid}>
         <Text style={rc.name}>{request.from_child.display_name}</Text>
-        <Text style={rc.sub}>Nível {request.from_child.level}</Text>
+        <Text style={rc.sub}>{t('common.level', { level: request.from_child.level })}</Text>
       </View>
       {loading ? (
         <ActivityIndicator color={colors.primary} size="small" style={{ marginHorizontal: 12 }} />
@@ -305,7 +307,7 @@ function FriendRow({ friend, rank, onBlock, onChat, unreadCount }: {
       <FriendAvatar name={friend.display_name} size={44} />
       <View style={fr.mid}>
         <Text style={fr.name}>{friend.display_name}</Text>
-        <Text style={fr.sub}>@{friend.username} · Nível {friend.level}</Text>
+        <Text style={fr.sub}>@{friend.username} · {t('common.level', { level: friend.level })}</Text>
       </View>
       <Pressable onPress={onChat} hitSlop={8} style={fr.chatBtn}>
         <Ionicons name="chatbubble-outline" size={20} color={colors.primary} />
@@ -453,7 +455,7 @@ export default function AmigosScreen() {
       void queryClient.invalidateQueries({ queryKey: ['friend_requests', child?.id] });
       void queryClient.invalidateQueries({ queryKey: ['friends_ranking', child?.id] });
     },
-    onError: (e) => Alert.alert('Erro', (e as Error).message),
+    onError: (e) => Alert.alert(t('common.error'), (e as Error).message),
   });
 
   // ── Queries — painel Ranking ────────────────────────────────────────────────
@@ -604,7 +606,7 @@ export default function AmigosScreen() {
                     <>
                       <Text style={s.sectionTitle}>
                         {search
-                          ? `Resultados (${filtered.length})`
+                          ? t('friends.results', { count: filtered.length })
                           : `${friends.length} amigo${friends.length !== 1 ? 's' : ''}`}
                       </Text>
                       {filtered.map((f, i) => (
