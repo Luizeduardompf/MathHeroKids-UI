@@ -503,13 +503,17 @@ export default function AmigosScreen() {
         style={[s.header, { paddingTop: insets.top + 16 }]}
       >
         <View style={s.headerRow}>
-          <View>
+          {/* Left spacer — balances the right action buttons */}
+          <View style={{ width: 98 }} />
+
+          {/* Center: Math Hero Kids + Friends */}
+          <View style={s.headerCenter}>
             <Text style={s.headerSub}>{t('friends.mathHeroKids')}</Text>
             <Text style={s.headerTitle}>{t('friends.title')}</Text>
           </View>
 
+          {/* Right: notifications + add friend */}
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            {/* Notificações */}
             <Pressable
               style={s.iconBtn}
               onPress={() => router.push('/(app)/friends/notifications')}
@@ -522,8 +526,6 @@ export default function AmigosScreen() {
                 </View>
               )}
             </Pressable>
-
-            {/* Adicionar amigos → tela de busca/sugestões */}
             <Pressable
               style={s.iconBtn}
               onPress={() => router.push('/(app)/friends/add')}
@@ -694,15 +696,15 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background.primary },
 
   // Header
-  header:         { paddingHorizontal: 20, paddingBottom: 24 },
-  headerRow:      { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  headerSub:      { fontFamily: fontFamily.semiBold, fontSize: 13, color: 'rgba(255,255,255,0.75)', marginBottom: 2 },
-  headerTitle:    { fontFamily: fontFamily.extraBold, fontSize: 36, color: '#fff' },
+  header:         { paddingHorizontal: 20, paddingBottom: 20 },
+  headerRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerCenter:   { flex: 1, alignItems: 'center' },
+  headerSub:      { fontFamily: fontFamily.semiBold, fontSize: 12, color: 'rgba(255,255,255,0.75)', marginBottom: 1 },
+  headerTitle:    { fontFamily: fontFamily.extraBold, fontSize: 24, color: '#fff' },
   iconBtn: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 42, height: 42, borderRadius: 21,
     backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center', justifyContent: 'center',
-    marginTop: 4,
   },
   notifBadge: {
     position: 'absolute', top: -4, right: -4,
