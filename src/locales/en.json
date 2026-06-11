@@ -280,7 +280,9 @@
       "result": "Result",
       "notFound": "No user found",
       "notFoundDesc": "Check if the username is correct",
-      "searchHint": "Search by username above!"
+      "searchHint": "Search by username above!",
+      "cancelRequest": "Cancel request",
+      "sentRequestsTitle": "Sent requests"
     },
     "ranking": {
       "title": "Friends ranking",
@@ -346,7 +348,44 @@
     "earnedOn": "EARNED",
     "howToEarn": "How to earn",
     "miloMessage": "Look at all the trophies you already have! Let's earn more?",
-    "detailTitle": "Trophy details"
+    "detailTitle": "Trophy details",
+    "items": {
+      "diario1": {
+        "name": "Daily Trophy",
+        "desc": "Complete today's challenge to earn this trophy.",
+        "howTo": "Complete 1 daily challenge with Milo."
+      },
+      "diario2": {
+        "name": "Early Bird",
+        "desc": "Start the challenge bright and early.",
+        "howTo": "Complete a challenge before 9am."
+      },
+      "semanal1": {
+        "name": "Weekly Trophy",
+        "desc": "Play every day for 7 days in a row.",
+        "howTo": "Keep your streak going for a full week."
+      },
+      "mensal1": {
+        "name": "Monthly Trophy",
+        "desc": "A whole month of math without missing a day!",
+        "howTo": "Complete challenges every day of the month."
+      },
+      "sequencia1": {
+        "name": "Fire Streak",
+        "desc": "Your streak is on fire!",
+        "howTo": "Reach a streak of 10 days."
+      },
+      "especial1": {
+        "name": "Perfect Week",
+        "desc": "7 days in a row without a single wrong answer.",
+        "howTo": "Get 100% on challenges for 7 days."
+      },
+      "especial2": {
+        "name": "Perfect Month",
+        "desc": "The rarest trophy of all: a flawless month.",
+        "howTo": "Get 100% on every challenge for a full month."
+      }
+    }
   },
   "achievements": {
     "title": "Achievements",

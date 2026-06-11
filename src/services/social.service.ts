@@ -38,6 +38,12 @@ export interface PendingRequest {
   from_child: FriendProfile;
 }
 
+export interface SentRequest {
+  id:          string;
+  to_child_id: string;
+  to_child:    FriendProfile;
+}
+
 export interface RankedFriend {
   child:    FriendProfile;
   xp:       number;   // weekly or monthly XP
@@ -136,6 +142,62 @@ export const socialService = {
   },
 
   /**
+   * Pedidos enviados pendentes com dados completos do destinatário.
+   * Usado na tela AddFriend para mostrar estado 'sent' + botão cancelar.
+   */
+  async getSentRequests(childId: string): Promise<SentRequest[]> {
+    try {
+      const { data, error } = await supabase
+        .from('friend_requests')
+        .select(`
+          id, to_child_id,
+          to_child:to_child_id (
+            id, display_name, username, avatar_id,
+            level, xp_total, current_streak
+          )
+        `)
+        .eq('from_child_id', childId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) return [];
+
+      return (data ?? [])
+        .map((row: { id: string; to_child_id: string; to_child: FriendProfile | FriendProfile[] | null }) => {
+          const tc = Array.isArray(row.to_child) ? row.to_child[0] : row.to_child;
+          if (!tc) return null;
+          return { id: row.id, to_child_id: row.to_child_id, to_child: tc };
+        })
+        .filter((r): r is SentRequest => r !== null);
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Cancela um pedido enviado pelo sender via Edge Function cancel_friend_request.
+   */
+  async cancelFriendRequest(requestId: string, fromChildId: string): Promise<void> {
+    const { error } = await supabase.functions.invoke('cancel_friend_request', {
+      body: { request_id: requestId, from_child_id: fromChildId },
+    });
+
+    if (!error) return;
+
+    let message = 'Não foi possível cancelar o pedido. Tente novamente.';
+    try {
+      const ctx = (error as { context?: Response }).context;
+      if (ctx) {
+        const body = await ctx.clone().json() as { error?: string; message?: string };
+        if (body.error === 'ALREADY_RESPONDED') message = 'Este pedido já foi respondido.';
+        else if (body.message) message = body.message;
+      }
+    } catch { /* usar mensagem default */ }
+
+    throw new Error(message);
+  },
+
+  /**
    * Busca exacta por username (case-insensitive).
    * Requer RLS que permita leitura cross-child (Phase 5 — por agora tenta e retorna null se falhar).
    */
@@ -156,7 +218,8 @@ export const socialService = {
   },
 
   /**
-   * Sugestões: amigos-de-amigos, excluindo já-amigos e a própria criança.
+   * Sugestões: amigos-de-amigos, excluindo já-amigos, a própria criança
+   * e qualquer child com pedido pendente em qualquer sentido (bilateral).
    * Requer RLS cross-child.
    */
   async getSuggestions(childId: string): Promise<FriendProfile[]> {
@@ -167,10 +230,29 @@ export const socialService = {
         .select('friend_id')
         .eq('child_id', childId);
 
-      const myFriendIds = new Set((myFriends ?? []).map((r: { friend_id: string }) => r.friend_id));
-      myFriendIds.add(childId); // excluir a própria criança
+      const excludeIds = new Set((myFriends ?? []).map((r: { friend_id: string }) => r.friend_id));
+      excludeIds.add(childId); // excluir a própria criança
 
-      if (myFriendIds.size <= 1) {
+      // 2. IDs com pedidos pendentes em qualquer sentido (enviados ou recebidos)
+      const [{ data: sentPending }, { data: receivedPending }] = await Promise.all([
+        supabase
+          .from('friend_requests')
+          .select('to_child_id')
+          .eq('from_child_id', childId)
+          .eq('status', 'pending'),
+        supabase
+          .from('friend_requests')
+          .select('from_child_id')
+          .eq('to_child_id', childId)
+          .eq('status', 'pending'),
+      ]);
+
+      (sentPending ?? []).forEach((r: { to_child_id: string }) => excludeIds.add(r.to_child_id));
+      (receivedPending ?? []).forEach((r: { from_child_id: string }) => excludeIds.add(r.from_child_id));
+
+      const excludeArr = Array.from(excludeIds);
+
+      if (excludeIds.size <= 1) {
         // Sem amigos — sugestões por nível próximo
         const { data: ownProfile } = await supabase
           .from('child_profiles')
@@ -186,18 +268,18 @@ export const socialService = {
           .gte('level', level - 2)
           .lte('level', level + 2)
           .eq('is_active', true)
-          .neq('id', childId)
+          .not('id', 'in', `(${excludeArr.join(',')})`)
           .limit(10);
 
         return (levelPeers ?? []) as FriendProfile[];
       }
 
-      // 2. Amigos-dos-amigos
+      // 3. Amigos-dos-amigos, excluindo todos os IDs a ignorar
       const { data: foaRows } = await supabase
         .from('friendships')
         .select('friend_id, friend:friend_id(id, display_name, username, avatar_id, level, xp_total, current_streak)')
-        .in('child_id', Array.from(myFriendIds))
-        .not('friend_id', 'in', `(${Array.from(myFriendIds).join(',')})`)
+        .in('child_id', excludeArr)
+        .not('friend_id', 'in', `(${excludeArr.join(',')})`)
         .limit(20);
 
       const seen = new Set<string>();

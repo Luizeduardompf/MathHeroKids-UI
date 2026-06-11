@@ -205,7 +205,9 @@
       "result": "Résultat",
       "notFound": "Utilisateur introuvable",
       "notFoundDesc": "Vérifiez que le nom d'utilisateur est correct",
-      "searchHint": "Recherchez par nom utilisateur ci-dessus !"
+      "searchHint": "Recherchez par nom utilisateur ci-dessus !",
+      "cancelRequest": "Annuler la demande",
+      "sentRequestsTitle": "Demandes envoyées"
     },
     "ranking": {
       "title": "Classement des amis",
@@ -383,6 +385,43 @@
   },
   "trophies": {
     "miloMessage": "Regarde tous les trophées que tu as déjà ! Allons en gagner plus ?",
-    "detailTitle": "Détails du trophée"
+    "detailTitle": "Détails du trophée",
+    "items": {
+      "diario1": {
+        "name": "Trophée Quotidien",
+        "desc": "Complète le défi du jour pour gagner ce trophée.",
+        "howTo": "Termine 1 défi quotidien avec Milo."
+      },
+      "diario2": {
+        "name": "Lève-tôt",
+        "desc": "Commence le défi de bonne heure.",
+        "howTo": "Complète un défi avant 9h."
+      },
+      "semanal1": {
+        "name": "Trophée Hebdomadaire",
+        "desc": "Joue tous les jours pendant 7 jours consécutifs.",
+        "howTo": "Maintiens ta série pendant une semaine entière."
+      },
+      "mensal1": {
+        "name": "Trophée Mensuel",
+        "desc": "Tout un mois de maths sans manquer un jour !",
+        "howTo": "Complète les défis tous les jours du mois."
+      },
+      "sequencia1": {
+        "name": "Série de Feu",
+        "desc": "Ta série est en feu !",
+        "howTo": "Atteins une série de 10 jours."
+      },
+      "especial1": {
+        "name": "Semaine Parfaite",
+        "desc": "7 jours consécutifs sans aucune mauvaise réponse.",
+        "howTo": "Obtiens 100% aux défis pendant 7 jours."
+      },
+      "especial2": {
+        "name": "Mois Parfait",
+        "desc": "Le trophée le plus rare : un mois impeccable.",
+        "howTo": "Obtiens 100% à tous les défis du mois."
+      }
+    }
   }
 }

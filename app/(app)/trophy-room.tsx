@@ -18,73 +18,80 @@ import { colors, fontFamily, radius, space } from '@/theme';
 
 // ─── Types & rarity config ────────────────────────────────────────────────────
 
-type Rarity = 'bronze' | 'prata' | 'ouro' | 'diamante';
+type Rarity = 'bronze' | 'silver' | 'gold' | 'diamond';
 type TrophyCategory = 'diario' | 'semanal' | 'mensal' | 'sequencia' | 'especial';
 
 interface Trophy {
   id: string;
-  name: string;
+  /** i18n key — e.g. 'trophies.items.diario1.name'. Phase 3: comes from DB name_key column. */
+  nameKey: string;
+  descKey: string;
+  howToEarnKey: string;
   category: TrophyCategory;
   rarity: Rarity;
-  description: string;
-  howToEarn: string;
   earned: boolean;
+  /** ISO date string — formatted locale-aware at render time. */
   dateEarned?: string;
   progress?: { current: number; total: number };
 }
 
-// Rarity config — matches design (Portuguese labels)
-const RARITY: Record<Rarity, { label: string; bg: string; icon: string; chip: string; chipText: string }> = {
-  bronze:   { label: 'Bronze',   bg: colors.accentLight,              icon: colors.accent,         chip: colors.accentLight,              chipText: colors.accent         },
-  prata:    { label: 'Prata',    bg: colors.background.cardAlt,       icon: colors.text.secondary, chip: colors.background.cardAlt,       chipText: colors.text.secondary },
-  ouro:     { label: 'Ouro',     bg: colors.trophy.goldLight,         icon: colors.trophy.gold,    chip: colors.trophy.goldLight,         chipText: colors.trophy.gold    },
-  diamante: { label: 'Diamante', bg: colors.primaryLight,             icon: colors.primary,        chip: colors.primaryLight,             chipText: colors.primary        },
+// Rarity config — no label (resolved via t('trophies.tiers.X') at render time)
+const RARITY: Record<Rarity, { bg: string; icon: string; chip: string; chipText: string }> = {
+  bronze:  { bg: colors.accentLight,         icon: colors.accent,         chip: colors.accentLight,         chipText: colors.accent         },
+  silver:  { bg: colors.background.cardAlt,  icon: colors.text.secondary, chip: colors.background.cardAlt,  chipText: colors.text.secondary },
+  gold:    { bg: colors.trophy.goldLight,     icon: colors.trophy.gold,    chip: colors.trophy.goldLight,     chipText: colors.trophy.gold    },
+  diamond: { bg: colors.primaryLight,         icon: colors.primary,        chip: colors.primaryLight,         chipText: colors.primary        },
 };
 
 const CATEGORY_ORDER: TrophyCategory[] = ['diario', 'semanal', 'mensal', 'sequencia', 'especial'];
 
-// Data from gamification-data.ts
+/**
+ * Static trophy catalog — Phase 3: replace with DB query (trophies table).
+ * nameKey / descKey / howToEarnKey map to i18n keys (same convention as DB name_key column).
+ * dateEarned is an ISO string; formatted locale-aware at render time.
+ */
 const TROPHIES: Trophy[] = [
   {
-    id: 'diario-1', name: 'Troféu Diário', category: 'diario', rarity: 'bronze',
-    description: 'Complete o desafio do dia para ganhar este troféu.',
-    howToEarn: 'Termine 1 desafio diário com o Milo.', earned: true, dateEarned: '17 de junho de 2026',
+    id: 'diario-1',
+    nameKey: 'trophies.items.diario1.name', descKey: 'trophies.items.diario1.desc', howToEarnKey: 'trophies.items.diario1.howTo',
+    category: 'diario', rarity: 'bronze', earned: true, dateEarned: '2026-06-17',
   },
   {
-    id: 'diario-2', name: 'Madrugador', category: 'diario', rarity: 'bronze',
-    description: 'Comece o desafio bem cedinho.',
-    howToEarn: 'Complete um desafio antes das 9h.', earned: false, progress: { current: 0, total: 1 },
+    id: 'diario-2',
+    nameKey: 'trophies.items.diario2.name', descKey: 'trophies.items.diario2.desc', howToEarnKey: 'trophies.items.diario2.howTo',
+    category: 'diario', rarity: 'bronze', earned: false, progress: { current: 0, total: 1 },
   },
   {
-    id: 'semanal-1', name: 'Troféu Semanal', category: 'semanal', rarity: 'prata',
-    description: 'Jogue todos os dias por 7 dias seguidos.',
-    howToEarn: 'Mantenha sua sequência por uma semana inteira.', earned: true, dateEarned: '15 de junho de 2026',
+    id: 'semanal-1',
+    nameKey: 'trophies.items.semanal1.name', descKey: 'trophies.items.semanal1.desc', howToEarnKey: 'trophies.items.semanal1.howTo',
+    category: 'semanal', rarity: 'silver', earned: true, dateEarned: '2026-06-15',
   },
   {
-    id: 'mensal-1', name: 'Troféu Mensal', category: 'mensal', rarity: 'ouro',
-    description: 'Um mês inteiro de matemática sem falhar!',
-    howToEarn: 'Complete os desafios todos os dias do mês.', earned: false, progress: { current: 18, total: 30 },
+    id: 'mensal-1',
+    nameKey: 'trophies.items.mensal1.name', descKey: 'trophies.items.mensal1.desc', howToEarnKey: 'trophies.items.mensal1.howTo',
+    category: 'mensal', rarity: 'gold', earned: false, progress: { current: 18, total: 30 },
   },
   {
-    id: 'sequencia-1', name: 'Sequência de Fogo', category: 'sequencia', rarity: 'ouro',
-    description: 'Sua sequência está pegando fogo!',
-    howToEarn: 'Alcance uma sequência de 10 dias.', earned: false, progress: { current: 8, total: 10 },
+    id: 'sequencia-1',
+    nameKey: 'trophies.items.sequencia1.name', descKey: 'trophies.items.sequencia1.desc', howToEarnKey: 'trophies.items.sequencia1.howTo',
+    category: 'sequencia', rarity: 'gold', earned: false, progress: { current: 8, total: 10 },
   },
   {
-    id: 'especial-1', name: 'Semana Perfeita', category: 'especial', rarity: 'diamante',
-    description: '7 dias seguidos sem errar nenhuma resposta.',
-    howToEarn: 'Acerte 100% dos desafios por 7 dias.', earned: true, dateEarned: '10 de junho de 2026',
+    id: 'especial-1',
+    nameKey: 'trophies.items.especial1.name', descKey: 'trophies.items.especial1.desc', howToEarnKey: 'trophies.items.especial1.howTo',
+    category: 'especial', rarity: 'diamond', earned: true, dateEarned: '2026-06-10',
   },
   {
-    id: 'especial-2', name: 'Mês Perfeito', category: 'especial', rarity: 'diamante',
-    description: 'O troféu mais raro de todos: um mês impecável.',
-    howToEarn: 'Acerte 100% dos desafios o mês inteiro.', earned: false, progress: { current: 12, total: 30 },
+    id: 'especial-2',
+    nameKey: 'trophies.items.especial2.name', descKey: 'trophies.items.especial2.desc', howToEarnKey: 'trophies.items.especial2.howTo',
+    category: 'especial', rarity: 'diamond', earned: false, progress: { current: 12, total: 30 },
   },
 ];
 
 // ─── Trophy card — 2-col, tall, icon centrado ─────────────────────────────────
 
 function TrophyCard({ trophy, onPress }: { trophy: Trophy; onPress: () => void }) {
+  const { t, i18n } = useTranslation();
   const r = RARITY[trophy.rarity];
   return (
     <TouchableOpacity style={styles.trophyCard} onPress={onPress} activeOpacity={0.75}>
@@ -105,13 +112,13 @@ function TrophyCard({ trophy, onPress }: { trophy: Trophy; onPress: () => void }
         numberOfLines={2}
         style={styles.trophyName}
       >
-        {trophy.name}
+        {t(trophy.nameKey)}
       </Text>
 
       {/* Rarity chip */}
       <View style={[styles.rarityChip, { backgroundColor: r.chip }]}>
         <Text style={[styles.rarityChipText, { color: r.chipText }]}>
-          {r.label}
+          {t(`trophies.tiers.${trophy.rarity}`)}
         </Text>
       </View>
     </TouchableOpacity>
@@ -167,7 +174,7 @@ export default function TrophyRoomScreen() {
               <Ionicons name="lock-closed" size={20} color={colors.text.tertiary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text variant="label">{nextTrophy.name}</Text>
+              <Text variant="label">{t(nextTrophy.nameKey)}</Text>
               <ProgressBar
                 value={nextTrophy.progress.current / nextTrophy.progress.total}
                 color={colors.warning}

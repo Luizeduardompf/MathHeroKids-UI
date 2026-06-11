@@ -280,7 +280,9 @@
       "result": "Resultado",
       "notFound": "Usuario no encontrado",
       "notFoundDesc": "Verifica que el nombre sea correcto",
-      "searchHint": "¡Busca por username arriba!"
+      "searchHint": "¡Busca por username arriba!",
+      "cancelRequest": "Cancelar solicitud",
+      "sentRequestsTitle": "Solicitudes enviadas"
     },
     "ranking": {
       "title": "Ranking de amigos",
@@ -436,6 +438,43 @@
   },
   "trophies": {
     "miloMessage": "¡Mira cuántos trofeos tienes! ¿Vamos a ganar más?",
-    "detailTitle": "Detalles del trofeo"
+    "detailTitle": "Detalles del trofeo",
+    "items": {
+      "diario1": {
+        "name": "Trofeo Diario",
+        "desc": "Completa el desafío del día para ganar este trofeo.",
+        "howTo": "Termina 1 desafío diario con Milo."
+      },
+      "diario2": {
+        "name": "Madrugador",
+        "desc": "Empieza el desafío muy temprano.",
+        "howTo": "Completa un desafío antes de las 9am."
+      },
+      "semanal1": {
+        "name": "Trofeo Semanal",
+        "desc": "Juega todos los días durante 7 días seguidos.",
+        "howTo": "Mantén tu racha por una semana entera."
+      },
+      "mensal1": {
+        "name": "Trofeo Mensual",
+        "desc": "¡Un mes entero de matemáticas sin fallar!",
+        "howTo": "Completa los desafíos todos los días del mes."
+      },
+      "sequencia1": {
+        "name": "Racha de Fuego",
+        "desc": "¡Tu racha está en llamas!",
+        "howTo": "Alcanza una racha de 10 días."
+      },
+      "especial1": {
+        "name": "Semana Perfecta",
+        "desc": "7 días seguidos sin ninguna respuesta incorrecta.",
+        "howTo": "Acierta el 100% de los desafíos por 7 días."
+      },
+      "especial2": {
+        "name": "Mes Perfecto",
+        "desc": "El trofeo más raro de todos: un mes impecable.",
+        "howTo": "Acierta el 100% de los desafíos todo el mes."
+      }
+    }
   }
 }

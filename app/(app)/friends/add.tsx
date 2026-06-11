@@ -6,6 +6,15 @@
  * - Campo de busca por username (executa ao submit/enter)
  * - Resultado: avatar + nome + @username + streak + botão Adicionar
  * - Sugestões (quando campo vazio): amigos-de-amigos
+ *
+ * Estados do FriendCard (bilaterais):
+ * - 'idle'        → botão Adicionar
+ * - 'sending'     → spinner
+ * - 'sent'        → badge "Enviado" + botão Cancelar
+ * - 'cancelling'  → spinner no cancelar
+ * - 'received'    → botões Aceitar / Rejeitar
+ * - 'responding'  → spinner no aceitar/rejeitar
+ * - 'already_friend' → badge "Amigo"
  */
 
 import React, { useState } from 'react';
@@ -28,24 +37,46 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { Text } from '@/components/ui';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
-import { socialService, type FriendProfile } from '@/services/social.service';
+import { socialService, type FriendProfile, type SentRequest, type PendingRequest } from '@/services/social.service';
 import { colors, fontFamily, radius, shadows } from '@/theme';
 import { FriendAvatar } from './../../(app)/(tabs)/friends';
 
-// ─── Friend result card ───────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-type RequestState = 'idle' | 'sending' | 'sent' | 'already_friend';
+type RequestState =
+  | 'idle'
+  | 'sending'
+  | 'sent'
+  | 'cancelling'
+  | 'received'
+  | 'responding'
+  | 'already_friend';
+
+interface CardInfo {
+  state:      RequestState;
+  requestId?: string;
+}
+
+// ─── Friend result card ───────────────────────────────────────────────────────
 
 function FriendCard({
   profile,
-  state,
+  info,
   onAdd,
+  onCancel,
+  onAccept,
+  onReject,
 }: {
-  profile:  FriendProfile;
-  state:    RequestState;
-  onAdd:    () => void;
+  profile:   FriendProfile;
+  info:      CardInfo;
+  onAdd:     () => void;
+  onCancel:  () => void;
+  onAccept:  () => void;
+  onReject:  () => void;
 }) {
   const { t } = useTranslation();
+  const { state } = info;
+
   return (
     <View style={fc.card}>
       <FriendAvatar name={profile.display_name} size={52} />
@@ -59,16 +90,54 @@ function FriendCard({
           <Text style={fc.level}>{t('common.level', { level: profile.level })}</Text>
         </View>
       </View>
+
+      {/* ── Action area ── */}
       {state === 'already_friend' ? (
         <View style={fc.friendedBadge}>
           <Ionicons name="checkmark" size={14} color="#22C55E" />
           <Text style={fc.friendedText}>{t('friends.add.alreadyFriend')}</Text>
         </View>
-      ) : state === 'sent' ? (
-        <View style={fc.sentBadge}>
-          <Text style={fc.sentText}>{t('friends.add.sent')}</Text>
+
+      ) : state === 'received' ? (
+        // Pedido recebido — Accept / Reject
+        <View style={fc.actionRow}>
+          <Pressable
+            style={({ pressed }) => [fc.acceptBtn, pressed && { opacity: 0.78 }]}
+            onPress={onAccept}
+          >
+            <Ionicons name="checkmark" size={15} color="#fff" />
+            <Text style={fc.acceptText}>{t('friends.accept')}</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [fc.rejectBtn, pressed && { opacity: 0.78 }]}
+            onPress={onReject}
+          >
+            <Ionicons name="close" size={15} color="#EF4444" />
+          </Pressable>
         </View>
+
+      ) : state === 'responding' ? (
+        <ActivityIndicator color={colors.primary} size="small" style={{ marginRight: 8 }} />
+
+      ) : state === 'sent' ? (
+        // Pedido enviado — badge + Cancelar
+        <View style={fc.sentGroup}>
+          <View style={fc.sentBadge}>
+            <Text style={fc.sentText}>{t('friends.add.sent')}</Text>
+          </View>
+          <Pressable
+            style={({ pressed }) => [fc.cancelBtn, pressed && { opacity: 0.78 }]}
+            onPress={onCancel}
+          >
+            <Text style={fc.cancelText}>{t('friends.add.cancelRequest')}</Text>
+          </Pressable>
+        </View>
+
+      ) : state === 'cancelling' ? (
+        <ActivityIndicator color="#6B7280" size="small" style={{ marginRight: 8 }} />
+
       ) : (
+        // idle / sending
         <Pressable
           style={({ pressed }) => [fc.addBtn, pressed && { opacity: 0.78 }]}
           onPress={onAdd}
@@ -97,12 +166,27 @@ const fc = StyleSheet.create({
   streak:       { fontFamily: fontFamily.bold, fontSize: 12, color: '#F5722A' },
   dot:          { fontFamily: fontFamily.regular, fontSize: 12, color: colors.text.secondary },
   level:        { fontFamily: fontFamily.regular, fontSize: 12, color: colors.text.secondary },
+
+  // Add
   addBtn:       { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9, ...shadows.sm },
   addBtnText:   { fontFamily: fontFamily.bold, fontSize: 14, color: '#fff' },
+
+  // Already friend
   friendedBadge:{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#DCFCE7', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
   friendedText: { fontFamily: fontFamily.bold, fontSize: 13, color: '#22C55E' },
-  sentBadge:    { backgroundColor: '#F3F4F6', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
-  sentText:     { fontFamily: fontFamily.bold, fontSize: 13, color: '#6B7280' },
+
+  // Sent + cancel
+  sentGroup:    { alignItems: 'flex-end', gap: 6 },
+  sentBadge:    { backgroundColor: '#F3F4F6', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  sentText:     { fontFamily: fontFamily.bold, fontSize: 12, color: '#6B7280' },
+  cancelBtn:    { paddingHorizontal: 8, paddingVertical: 2 },
+  cancelText:   { fontFamily: fontFamily.semiBold, fontSize: 11, color: '#EF4444' },
+
+  // Received — Accept / Reject
+  actionRow:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  acceptBtn:    { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
+  acceptText:   { fontFamily: fontFamily.bold, fontSize: 13, color: '#fff' },
+  rejectBtn:    { width: 34, height: 34, borderRadius: 17, backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center' },
 });
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
@@ -114,10 +198,11 @@ export default function AddFriendScreen() {
   const queryClient = useQueryClient();
   const child       = useProfileStore(selectActiveChild);
 
-  const [query,         setQuery]         = useState('');
-  const [searchResult,  setSearchResult]  = useState<FriendProfile | null | 'not_found'>(null);
-  const [searching,     setSearching]     = useState(false);
-  const [sentIds,       setSentIds]       = useState<Set<string>>(new Set());
+  const [query,        setQuery]        = useState('');
+  const [searchResult, setSearchResult] = useState<FriendProfile | null | 'not_found'>(null);
+  const [searching,    setSearching]    = useState(false);
+
+  // ── Queries ─────────────────────────────────────────────────────────────────
 
   const { data: friends = [] } = useQuery({
     queryKey: ['friends', child?.id],
@@ -126,7 +211,19 @@ export default function AddFriendScreen() {
     staleTime: 30_000,
   });
 
-  const friendIds = new Set(friends.map((f) => f.id));
+  const { data: sentRequests = [] } = useQuery({
+    queryKey: ['sentRequests', child?.id],
+    queryFn:  () => socialService.getSentRequests(child!.id),
+    enabled:  !!child?.id,
+    staleTime: 30_000,
+  });
+
+  const { data: pendingRequests = [] } = useQuery({
+    queryKey: ['pendingRequests', child?.id],
+    queryFn:  () => socialService.getPendingRequests(child!.id),
+    enabled:  !!child?.id,
+    staleTime: 30_000,
+  });
 
   const { data: suggestions = [], isLoading: loadingSugg } = useQuery({
     queryKey: ['suggestions', child?.id],
@@ -135,14 +232,65 @@ export default function AddFriendScreen() {
     staleTime: 60_000,
   });
 
+  // ── Derived maps ─────────────────────────────────────────────────────────────
+
+  const friendIds  = new Set(friends.map((f) => f.id));
+  // sent: childId → requestId
+  const sentMap    = new Map(sentRequests.map((r: SentRequest) => [r.to_child_id, r.id]));
+  // received: fromChildId → requestId
+  const receivedMap = new Map(pendingRequests.map((r: PendingRequest) => [r.from_child_id, r.id]));
+
+  // ── Mutations ────────────────────────────────────────────────────────────────
+
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ['friends',        child?.id] });
+    void queryClient.invalidateQueries({ queryKey: ['sentRequests',   child?.id] });
+    void queryClient.invalidateQueries({ queryKey: ['pendingRequests',child?.id] });
+    void queryClient.invalidateQueries({ queryKey: ['suggestions',    child?.id] });
+  };
+
   const sendMutation = useMutation({
     mutationFn: (toId: string) => socialService.sendFriendRequest(child!.id, toId),
-    onSuccess: (_data, toId) => {
-      setSentIds((prev) => new Set(prev).add(toId));
-      void queryClient.invalidateQueries({ queryKey: ['friends', child?.id] });
-    },
+    onSuccess: invalidate,
     onError: (e) => Alert.alert(t('common.error'), (e as Error).message),
   });
+
+  const cancelMutation = useMutation({
+    mutationFn: (requestId: string) => socialService.cancelFriendRequest(requestId, child!.id),
+    onSuccess: invalidate,
+    onError: (e) => Alert.alert(t('common.error'), (e as Error).message),
+  });
+
+  const respondMutation = useMutation({
+    mutationFn: ({ requestId, accept }: { requestId: string; accept: boolean }) =>
+      socialService.respondToRequest(requestId, accept),
+    onSuccess: invalidate,
+    onError: (e) => Alert.alert(t('common.error'), (e as Error).message),
+  });
+
+  // ── Card state resolver ───────────────────────────────────────────────────────
+
+  function getCardInfo(profileId: string): CardInfo {
+    if (friendIds.has(profileId))    return { state: 'already_friend' };
+
+    const receivedReqId = receivedMap.get(profileId);
+    if (receivedReqId) {
+      const isResponding = respondMutation.isPending &&
+        (respondMutation.variables as { requestId: string } | undefined)?.requestId === receivedReqId;
+      return { state: isResponding ? 'responding' : 'received', requestId: receivedReqId };
+    }
+
+    const sentReqId = sentMap.get(profileId);
+    if (sentReqId) {
+      const isCancelling = cancelMutation.isPending && cancelMutation.variables === sentReqId;
+      return { state: isCancelling ? 'cancelling' : 'sent', requestId: sentReqId };
+    }
+
+    if (sendMutation.isPending && sendMutation.variables === profileId) return { state: 'sending' };
+    return { state: 'idle' };
+  }
+
+  // ── Search ────────────────────────────────────────────────────────────────────
 
   async function handleSearch() {
     if (!query.trim() || !child) return;
@@ -160,14 +308,24 @@ export default function AddFriendScreen() {
     }
   }
 
-  function getCardState(profileId: string): RequestState {
-    if (friendIds.has(profileId))   return 'already_friend';
-    if (sentIds.has(profileId))     return 'sent';
-    if (sendMutation.isPending && sendMutation.variables === profileId) return 'sending';
-    return 'idle';
-  }
-
   if (!child) return null;
+
+  // ── Render ────────────────────────────────────────────────────────────────────
+
+  function renderCard(p: FriendProfile) {
+    const info = getCardInfo(p.id);
+    return (
+      <FriendCard
+        key={p.id}
+        profile={p}
+        info={info}
+        onAdd={() => sendMutation.mutate(p.id)}
+        onCancel={() => { if (info.requestId) cancelMutation.mutate(info.requestId); }}
+        onAccept={() => { if (info.requestId) respondMutation.mutate({ requestId: info.requestId, accept: true }); }}
+        onReject={() => { if (info.requestId) respondMutation.mutate({ requestId: info.requestId, accept: false }); }}
+      />
+    );
+  }
 
   return (
     <View style={s.root}>
@@ -229,11 +387,15 @@ export default function AddFriendScreen() {
         {searchResult && searchResult !== 'not_found' && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>{t('friends.add.result')}</Text>
-            <FriendCard
-              profile={searchResult}
-              state={getCardState(searchResult.id)}
-              onAdd={() => sendMutation.mutate(searchResult.id)}
-            />
+            {renderCard(searchResult)}
+          </View>
+        )}
+
+        {/* Sent requests — always visible when present and no search active */}
+        {!query.trim() && sentRequests.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>{t('friends.add.sentRequestsTitle')}</Text>
+            {sentRequests.map((r: SentRequest) => renderCard(r.to_child))}
           </View>
         )}
 
@@ -249,14 +411,7 @@ export default function AddFriendScreen() {
                 <Text style={s.emptySub}>{t('friends.add.noSuggestionsDesc')}</Text>
               </View>
             ) : (
-              suggestions.map((p) => (
-                <FriendCard
-                  key={p.id}
-                  profile={p}
-                  state={getCardState(p.id)}
-                  onAdd={() => sendMutation.mutate(p.id)}
-                />
-              ))
+              suggestions.map((p) => renderCard(p))
             )}
           </View>
         )}

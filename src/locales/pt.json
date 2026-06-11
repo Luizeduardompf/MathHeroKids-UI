@@ -291,7 +291,9 @@
       "result": "Resultado",
       "notFound": "Nenhum utilizador encontrado",
       "notFoundDesc": "Verifica se o username está correcto",
-      "searchHint": "Busca por username acima!"
+      "searchHint": "Busca por username acima!",
+      "cancelRequest": "Cancelar pedido",
+      "sentRequestsTitle": "Pedidos enviados"
     },
     "ranking": {
       "title": "Ranking de amigos",
@@ -357,7 +359,44 @@
     "earnedOn": "CONQUISTADO",
     "howToEarn": "Como conquistar",
     "miloMessage": "Olha quantos troféus você já tem! Vamos conquistar mais?",
-    "detailTitle": "Detalhes do troféu"
+    "detailTitle": "Detalhes do troféu",
+    "items": {
+      "diario1": {
+        "name": "Troféu Diário",
+        "desc": "Complete o desafio do dia para ganhar este troféu.",
+        "howTo": "Termine 1 desafio diário com o Milo."
+      },
+      "diario2": {
+        "name": "Madrugador",
+        "desc": "Comece o desafio bem cedinho.",
+        "howTo": "Complete um desafio antes das 9h."
+      },
+      "semanal1": {
+        "name": "Troféu Semanal",
+        "desc": "Jogue todos os dias por 7 dias seguidos.",
+        "howTo": "Mantenha sua sequência por uma semana inteira."
+      },
+      "mensal1": {
+        "name": "Troféu Mensal",
+        "desc": "Um mês inteiro de matemática sem falhar!",
+        "howTo": "Complete os desafios todos os dias do mês."
+      },
+      "sequencia1": {
+        "name": "Sequência de Fogo",
+        "desc": "Sua sequência está pegando fogo!",
+        "howTo": "Alcance uma sequência de 10 dias."
+      },
+      "especial1": {
+        "name": "Semana Perfeita",
+        "desc": "7 dias seguidos sem errar nenhuma resposta.",
+        "howTo": "Acerte 100% dos desafios por 7 dias."
+      },
+      "especial2": {
+        "name": "Mês Perfeito",
+        "desc": "O troféu mais raro de todos: um mês impecável.",
+        "howTo": "Acerte 100% dos desafios o mês inteiro."
+      }
+    }
   },
   "achievements": {
     "title": "Conquistas",
