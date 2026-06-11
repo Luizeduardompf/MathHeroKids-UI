@@ -69,7 +69,7 @@ const sectionIconStyles = StyleSheet.create({
 
 // ─── Settings header ──────────────────────────────────────────────────────────
 
-function SettingsHeader({ title }: { title: string }) {
+function SettingsHeader({ title, onBack }: { title: string; onBack?: () => void }) {
   return (
     <LinearGradient
       colors={[colors.primary, colors.primaryDark]}
@@ -77,9 +77,16 @@ function SettingsHeader({ title }: { title: string }) {
       end={{ x: 1, y: 1 }}
     >
       <SafeAreaView edges={['top']}>
-        <View style={styles.header}>
-          <Text variant="caption" style={styles.appName}>Math Hero Kids</Text>
-          <Text variant="h1" color={colors.text.inverse}>{title}</Text>
+        <View style={[styles.header, onBack ? styles.headerWithBack : null]}>
+          {onBack && (
+            <Pressable onPress={onBack} style={styles.headerBackBtn} hitSlop={8}>
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </Pressable>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text variant="caption" style={styles.appName}>Math Hero Kids</Text>
+            <Text variant="h1" color={colors.text.inverse}>{title}</Text>
+          </View>
         </View>
       </SafeAreaView>
     </LinearGradient>
@@ -102,7 +109,7 @@ function PinDots({ count, total = 4 }: { count: number; total?: number }) {
 // Full-screen PIN verification with numeric keypad — shown before settings open.
 // If no PIN is set → calls onUnlock() immediately on mount.
 
-function PinGate({ onUnlock }: { onUnlock: () => void }) {
+function PinGate({ onUnlock, onCancel }: { onUnlock: () => void; onCancel?: () => void }) {
   const { t } = useTranslation();
   const router   = useRouter();
   const insets   = useSafeAreaInsets();
@@ -188,7 +195,7 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
         layout="stack"
       />
 
-      <SettingsHeader title={t('settings.title')} />
+      <SettingsHeader title={t('settings.title')} onBack={onCancel} />
 
       <View style={pinStyles.content}>
         {/* Lock icon */}
@@ -464,7 +471,9 @@ function ParentCard() {
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const router      = useRouter();
-  const [showPinGate, setShowPinGate] = useState(false);
+  const [showPinGate,      setShowPinGate]      = useState(false);
+  const [showLogoutModal,  setShowLogoutModal]  = useState(false);
+  const [loggingOut,       setLoggingOut]       = useState(false);
 
   const currentLocale = i18n.language as SupportedLocale;
 
@@ -473,8 +482,18 @@ export default function SettingsScreen() {
     await AsyncStorage.setItem(LOCALE_STORAGE_KEY, locale);
   }
 
-  // Show PIN gate inline (full-screen, replaces settings content)
-  // On unlock → navigate to parent area
+  async function handleLogout() {
+    setShowLogoutModal(false);
+    setLoggingOut(true);
+    try {
+      await authService.signOut();
+      router.replace('/(auth)/welcome');
+    } finally {
+      setLoggingOut(false);
+    }
+  }
+
+  // Show PIN gate inline — has back button via onCancel prop
   if (showPinGate) {
     return (
       <PinGate
@@ -482,12 +501,25 @@ export default function SettingsScreen() {
           setShowPinGate(false);
           router.push('/(app)/parent-area/');
         }}
+        onCancel={() => setShowPinGate(false)}
       />
     );
   }
 
   return (
     <View style={styles.root}>
+      <ConfirmDialog
+        visible={showLogoutModal}
+        title={t('settings.logoutTitle')}
+        message={t('settings.logoutMessage')}
+        primaryLabel={t('common.continue')}
+        primaryVariant="primary"
+        onPrimary={() => setShowLogoutModal(false)}
+        confirmLabel={t('settings.logoutConfirm')}
+        confirmVariant="destructive"
+        onConfirm={() => { void handleLogout(); }}
+        layout="stack"
+      />
       <SettingsHeader title={t('settings.title')} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -550,6 +582,22 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
         </Pressable>
 
+        {/* ── Sign out ─────────────────────────────────────────────── */}
+        <Pressable
+          style={styles.signOutBtn}
+          onPress={() => setShowLogoutModal(true)}
+          disabled={loggingOut}
+        >
+          {loggingOut ? (
+            <ActivityIndicator color={colors.error} size="small" />
+          ) : (
+            <>
+              <Ionicons name="log-out-outline" size={18} color={colors.error} />
+              <Text variant="label" color={colors.error}>{t('settings.logout')}</Text>
+            </>
+          )}
+        </Pressable>
+
       </ScrollView>
     </View>
   );
@@ -565,6 +613,19 @@ const styles = StyleSheet.create({
     paddingTop: space.sm,
     paddingBottom: space.lg,
     gap: space.xs,
+  },
+  headerWithBack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+  },
+  headerBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   appName: {
     color: 'rgba(255,255,255,0.75)',
@@ -590,6 +651,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // ── Sign out button ──────────────────────────────────────────────────────────
+  signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.sm,
+    paddingVertical: space.md,
+    marginTop: space.xs,
   },
 
   // ── Parent card ─────────────────────────────────────────────────────────────
