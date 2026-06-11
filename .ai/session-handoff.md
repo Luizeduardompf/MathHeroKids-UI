@@ -4,39 +4,34 @@
 
 ---
 
-## Estado actual — 2026-06-11 15:37 UTC
+## Estado actual — 2026-06-11 18:30 UTC
 
 ### 🟢 Em curso
 ```
 ESTADO: LIVRE
-ÚLTIMO COMMIT: 6febc6d
+ÚLTIMO COMMIT: cfe72f6
 ```
 
 ---
 
 ### ✅ Concluído (sessão 5 — 2026-06-11)
 
-**Aba Amigos — reestruturação UI (toggle Amigos | Ranking):**
-- `(tabs)/friends.tsx` reescrito: toggle de topo "Amigos" (default) | "Ranking"
-- Painel Amigos: search bar inline, pedidos pendentes (accept/reject), lista de amigos com chat + block
-- Painel Ranking: sub-toggle Semanal/Mensal/Global + pódio + lista
-- Ícone `person-add` no header navega para `friends/add` (busca/sugestões) em vez de `friends/list`
-- Locales pt/en/es/fr: `sectionFriends`, `sectionRanking`, `blockTitle` adicionados
-
-**Fix sendFriendRequest / respondToRequest — erros da EF surfaçados:**
-- Ambos os métodos tinham `catch {}` silencioso que engolia o erro real da EF
-- Fallback de insert/update directo sempre falhava (sem RLS INSERT/UPDATE em friend_requests)
-- Fix: removido catch silencioso; FunctionsHttpError.context parseado para mostrar código real da EF
-
-**Fix BOOT_ERROR em todas as EFs — imports corrigidos:**
-- `https://esm.sh/@supabase/supabase-js@2` → `npm:@supabase/supabase-js@2` (5 EFs)
-- `verify_parent_pin`: `deno.land/x/bcrypt` (WASM + Worker, incompatível) → `npm:bcryptjs` (pure JS)
-- `bcrypt.hash(pin)` → `bcrypt.hash(pin, 10)` (bcryptjs exige salt rounds explícito)
-- Todas as 5 EFs confirmadas a responder correctamente ✅
-- Pedido de amizade confirmado a funcionar pelo utilizador ✅
+**i18n — auditoria completa de textos hardcoded PT:**
+- `PlaceholderScreen.tsx`: 'Voltar' → t('common.back'), 'Em breve' → t('common.comingSoon')
+- `+not-found.tsx`: 'Página não encontrada' + 'Voltar ao início' → t()
+- `trophy-room.tsx`: title, miloMessage, 'PRÓXIMO TROFÉU', CATEGORY_LABELS → t()
+- `trophy/[id].tsx`, `controls.tsx`, `rewards.tsx`, `parent-area/child/new.tsx` → t() nos títulos dos placeholders
+- `pin.tsx`: 'Controle dos pais', 'Área dos pais', 'Digite o PIN', 'Esqueci o PIN' → t()
+- `edit-profile.tsx`: todos os labels, placeholders, erros, alerts → t()
+- `change-password.tsx`: erros de validação, labels, botões → t()
+- `add-child.tsx` (profile-select): title, miloMessage, botão → t()
+- `forgot-password.tsx`: mensagem de sucesso → t()
+- `friends/chat`: 'Amigo' + 'Começa a conversa!' → t()
+- `friends/add`: 'Sem sugestões' + 'Busca por username' → t()
+- `home/index.tsx`: '+150 XP' badge → t('home.challenge.xpReward')
+- Novas chaves adicionadas em pt/en/es/fr: 30+ chaves novas
 
 ---
-
 ### ✅ Concluído (sessão 4 — 2026-06-11)
 
 **Fix complete_challenge EF — unique constraint collision:**
