@@ -27,7 +27,8 @@
     },
     "self": "Vous",
     "comingSoon": "Bientôt disponible",
-    "saving": "Enregistrement…"
+    "saving": "Enregistrement…",
+    "delete": "Effacer"
   },
   "nav": {
     "home": "Accueil",
@@ -43,9 +44,9 @@
       "getStarted": "Commencer",
       "signIn": "J'ai déjà un compte",
       "features": {
-        "trophies":   "Gagne des trophées et monte de niveau",
+        "trophies": "Gagne des trophées et monte de niveau",
         "challenges": "Défis quotidiens avec Milo",
-        "profiles":   "Plusieurs profils pour toute la famille"
+        "profiles": "Plusieurs profils pour toute la famille"
       }
     },
     "login": {
@@ -157,6 +158,15 @@
     "logoutTitle": "Se déconnecter ?",
     "logoutMessage": "Vous devrez vous reconnecter.",
     "logoutConfirm": "Quitter"
+  },
+  "rewards": {
+    "frame_star":    { "name": "Cadre Étoile" },
+    "outfit_hero":   { "name": "Tenue Héros" },
+    "medal_bronze":  { "name": "Médaille de Bronze" },
+    "frame_fire":    { "name": "Cadre Flamme" },
+    "outfit_mage":   { "name": "Tenue Mage" },
+    "medal_silver":  { "name": "Médaille d'Argent" },
+    "frame_rainbow": { "name": "Cadre Arc-en-ciel" }
   },
   "errors": {
     "generic": "Quelque chose s'est mal passé. Veuillez réessayer.",
@@ -323,7 +333,9 @@
     "target100": "★ Objectif: 100%",
     "yourAnswer": "Ta réponse:",
     "errorSubmitMsg": "Impossible d'envoyer le défi. Veuillez réessayer.",
-    "errorRetry": "Réessayer"
+    "errorRetry": "Réessayer",
+    "offlineTitle": "Pas d'internet",
+    "offlineMsg": "Milo a besoin d'internet pour préparer ton défi. Connecte-toi et réessaie."
   },
   "parentArea": {
     "pin": {
@@ -365,14 +377,27 @@
       "confirmPlaceholder": "Répétez le mot de passe",
       "updated": "✓ Mot de passe modifié avec succès !",
       "saveBtn": "Enregistrer le nouveau mot de passe"
-    }
+    },
+    "accountSection": "Gérer le compte",
+    "childrenSection": "Vos enfants",
+    "addChild": "Ajouter un enfant"
   },
   "progression": {
     "xpToLevel": "Il manque {{xp}} XP pour le niveau {{level}}",
     "miloNearLevel": "Tu es si proche du prochain niveau ! Allez !",
     "miloContinue": "Continue les défis pour monter de niveau !",
     "milestonesTitle": "Jalons et récompenses",
-    "milestoneLabel": "Niveau {{level}} · {{title}}"
+    "milestoneLabel": "Niveau {{level}} · {{title}}",
+    "milestones": {
+      "initialAvatar": "Avatar initial débloqué",
+      "adventurerFrame": "Cadre Aventurier",
+      "starsFrame": "Cadre Étoiles",
+      "magicCape": "Cape Magique",
+      "silverMedal": "Médaille d'Argent",
+      "brilliantTrophy": "Trophée Brillant",
+      "galacticHat": "Chapeau Galactique",
+      "goldenFireworks": "Feux Dorés"
+    }
   },
   "milo": {
     "great_job": "Super travail aujourd'hui !",
@@ -397,6 +422,21 @@
   "trophies": {
     "miloMessage": "Regarde tous les trophées que tu as déjà ! Allons en gagner plus ?",
     "detailTitle": "Détails du trophée",
+    "daily1":   { "name": "Premier Défi",        "desc": "Ton premier défi quotidien complété !" },
+    "daily7":   { "name": "En Route",            "desc": "7 défis complétés. Continue !" },
+    "daily30":  { "name": "Dévoué",              "desc": "30 défis. Quelle concentration !" },
+    "daily100": { "name": "Légendaire",          "desc": "100 défis ! Tu es incroyable." },
+    "weekly1":  { "name": "Semaine Complète",    "desc": "5 défis en une semaine." },
+    "weekly2":  { "name": "Semaine Parfaite",    "desc": "7 défis en une semaine. Bravo !" },
+    "monthly1": { "name": "Mois Dévoué",         "desc": "20 défis en un mois. Impressionnant !" },
+    "monthly2": { "name": "Mois Complet",        "desc": "30 défis en un mois. Parfait !" },
+    "streak3":  { "name": "Trio Incroyable",     "desc": "3 jours de suite. Super début !" },
+    "streak7":  { "name": "En Feu",              "desc": "7 jours de suite. Quelle série !" },
+    "streak30": { "name": "Mois en Feu",         "desc": "30 jours de suite. Héros maths !" },
+    "streak100":{ "name": "Cent Jours",          "desc": "100 jours de suite. Légendaire !" },
+    "perfect1": { "name": "Note Parfaite",       "desc": "Premier défi parfait. Bravo !" },
+    "perfect10":{ "name": "Dix Parfaits",        "desc": "10 défis parfaits. Talentueux !" },
+    "perfect30":{ "name": "Maître de Perfection","desc": "30 défis parfaits. Sans mots !" },
     "items": {
       "diario1": {
         "name": "Trophée Quotidien",
@@ -440,6 +480,19 @@
       "desempenho": "Performance",
       "colecao": "Collection"
     },
+    "firstChallenge": { "name": "Premiers Pas",         "desc": "Tu as complété ton premier défi !" },
+    "firstPerfect":   { "name": "Début Parfait",        "desc": "Premier défi sans erreurs !" },
+    "challenges10":   { "name": "10 Défis",             "desc": "10 défis terminés. Continue !" },
+    "challenges50":   { "name": "50 Défis",             "desc": "50 défis ! Tu es un héros." },
+    "streak3":        { "name": "3 Jours de Suite",     "desc": "3 jours en série. Super début !" },
+    "streak7":        { "name": "7 Jours de Suite",     "desc": "Une semaine entière ! Bravo !" },
+    "streak30":       { "name": "30 Jours de Suite",    "desc": "Un mois de série. Incroyable !" },
+    "streak100":      { "name": "100 Jours de Suite",   "desc": "100 jours de suite. Légendaire !" },
+    "perfect10":      { "name": "Dix Parfaits",         "desc": "10 défis parfaits. Génie !" },
+    "mastery25":      { "name": "Connaisseur",          "desc": "Maîtrisé 25 tables ! Excellent !" },
+    "mastery100":     { "name": "Maître des Tables",    "desc": "100 tables maîtrisées. Légende !" },
+    "level5":         { "name": "Aventurier",           "desc": "Niveau 5 atteint. Bien joué !" },
+    "level10":        { "name": "Explorateur Maître",   "desc": "Niveau 10 atteint. Sensationnel !" },
     "items": {
       "a1": {
         "name": "Première Journée Parfaite",

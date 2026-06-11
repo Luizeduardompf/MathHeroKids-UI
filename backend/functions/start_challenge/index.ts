@@ -1,42 +1,44 @@
 /**
- * start_challenge — Edge Function (Deno)
+ * start_challenge — Edge Function (Phase 2.5 — adaptive engine)
  *
- * Creates or resumes a challenge_sessions row for the given child + date.
- * Idempotent: same child + date + session_id returns the existing session.
+ * Cria ou retoma uma challenge_session. Diferenca para v1:
+ * - Ignora question_seed (legacy).
+ * - Gera 20 questoes adaptativamente a partir de child_fact_mastery + adaptive-rules.json.
+ * - Persiste payload em challenge_sessions.questions_payload.
  *
  * Request body:
  * {
- *   child_id: string,
- *   challenge_date: string,       // YYYY-MM-DD
- *   module_id: string,
- *   session_id: string,           // client-generated UUID
- *   question_seed: string,
- *   timer_seconds: number,
- *   multiplication_max: number,
+ *   child_id: string;
+ *   challenge_date: string;   // YYYY-MM-DD
+ *   module_id?: string;       // default 'multiplication'
+ *   session_id: string;       // client UUID (idempotencia)
+ *   timer_seconds: number;
  * }
  *
  * Response:
  * {
- *   sessionId: string,
- *   status: 'new' | 'resumed',
- *   resumeFromIndex: number,      // 0 for new sessions
+ *   sessionId: string;
+ *   status: 'new' | 'resumed';
+ *   questions: Array<{
+ *     position: number;
+ *     fact_id: string;
+ *     operand_a: number;
+ *     operand_b: number;
+ *     bucket: MasteryState;
+ *   }>;
+ *   rulesVersion: number;
  * }
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders } from '../_shared/cors.ts';
+import { getRules, getRulesVersion } from '../_shared/adaptive-rules.ts';
+import { selectQuestions } from '../_shared/question-selector.ts';
 
 const RETROACTIVE_WINDOW_DAYS = 7;
 
 Deno.serve(async (req: Request) => {
-  // CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
     const supabase = createClient(
@@ -44,116 +46,158 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const body = await req.json() as {
-      child_id: string;
-      challenge_date: string;
-      module_id: string;
-      session_id: string;
-      question_seed: string;
-      timer_seconds: number;
-      multiplication_max: number;
-    };
+    const body = await req.json();
+    const { child_id, challenge_date, session_id, timer_seconds } = body;
+    const module_id = body.module_id ?? 'multiplication';
 
-    const { child_id, challenge_date, module_id, session_id, question_seed, timer_seconds, multiplication_max } = body;
+    // Validacao de inputs
+    if (!child_id || !challenge_date || !session_id || timer_seconds == null) {
+      return jsonError(400, 'MISSING_FIELDS', 'child_id, challenge_date, session_id e timer_seconds sao obrigatorios.');
+    }
 
-    // ── Validate date ──────────────────────────────────────────────────
+    // Validacao de data
     const today = new Date().toISOString().split('T')[0]!;
-    const challengeDay = new Date(challenge_date);
-    const todayDay = new Date(today);
-    const diffDays = Math.floor((todayDay.getTime() - challengeDay.getTime()) / 86400000);
-
+    const diffDays = Math.floor(
+      (new Date(today).getTime() - new Date(challenge_date).getTime()) / 86400000,
+    );
     if (diffDays < 0) {
-      return new Response(
-        JSON.stringify({ error: 'FUTURE_DATE', message: 'Cannot start a challenge for a future date.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+      return jsonError(400, 'FUTURE_DATE', 'Cannot start a challenge for a future date.');
+    }
+    if (diffDays > RETROACTIVE_WINDOW_DAYS) {
+      return jsonError(429, 'RETROACTIVE_WINDOW_EXPIRED', 'Outside 7-day retroactive window.');
     }
 
-    const isRetroactive = diffDays > 0;
-    if (isRetroactive && diffDays > RETROACTIVE_WINDOW_DAYS) {
-      return new Response(
-        JSON.stringify({ error: 'RETROACTIVE_WINDOW_EXPIRED', message: 'This date is outside the 7-day retroactive window.' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    // ── Check for existing session ─────────────────────────────────────
+    // Idempotencia: 1) por session_id (mesmo cliente)
     const { data: existing } = await supabase
       .from('challenge_sessions')
-      .select('id, status, correct_count')
+      .select('id, status, questions_payload, rules_version')
+      .eq('id', session_id)
+      .maybeSingle();
+
+    if (existing?.questions_payload) {
+      return jsonOk({
+        sessionId: existing.id,
+        status: 'resumed',
+        questions: existing.questions_payload,
+        rulesVersion: existing.rules_version,
+      });
+    }
+
+    // Idempotencia: 2) por (child_id, challenge_date, module_id) — previne unique constraint ao retry
+    // Inclui sessoes sem payload (criadas por tentativas anteriores que falharam a meio).
+    const { data: existingByDate } = await supabase
+      .from('challenge_sessions')
+      .select('id, status, questions_payload, rules_version')
       .eq('child_id', child_id)
       .eq('challenge_date', challenge_date)
       .eq('module_id', module_id)
       .maybeSingle();
 
-    if (existing) {
-      if (existing.status === 'completed') {
-        return new Response(
-          JSON.stringify({ error: 'ALREADY_COMPLETED', message: 'Challenge for this date is already completed.' }),
-          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        );
-      }
-
-      // Resume in_progress session
-      // Estimate resume index from correct_count (approximate — server revalidates on completion)
-      const resumeFromIndex = existing.correct_count ?? 0;
-      return new Response(
-        JSON.stringify({ sessionId: existing.id, status: 'resumed', resumeFromIndex }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
+    // Se ja tem payload: retornar directamente
+    if (existingByDate?.questions_payload) {
+      return jsonOk({
+        sessionId: existingByDate.id,
+        status: 'resumed',
+        questions: existingByDate.questions_payload,
+        rulesVersion: existingByDate.rules_version,
+      });
     }
 
-    // ── Create new session ─────────────────────────────────────────────
-    const { data: newSession, error: insertError } = await supabase
+    // Se existe mas sem payload (orfao): reutilizar o mesmo id para o upsert nao colidir
+    const effectiveSessionId = existingByDate?.id ?? session_id;
+
+    // Carregar mastery atual da crianca
+    const { data: mastery, error: masteryErr } = await supabase
+      .from('child_fact_mastery')
+      .select('fact_id, state, strength, last_seen_at')
+      .eq('child_id', child_id);
+
+    if (masteryErr) {
+      console.error('mastery fetch error', masteryErr);
+      return jsonError(500, 'MASTERY_FETCH_FAILED', masteryErr.message);
+    }
+
+    // Carregar catalogo de facts
+    const { data: facts, error: factsErr } = await supabase
+      .from('multiplication_facts')
+      .select('id, operand_a, operand_b, answer, fact_group_id, base_difficulty');
+
+    if (factsErr || !facts || facts.length === 0) {
+      return jsonError(500, 'FACTS_NOT_SEEDED', 'multiplication_facts table is empty.');
+    }
+
+    // Cooldown: facts usados nas ultimas N sessoes
+    const rules = getRules();
+    const { data: recentSessions } = await supabase
       .from('challenge_sessions')
-      .insert({
-        id: session_id,
+      .select('questions_payload')
+      .eq('child_id', child_id)
+      .neq('id', session_id)
+      .not('questions_payload', 'is', null)
+      .order('started_at', { ascending: false })
+      .limit(rules.antiRepeat.crossSessionCooldown);
+
+    const excludedFactIds = new Set<string>();
+    (recentSessions ?? []).forEach((s: { questions_payload: Array<{ fact_id: string }> | null }) => {
+      (s.questions_payload ?? []).forEach(q => excludedFactIds.add(q.fact_id));
+    });
+
+    // Selecionar 20 questoes adaptativamente
+    const { questions, metadata } = selectQuestions({
+      facts,
+      mastery: mastery ?? [],
+      excludedFactIds,
+      rules,
+    });
+
+    // Upsert da sessao com payload persistido
+    const { error: upsertErr } = await supabase
+      .from('challenge_sessions')
+      .upsert({
+        id: effectiveSessionId,
         child_id,
         challenge_date,
         module_id,
-        question_seed,
-        status: 'in_progress',
-        total_questions: 20,
-        correct_count: 0,
-        xp_awarded: 0,
-        is_retroactive: isRetroactive,
-        is_perfect: false,
+        questions_payload: questions,
+        rules_version: getRulesVersion(),
+        selection_metadata: metadata,
         timer_seconds,
-        multiplication_max,
-      })
-      .select('id')
-      .single();
+        multiplication_max: 10,
+        status: 'in_progress',
+        total_questions: rules.session.questionsPerChallenge,
+        is_retroactive: diffDays > 0,
+        question_seed: null, // legacy — deprecado na Phase 2.5
+      }, { onConflict: 'id' });
 
-    if (insertError) {
-      // Handle race condition: another request created the session simultaneously
-      if (insertError.code === '23505') {
-        const { data: raceExisting } = await supabase
-          .from('challenge_sessions')
-          .select('id, status, correct_count')
-          .eq('child_id', child_id)
-          .eq('challenge_date', challenge_date)
-          .single();
-
-        if (raceExisting) {
-          return new Response(
-            JSON.stringify({ sessionId: raceExisting.id, status: 'resumed', resumeFromIndex: raceExisting.correct_count ?? 0 }),
-            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-          );
-        }
-      }
-      throw insertError;
+    if (upsertErr) {
+      console.error('upsert error', upsertErr);
+      return jsonError(500, 'SESSION_UPSERT_FAILED', upsertErr.message);
     }
 
-    return new Response(
-      JSON.stringify({ sessionId: newSession.id, status: 'new', resumeFromIndex: 0 }),
-      { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+    return jsonOk({
+      sessionId: effectiveSessionId,
+      status: 'new',
+      questions,
+      rulesVersion: getRulesVersion(),
+    });
 
-  } catch (err) {
-    console.error('start_challenge error:', err);
-    return new Response(
-      JSON.stringify({ error: 'INTERNAL_ERROR', message: (err as Error).message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error('start_challenge error', err);
+    return jsonError(500, 'INTERNAL_ERROR', message);
   }
 });
+
+function jsonOk(body: unknown) {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+function jsonError(status: number, code: string, message: string) {
+  return new Response(JSON.stringify({ error: code, message }), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}

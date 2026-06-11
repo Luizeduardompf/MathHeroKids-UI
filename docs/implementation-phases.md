@@ -56,7 +56,7 @@ Testing:
 
 ---
 
-## Phase 2 — Challenge Engine (Week 5–7)
+## Phase 2 — Challenge Engine (Week 5–7) ✅ Completo
 
 **Goal**: A child can complete a daily challenge end-to-end with XP awarded.
 
@@ -67,24 +67,38 @@ Screens:
 - Challenge Completed screen
 
 Backend (Edge Functions):
-- `start_challenge`: create/resume `challenge_sessions` row; idempotent
-- `submit_answer`: validate answer, insert `challenge_answers`, award per-question XP, return next question
-- `complete_challenge`: award completion XP, update `child_profiles.xp_total`, check level up, update `calendar_days`, update streak
-- Question generator: multiplication `a × b` where a,b ∈ [1, multiplication_max], no repeat within session
+- `start_challenge`: create/resume `challenge_sessions`; idempotent
+- `complete_challenge`: validate answers, award XP, update `child_profiles`, `calendar_days`, streak
 
-Local:
-- Offline queue: if `submit_answer` fails (no network), buffer locally and sync on reconnect
-- Timer implemented client-side; server validates total session time on completion
+---
 
-State:
-- `challengeStore`: current session, current question index, answers buffer, timer state
+## Phase 2.5 — Adaptive Multiplication System ✅ Completo
 
-Testing:
-- 20 questions flow, correct XP sum
-- Time expiry handling
-- Exit mid-challenge: progress preserved to last submitted question
-- Offline: complete challenge offline → sync on reconnect → XP correctly awarded once
-- Retroactive challenge: completing past day records correctly, does not restore streak
+**Goal**: Substituir geração seed determinística por seleção adaptativa server-side com mastery por questão.
+
+Decisões de design em `docs/adaptive-multiplication-system.md`. Implementação em `docs/phase-2.5-implementation-handoff.md`.
+
+### Sprints entregues
+
+| Sprint | Entregável | Estado |
+|---|---|---|
+| 2.5.1 | `006_multiplication_facts.sql` — 100 questões, tiers T1–T5 | ✅ |
+| 2.5.2 | `007_child_fact_mastery.sql` — mastery, timezone, colunas legacy deprecated | ✅ |
+| 2.5.3 | `adaptive-rules.json` + schema + `_shared/adaptive-rules.ts` | ✅ |
+| 2.5.4 | Refactor `start_challenge` — geração adaptativa, persiste `questions_payload` | ✅ |
+| 2.5.5 | Refactor `complete_challenge` — valida contra payload, atualiza mastery | ✅ |
+| 2.5.6 | App cliente — consome payload server-side, `use-network-status`, offline screen | ✅ |
+| 2.5.7 | `recompute_mastery` EF — idempotente, replay histórico | ✅ |
+| 2.5.8 | A/B harness — `adaptive-rules-v2.json`, `getRulesForChild`, `docs/ab-testing.md` | ✅ |
+
+### Arquitetura resultante
+
+- **Online-only**: challenges requerem conexão. Sem offline queue para sessões.
+- **Server-authoritative**: questões geradas pelo servidor, payload persistido em `challenge_sessions.questions_payload`.
+- **Mastery por questão**: estados NEW→LEARNING→REVIEWING→MASTERED←→WEAK por `(child_id, fact_id)`.
+- **Progressão de tiers**: T1+T2 na cold start; T3–T5 desbloqueados por mastery.
+- **Comutatividade**: acerto em 7×8 transfere 50% de crédito para 8×7.
+- **A/B harness**: `AB_TEST_ENABLED=true` ativa distribuição estável 50/50 por `child_id`.
 
 ---
 

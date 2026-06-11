@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mathheroskids.com/schemas/adaptive-rules.json",
+  "type": "object",
+  "required": ["version","mastery","selectionMix","antiRepeat","progression","strength","commutativity","sessionDistinctness","session"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "lastUpdated": { "type": "string", "format": "date" },
+    "mastery": {
+      "type": "object",
+      "required": ["learning","mastered","weak"],
+      "properties": {
+        "learning": {
+          "type": "object",
+          "required": ["distinctSessionsRequired"],
+          "properties": {
+            "distinctSessionsRequired": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "mastered": {
+          "type": "object",
+          "required": ["totalCorrectRequired","distinctSessionsRequired"],
+          "properties": {
+            "totalCorrectRequired": { "type": "integer", "minimum": 1 },
+            "distinctSessionsRequired": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "weak": {
+          "type": "object",
+          "required": ["consecutiveWrongTrigger","recoveryDistinctSessions","recoveryCorrectPerSession"],
+          "properties": {
+            "consecutiveWrongTrigger": { "type": "integer", "minimum": 1 },
+            "recoveryDistinctSessions": { "type": "integer", "minimum": 1 },
+            "recoveryCorrectPerSession": { "type": "integer", "minimum": 1 }
+          }
+        }
+      }
+    },
+    "selectionMix": {
+      "type": "object",
+      "required": ["weights","fallbackOrder"],
+      "properties": {
+        "weights": {
+          "type": "object",
+          "required": ["WEAK","LEARNING","NEW","REVIEWING","MASTERED"],
+          "additionalProperties": false,
+          "properties": {
+            "WEAK":      { "type": "number", "minimum": 0, "maximum": 1 },
+            "LEARNING":  { "type": "number", "minimum": 0, "maximum": 1 },
+            "NEW":       { "type": "number", "minimum": 0, "maximum": 1 },
+            "REVIEWING": { "type": "number", "minimum": 0, "maximum": 1 },
+            "MASTERED":  { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "fallbackOrder": {
+          "type": "array",
+          "items": { "enum": ["WEAK","LEARNING","NEW","REVIEWING","MASTERED"] },
+          "minItems": 5,
+          "maxItems": 5
+        }
+      }
+    },
+    "antiRepeat": {
+      "type": "object",
+      "required": ["intraSessionUnique","crossSessionCooldown","introduceByDifficulty"],
+      "properties": {
+        "intraSessionUnique": { "type": "boolean" },
+        "crossSessionCooldown": { "type": "integer", "minimum": 0 },
+        "introduceByDifficulty": { "type": "boolean" }
+      }
+    },
+    "progression": {
+      "type": "object",
+      "required": ["tiers"],
+      "properties": {
+        "tiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["base"],
+            "properties": {
+              "base": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "unlockAt": { "enum": ["start"] },
+              "unlockWhen": { "enum": ["tierLearned"] },
+              "minTier": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "minMasteryPct": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        }
+      }
+    },
+    "strength": {
+      "type": "object",
+      "required": ["halfLifeDays","wrongDecay","weights","targetSessions"],
+      "properties": {
+        "halfLifeDays": { "type": "number", "exclusiveMinimum": 0 },
+        "wrongDecay": { "type": "number", "minimum": 0 },
+        "weights": {
+          "type": "object",
+          "required": ["recency","accuracy","sessions"],
+          "properties": {
+            "recency":  { "type": "number", "minimum": 0, "maximum": 1 },
+            "accuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+            "sessions": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "targetSessions": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "commutativity": {
+      "type": "object",
+      "required": ["enabled","transferFactor"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "transferFactor": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "sessionDistinctness": {
+      "type": "object",
+      "required": ["mode"],
+      "properties": {
+        "mode": { "enum": ["byCalendarDay","bySessionId"] }
+      }
+    },
+    "session": {
+      "type": "object",
+      "required": ["questionsPerChallenge","blockSize","maxWeakPerSession"],
+      "properties": {
+        "questionsPerChallenge": { "type": "integer", "minimum": 1 },
+        "blockSize": { "type": "integer", "minimum": 1 },
+        "maxWeakPerSession": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

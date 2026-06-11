@@ -33,3 +33,24 @@ export type BadgeVariant =
   | 'diamond';
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+
+// ─── Challenge Types (Phase 2.5 — server-side adaptive) ───────────────────────
+
+export type MasteryState = 'NEW' | 'LEARNING' | 'REVIEWING' | 'MASTERED' | 'WEAK';
+
+/** Questao retornada pelo servidor em start_challenge (Phase 2.5+) */
+export interface ChallengeQuestion {
+  position: number;      // 1..20
+  fact_id: string;       // e.g. 'fact_7x8'
+  operand_a: number;
+  operand_b: number;
+  bucket: MasteryState;
+}
+
+/** Resposta de start_challenge (Phase 2.5+) */
+export interface ChallengeStartResponse {
+  sessionId: string;
+  status: 'new' | 'resumed';
+  questions: ChallengeQuestion[];
+  rulesVersion: number;
+}

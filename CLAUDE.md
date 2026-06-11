@@ -112,7 +112,7 @@ git add backend/functions/<nome> supabase/functions/<nome>
 | Server state | TanStack Query (React Query) |
 | Client state | Zustand (auth, activeChild, challenge UI) |
 | i18n | i18next + expo-localization (pt, en, es, fr) |
-| Offline | AsyncStorage sync queue — NÃO SQLite |
+| Offline | AsyncStorage apenas para: activeChild, idioma, tema, local completions (calendário). Challenges são online-only (Phase 2.5) |
 | Animações | React Native Reanimated 3 |
 
 ---
@@ -217,20 +217,21 @@ MathHeroKids-UI/
 
 **Phase 0 (Foundation)** ✅ Completo
 **Phase 1 (Auth & Profiles)** ✅ Completo
+**Phase 2.5 (Adaptive Multiplication System)** ✅ Completo
 
-### O que está feito (Phase 0 + 1)
+### O que está feito (Phase 0 + 1 + 2.5)
 - Expo Router + TypeScript strict + design system + i18n + tema
 - Supabase client, TanStack Query, Zustand stores (auth + profile com persist)
-- `useAuthListener`: sincroniza session Supabase → `authStore`, limpa `activeChild` no signout
-- `app/index.tsx`: ponto de decisão de rota inicial (loading → welcome → profile-select → app)
-- Guard em `app/(app)/_layout.tsx`: bloqueia acesso sem auth ou sem `activeChild`
-- `src/services/auth.service.ts`: signUp, signIn, signOut, resetPassword (com error mapping)
-- `src/services/child.service.ts`: listChildren, createChild, updateChild, deactivateChild, isUsernameAvailable
-- Todas as telas de auth wired: login, register/parent, register/child, forgot-password
-- `profile-select/index.tsx`: carrega filhos reais via TanStack Query, seta `activeChild`
-- `backend/`: estrutura scaffolded (functions, migrations, seeds)
+- Auth completo: login, register, forgot-password, profile-select
+- `multiplication_facts` (100 questões, tiers T1–T5) + `child_fact_mastery` (mastery por criança)
+- `adaptive-rules.json` versionado + JSON Schema + validação no boot da EF
+- `start_challenge` EF: geração adaptativa server-side, persiste `questions_payload`
+- `complete_challenge` EF: valida contra payload, atualiza mastery, XP, streak, calendar
+- `recompute_mastery` EF: replay idempotente do histórico
+- App cliente: consome payload server-side, sem geração local, tela offline, `use-network-status`
+- A/B harness: `AB_TEST_ENABLED=true` para testar variantes de `adaptive-rules.json`
 
-### Pendente (Phase 2+)
+### Pendente (Phase 3+)
 Consultar `docs/implementation-phases.md` para o roadmap completo.
 
 ---
@@ -249,12 +250,16 @@ Consultar `docs/implementation-phases.md` para o roadmap completo.
 - O cliente **NUNCA escreve** diretamente em colunas de progressão de `child_profiles`
 - Todos os updates de jogo passam pela Edge Function `complete_challenge`
 
-### Challenge (Phase 2)
-- Questões geradas client-side com seed determinístico: `${child_id}:${date}:${module_id}`
-- Todas as 20 respostas enviadas em batch no fim da sessão (não por questão)
-- Servidor valida regenerando as questões com o mesmo seed
-- Checkpoint: salvar no AsyncStorage a cada bloco (4 blocos × 5 questões)
-- Offline: payload salvo em AsyncStorage → sincronizado na reconexão
+### Challenge (Phase 2.5 — adaptive engine) ⚠️ CRÍTICO
+- **Online-only**: sem queue offline para challenge sessions. Se offline, tela de erro amigável.
+- Questões geradas **server-side** por `start_challenge` EF de forma adaptativa.
+- Payload persistido em `challenge_sessions.questions_payload` — cliente só renderiza.
+- Mastery por questão em `child_fact_mastery`: NEW→LEARNING→REVIEWING→MASTERED←→WEAK.
+- 20 respostas enviadas em batch via `complete_challenge` no fim da sessão.
+- `complete_challenge` valida contra `questions_payload` (não regenera com seed).
+- Cache local apenas: completions de calendário, activeChild, idioma, tema.
+- A/B harness: `AB_TEST_ENABLED=true` ativa variante v2 das regras para 50% das crianças.
+- Docs: `docs/adaptive-multiplication-system.md`, `docs/ab-testing.md`.
 
 ### Serviços vs. Telas
 - Telas **não chamam `supabase` diretamente** — usam `src/services/` + TanStack Query
@@ -266,9 +271,10 @@ Consultar `docs/implementation-phases.md` para o roadmap completo.
 - Sem Supabase Realtime para rankings — pull-to-refresh via TanStack Query
 - Realtime apenas para: badge de friend requests
 
-### Offline (Phase 8)
+### Offline
 - **NÃO usar SQLite** — overengineering para MVP
-- Estratégia: AsyncStorage sync queue para challenge sessions pendentes
+- Challenges são **online-only** (Phase 2.5): sem queue de sync para sessões
+- AsyncStorage apenas para: completions locais (calendário), activeChild, idioma, tema
 - Todas as outras operações exigem conectividade
 
 ---

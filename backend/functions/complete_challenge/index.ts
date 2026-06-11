@@ -1,90 +1,32 @@
 /**
- * complete_challenge — Edge Function (Deno)
+ * complete_challenge — Edge Function (Phase 3 — gamification completo)
  *
- * The ONLY way XP and progression are mutated. Never via direct client writes.
+ * O UNICO caminho para mutar XP, level, streak, mastery. Nunca via escrita direta do cliente.
  *
- * Responsibilities:
- *  1. Validate idempotency (already completed? return cached result)
- *  2. Regenerate questions server-side using the same seed
- *  3. Validate answers against regenerated questions
- *  4. Compute XP (10/correct answer, first occurrence only + completion bonus)
- *  5. Update child_profiles: xp_total, level, current_streak, best_streak, last_challenge_date
- *  6. Upsert calendar_days
- *  7. Append child_xp_ledger rows
- *  8. Evaluate trophy progress
- *  9. Evaluate achievement unlocks
- * 10. Return CompleteChallengeResponse
+ * Responsabilidades:
+ *  1. Idempotencia (sessao ja completada? retornar resultado em cache)
+ *  2. Validar respostas contra questions_payload armazenado (nao regenera com seed)
+ *  3. Computar XP (10/resposta correta + bonus completacao + bonus perfeito)
+ *  4. Atualizar child_profiles: xp_total, level, current_streak, best_streak, last_challenge_date
+ *  5. Upsert calendar_days
+ *  6. Append child_xp_ledger
+ *  7. Avaliar trophies e achievements completo (Phase 3)
+ *  8. Atualizar child_fact_mastery por questao
+ *  9. Aplicar comutatividade
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders } from '../_shared/cors.ts';
+import { getRules } from '../_shared/adaptive-rules.ts';
+import { updateMastery, applyCommutativity } from '../_shared/mastery.ts';
 
-// ─── Question generator (mirrors src/lib/question-generator.ts) ───────────────
-
-function hashSeed(seed: string): number {
-  let hash = 5381;
-  for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) + hash) ^ seed.charCodeAt(i);
-    hash = hash >>> 0;
-  }
-  return hash || 1;
-}
-
-function mulberry32(state: number): { next: number; value: number } {
-  let s = (state + 0x6d2b79f5) >>> 0;
-  s = Math.imul(s ^ (s >>> 15), s | 1);
-  s ^= s + Math.imul(s ^ (s >>> 7), s | 61);
-  const value = ((s ^ (s >>> 14)) >>> 0) / 4294967296;
-  return { next: s, value };
-}
-
-function shuffleWithSeed<T>(arr: T[], seed: number): T[] {
-  const result = [...arr];
-  let state = seed;
-  for (let i = result.length - 1; i > 0; i--) {
-    const { next, value } = mulberry32(state);
-    state = next;
-    const j = Math.floor(value * (i + 1));
-    const tmp = result[i]!;
-    result[i] = result[j]!;
-    result[j] = tmp;
-  }
-  return result;
-}
-
-interface ServerQuestion {
-  index: number;
-  operand_a: number;
-  operand_b: number;
-  correct_answer: number;
-}
-
-function generateQuestions(seed: string, multiplicationMax: number): ServerQuestion[] {
-  const prngSeed = hashSeed(seed);
-  const pool: Array<[number, number]> = [];
-  for (let a = 1; a <= multiplicationMax; a++) {
-    for (let b = 1; b <= multiplicationMax; b++) {
-      pool.push([a, b]);
-    }
-  }
-  return shuffleWithSeed(pool, prngSeed)
-    .slice(0, 20)
-    .map(([a, b], i) => ({ index: i, operand_a: a, operand_b: b, correct_answer: a * b }));
-}
-
-// ─── XP constants ─────────────────────────────────────────────────────────────
-
+// ─── XP Constants ─────────────────────────────────────────────────────────────
 const XP_PER_CORRECT = 10;
-const XP_COMPLETION_BONUS = 200;
-const XP_PERFECT_BONUS = 100; // all 20 correct
+const XP_COMPLETION_BONUS = 20;
+const XP_PERFECT_BONUS = 50;
 
-// ─── Level thresholds (mirrors LEVEL_THRESHOLDS in config.ts) ─────────────────
-
-const LEVEL_THRESHOLDS = [
+// ─── Level thresholds (fallback — fonte autoritativa: tabela level_thresholds) ──
+const LEVEL_THRESHOLDS_FALLBACK = [
   { level: 1, xp_required: 0 },
   { level: 2, xp_required: 400 },
   { level: 3, xp_required: 900 },
@@ -104,16 +46,17 @@ const LEVEL_THRESHOLDS = [
   { level: 50, xp_required: 60000 },
 ];
 
-function computeLevel(xpTotal: number): number {
+function computeLevelFromThresholds(
+  xpTotal: number,
+  thresholds: Array<{ level: number; xp_required: number }>,
+): number {
   let level = 1;
-  for (const threshold of LEVEL_THRESHOLDS) {
-    if (xpTotal >= threshold.xp_required) level = threshold.level;
+  for (const t of thresholds) {
+    if (xpTotal >= t.xp_required) level = t.level;
     else break;
   }
   return level;
 }
-
-// ─── Streak helpers ───────────────────────────────────────────────────────────
 
 function daysBetween(dateA: string, dateB: string): number {
   const a = new Date(dateA).getTime();
@@ -121,185 +64,310 @@ function daysBetween(dateA: string, dateB: string): number {
   return Math.abs(Math.floor((b - a) / 86400000));
 }
 
-// ─── Main handler ─────────────────────────────────────────────────────────────
+// ─── Trophy / Achievement evaluation helpers ──────────────────────────────────
 
-Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+interface TrophyRow {
+  id: string;
+  name_key: string;
+  description_key: string;
+  category: string;
+  tier: string;
+  requirement_type: string;
+  requirement_value: number;
+  icon_asset: string;
+  sort_order: number;
+}
+
+interface AchievementRow {
+  id: string;
+  name_key: string;
+  description_key: string;
+  category: string;
+  condition_type: string;
+  condition_value: number | null;
+  icon_asset: string;
+  sort_order: number;
+}
+
+interface GamificationStats {
+  challengesTotal: number;
+  challengesThisWeek: number;
+  challengesThisMonth: number;
+  perfectTotal: number;
+  masteredFacts: number;
+}
+
+async function fetchGamificationStats(
+  supabase: ReturnType<typeof createClient>,
+  childId: string,
+  challengeDate: string,
+): Promise<GamificationStats> {
+  const [total, weekMonth, perfect, mastery] = await Promise.all([
+    // Total completed challenges
+    supabase
+      .from('challenge_sessions')
+      .select('id', { count: 'exact', head: true })
+      .eq('child_id', childId)
+      .eq('status', 'completed'),
+
+    // Weekly + monthly counts via raw SQL (two counts in one query)
+    supabase.rpc('get_challenge_counts_for_gamification', {
+      p_child_id: childId,
+      p_date: challengeDate,
+    }).maybeSingle(),
+
+    // Perfect challenges
+    supabase
+      .from('challenge_sessions')
+      .select('id', { count: 'exact', head: true })
+      .eq('child_id', childId)
+      .eq('status', 'completed')
+      .eq('is_perfect', true),
+
+    // MASTERED facts
+    supabase
+      .from('child_fact_mastery')
+      .select('fact_id', { count: 'exact', head: true })
+      .eq('child_id', childId)
+      .eq('state', 'MASTERED'),
+  ]);
+
+  // Fallback for RPC (function may not exist yet)
+  let challengesThisWeek = 0;
+  let challengesThisMonth = 0;
+  if (!weekMonth.error && weekMonth.data) {
+    challengesThisWeek = (weekMonth.data as { week_count: number; month_count: number }).week_count ?? 0;
+    challengesThisMonth = (weekMonth.data as { week_count: number; month_count: number }).month_count ?? 0;
   }
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  );
+  return {
+    challengesTotal: total.count ?? 0,
+    challengesThisWeek,
+    challengesThisMonth,
+    perfectTotal: perfect.count ?? 0,
+    masteredFacts: mastery.count ?? 0,
+  };
+}
+
+function checkTrophyCondition(
+  trophy: TrophyRow,
+  stats: GamificationStats,
+  currentStreak: number,
+): boolean {
+  const v = trophy.requirement_value;
+  switch (trophy.requirement_type) {
+    case 'challenges_completed':  return stats.challengesTotal >= v;
+    case 'challenges_in_week':    return stats.challengesThisWeek >= v;
+    case 'challenges_in_month':   return stats.challengesThisMonth >= v;
+    case 'current_streak':        return currentStreak >= v;
+    case 'perfect_challenges':    return stats.perfectTotal >= v;
+    default:                      return false;
+  }
+}
+
+function checkAchievementCondition(
+  ach: AchievementRow,
+  stats: GamificationStats,
+  currentStreak: number,
+  currentLevel: number,
+): boolean {
+  const v = ach.condition_value ?? 0;
+  switch (ach.condition_type) {
+    case 'challenges_total':   return stats.challengesTotal >= v;
+    case 'perfect_challenges': return stats.perfectTotal >= v;
+    case 'streak_days':        return currentStreak >= v;
+    case 'facts_mastered':     return stats.masteredFacts >= v;
+    case 'level_reached':      return currentLevel >= v;
+    default:                   return false;
+  }
+}
+
+// ─── Main handler ─────────────────────────────────────────────────────────────
+
+interface AnswerInput {
+  position: number;            // 1..20
+  fact_id: string;
+  child_answer: number | null; // null = timeout
+  time_taken_ms: number;
+  block_number: number;        // 1..4
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const body = await req.json() as {
-      child_id: string;
-      challenge_date: string;
-      session_id: string;
-      module_id: string;
-      timer_seconds: number;
-      multiplication_max: number;
-      answers: Array<{
-        question_index: number;
-        block_number: number;
-        attempt_number: number;
-        operand_a: number;
-        operand_b: number;
-        child_answer: number | null;
-        time_taken_ms: number | null;
-      }>;
-    };
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
 
-    const { child_id, challenge_date, session_id, module_id, multiplication_max, answers } = body;
-    const { timer_seconds } = body;
+    const { session_id, answers }: { session_id: string; answers: AnswerInput[] } = await req.json();
 
-    // ── 1. Idempotency check + session upsert ─────────────────────────────
-    // Strategy: check by (child_id, challenge_date, module_id) first — this covers
-    // both the normal case (same session_id) and the edge case where start_challenge
-    // created a session with a DIFFERENT UUID (would violate the unique constraint
-    // if we tried to upsert by id). Then fallback to check by session_id.
-    const today = new Date().toISOString().split('T')[0]!;
-    const isRetroactivePre = challenge_date !== today;
-    const questionSeedFallback = `${child_id}:${challenge_date}:${module_id}`;
-
-    // Primary check: by (child_id, challenge_date, module_id)
-    const { data: byDay } = await supabase
-      .from('challenge_sessions')
-      .select('*')
-      .eq('child_id', child_id)
-      .eq('challenge_date', challenge_date)
-      .eq('module_id', module_id)
-      .maybeSingle();
-
-    // Secondary check: by session_id (if no row exists for this day yet)
-    const { data: byId } = !byDay ? await supabase
-      .from('challenge_sessions')
-      .select('*')
-      .eq('id', session_id)
-      .maybeSingle() : { data: null };
-
-    const existingSession = byDay ?? byId ?? null;
-    // Use the session id that actually exists in the DB (may differ from client's UUID)
-    const effectiveSessionId = existingSession?.id ?? session_id;
-
-    if (!existingSession) {
-      // Session was never created — create it now so FK on challenge_answers works
-      const { error: insertErr } = await supabase.from('challenge_sessions').insert({
-        id: session_id,
-        child_id,
-        challenge_date,
-        module_id,
-        question_seed: questionSeedFallback,
-        status: 'in_progress',
-        total_questions: answers.length,
-        correct_count: 0,
-        xp_awarded: 0,
-        is_retroactive: isRetroactivePre,
-        is_perfect: false,
-        timer_seconds: timer_seconds ?? 15,
-        multiplication_max,
-      });
-      if (insertErr) {
-        // Race condition or unique violation — fetch the real session
-        const { data: raceSession } = await supabase
-          .from('challenge_sessions')
-          .select('*')
-          .eq('child_id', child_id)
-          .eq('challenge_date', challenge_date)
-          .eq('module_id', module_id)
-          .maybeSingle();
-        if (raceSession) {
-          // Re-run as if session existed — return cached or continue scoring
-          if (raceSession.status === 'completed') {
-            const { data: child } = await supabase.from('child_profiles')
-              .select('xp_total, level, current_streak, best_streak').eq('id', child_id).single();
-            return new Response(JSON.stringify({
-              session: raceSession, xp_earned: raceSession.xp_awarded,
-              level_up: false, new_level: child?.level ?? null,
-              unlocked_reward: null, trophies_earned: [], achievements_earned: [],
-            }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-          }
-        } else {
-          throw new Error(`Session insert failed: ${insertErr.message}`);
-        }
-      }
+    if (!session_id || !answers?.length) {
+      return jsonError(400, 'MISSING_FIELDS', 'session_id e answers sao obrigatorios.');
     }
 
-    if (existingSession?.status === 'completed') {
-      // Already completed — return cached XP (no re-award)
-      const { data: child } = await supabase
-        .from('child_profiles')
-        .select('xp_total, level, current_streak, best_streak')
-        .eq('id', child_id)
-        .single();
+    // ── 0. Carregar level_thresholds do DB ────────────────────────────────
+    const { data: dbThresholds } = await supabase
+      .from('level_thresholds')
+      .select('level, xp_required')
+      .order('level', { ascending: true });
+    const levelThresholds = dbThresholds?.length
+      ? dbThresholds
+      : LEVEL_THRESHOLDS_FALLBACK;
 
-      return new Response(JSON.stringify({
-        session: existingSession,
-        xp_earned: existingSession.xp_awarded,
+    const computeLevel = (xp: number) => computeLevelFromThresholds(xp, levelThresholds);
+
+    // ── 1. Buscar sessao + child ───────────────────────────────────────────
+    const { data: session, error: sErr } = await supabase
+      .from('challenge_sessions')
+      .select('*, child_profiles!inner(id, timezone, xp_total, level, current_streak, best_streak, last_challenge_date)')
+      .eq('id', session_id)
+      .single();
+
+    if (sErr || !session) return jsonError(404, 'SESSION_NOT_FOUND', 'Session not found.');
+
+    // ── 2. Idempotencia ────────────────────────────────────────────────────
+    if (session.status === 'completed') {
+      return jsonOk({
+        session,
+        xp_earned: session.xp_awarded,
         level_up: false,
-        new_level: child?.level ?? null,
+        new_level: session.child_profiles.level,
         unlocked_reward: null,
         trophies_earned: [],
         achievements_earned: [],
-      }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    // ── 2. Regenerate questions (server validation) ───────────────────────
-    const questionSeed = existingSession?.question_seed
-      ?? `${child_id}:${challenge_date}:${module_id}`;
-    const serverQuestions = generateQuestions(questionSeed, multiplication_max);
-    const questionMap = new Map(serverQuestions.map((q) => [q.index, q]));
-
-    // ── 3. Validate + score answers ───────────────────────────────────────
-    // First correct answer per question_index wins; retries get xp_awarded=0
-    const correctByIndex = new Set<number>();
-    const scoredAnswers: Array<typeof answers[0] & { is_correct: boolean; xp_awarded: number }> = [];
-
-    for (const ans of answers) {
-      const serverQ = questionMap.get(ans.question_index);
-      const is_correct = serverQ !== undefined
-        && ans.child_answer !== null
-        && ans.child_answer === serverQ.correct_answer;
-
-      const firstCorrect = is_correct && !correctByIndex.has(ans.question_index);
-      if (firstCorrect) correctByIndex.add(ans.question_index);
-
-      scoredAnswers.push({
-        ...ans,
-        operand_a: serverQ?.operand_a ?? ans.operand_a,
-        operand_b: serverQ?.operand_b ?? ans.operand_b,
-        is_correct,
-        xp_awarded: firstCorrect ? XP_PER_CORRECT : 0,
       });
     }
 
-    const correctCount = correctByIndex.size;
-    const isPerfect = correctCount === 20;
+    // ── 3. Verificar payload (sessoes legacy sem payload nao sao suportadas) ─
+    const payload = session.questions_payload as Array<{
+      position: number;
+      fact_id: string;
+      operand_a: number;
+      operand_b: number;
+    }> | null;
 
-    // ── 4. Compute XP ─────────────────────────────────────────────────────
+    if (!payload) {
+      return jsonError(409, 'LEGACY_SESSION_UNSUPPORTED',
+        'Esta sessao foi criada antes da Phase 2.5 e nao possui questions_payload. Inicie uma nova sessao.');
+    }
+
+    // ── 4. Buscar respostas corretas do catalogo ───────────────────────────
+    const factIds = payload.map(p => p.fact_id);
+    const { data: facts, error: factErr } = await supabase
+      .from('multiplication_facts')
+      .select('id, answer, fact_group_id')
+      .in('id', factIds);
+
+    if (factErr || !facts) {
+      return jsonError(500, 'FACTS_FETCH_FAILED', 'Erro ao buscar multiplication_facts.');
+    }
+
+    const factAnswerMap = new Map(facts.map(f => [f.id, f.answer]));
+    const factGroupMap = new Map(facts.map(f => [f.id, f.fact_group_id]));
+    const payloadMap = new Map(payload.map(p => [p.position, p]));
+
+    // ── 5. Validar e pontuar respostas ─────────────────────────────────────
+    const rules = getRules();
+    const childId = session.child_id;
+    const child = session.child_profiles;
+
+    const answerRows: Array<{
+      session_id: string;
+      block_number: number;
+      attempt_number: number;
+      question_index: number;
+      operand_a: number;
+      operand_b: number;
+      correct_answer: number | undefined;
+      child_answer: number | null;
+      is_correct: boolean;
+      time_taken_ms: number;
+      response_time_ms: number;
+      xp_awarded: number;
+      fact_id: string;
+    }> = [];
+
+    const correctByPosition = new Set<number>();
+
+    for (const ans of answers) {
+      const q = payloadMap.get(ans.position);
+      if (!q || q.fact_id !== ans.fact_id) {
+        return jsonError(400, 'ANSWER_MISMATCH',
+          `Resposta na posicao ${ans.position} nao bate com o payload da sessao.`);
+      }
+
+      const correctAnswer = factAnswerMap.get(ans.fact_id);
+      const isCorrect = ans.child_answer !== null && ans.child_answer === correctAnswer;
+      const firstCorrect = isCorrect && !correctByPosition.has(ans.position);
+      if (firstCorrect) correctByPosition.add(ans.position);
+
+      answerRows.push({
+        session_id,
+        block_number: ans.block_number,
+        attempt_number: 1,
+        question_index: ans.position - 1,
+        operand_a: q.operand_a,
+        operand_b: q.operand_b,
+        correct_answer: correctAnswer,
+        child_answer: ans.child_answer,
+        is_correct: isCorrect,
+        time_taken_ms: ans.time_taken_ms,
+        response_time_ms: ans.time_taken_ms,
+        xp_awarded: firstCorrect ? XP_PER_CORRECT : 0,
+        fact_id: ans.fact_id,
+      });
+    }
+
+    const correctCount = correctByPosition.size;
+    const isPerfect = correctCount === rules.session.questionsPerChallenge;
+
+    // ── 6. Computar XP ─────────────────────────────────────────────────────
     const answerXp = correctCount * XP_PER_CORRECT;
     const completionXp = XP_COMPLETION_BONUS;
     const perfectXp = isPerfect ? XP_PERFECT_BONUS : 0;
     const totalXpEarned = answerXp + completionXp + perfectXp;
 
-    // ── 5. Fetch current child profile ────────────────────────────────────
-    const { data: child, error: childError } = await supabase
-      .from('child_profiles')
-      .select('xp_total, level, current_streak, best_streak, last_challenge_date')
-      .eq('id', child_id)
-      .single();
+    // ── 7. Inserir respostas ───────────────────────────────────────────────
+    const { error: insErr } = await supabase.from('challenge_answers').insert(answerRows);
+    if (insErr) return jsonError(500, 'INSERT_ANSWERS_FAILED', insErr.message);
 
-    if (childError || !child) throw new Error('Child profile not found');
+    // ── 8. Atualizar mastery por fact ──────────────────────────────────────
+    const childTimezone = child.timezone ?? 'America/Sao_Paulo';
+    for (const row of answerRows) {
+      await updateMastery({
+        supabase,
+        childId,
+        factId: row.fact_id,
+        sessionId: session_id,
+        isCorrect: row.is_correct,
+        childTimezone,
+        rules,
+      });
+    }
 
-    const oldLevel = child.level;
-    const newXpTotal = child.xp_total + totalXpEarned;
-    const newLevel = computeLevel(newXpTotal);
-    const levelUp = newLevel > oldLevel;
+    // ── 9. Comutatividade ──────────────────────────────────────────────────
+    if (rules.commutativity.enabled) {
+      for (const row of answerRows) {
+        const groupId = factGroupMap.get(row.fact_id);
+        if (groupId) {
+          await applyCommutativity({
+            supabase,
+            childId,
+            factId: row.fact_id,
+            factGroupId: groupId,
+            isCorrect: row.is_correct,
+            childTimezone,
+            rules,
+          });
+        }
+      }
+    }
 
-    // ── 6. Streak calculation (non-retroactive only) ───────────────────────
-    const isRetroactive = isRetroactivePre;
+    // ── 10. Streak ─────────────────────────────────────────────────────────
+    const today = new Date().toISOString().split('T')[0]!;
+    const isRetroactive = session.challenge_date !== today;
     let newStreak = child.current_streak;
     let newBestStreak = child.best_streak;
 
@@ -312,32 +380,121 @@ Deno.serve(async (req: Request) => {
         if (diff === 1) {
           newStreak = child.current_streak + 1;
         } else if (diff === 0) {
-          newStreak = child.current_streak; // already played today
+          newStreak = child.current_streak;
         } else {
-          newStreak = 1; // streak broken
+          newStreak = 1;
         }
       }
       newBestStreak = Math.max(newStreak, child.best_streak);
     }
 
-    // ── 7. Insert answers ─────────────────────────────────────────────────
-    const answerRows = scoredAnswers.map((a) => ({
-      session_id: effectiveSessionId,
-      block_number: a.block_number,
-      attempt_number: a.attempt_number,
-      question_index: a.question_index,
-      operand_a: a.operand_a,
-      operand_b: a.operand_b,
-      correct_answer: a.operand_a * a.operand_b,
-      child_answer: a.child_answer,
-      is_correct: a.is_correct,
-      time_taken_ms: a.time_taken_ms,
-      xp_awarded: a.xp_awarded,
-    }));
+    // ── 11. Atualizar child_profiles ───────────────────────────────────────
+    const oldLevel = child.level;
+    const newXpTotal = child.xp_total + totalXpEarned;
+    const newLevel = computeLevel(newXpTotal);
+    const levelUp = newLevel > oldLevel;
 
-    await supabase.from('challenge_answers').insert(answerRows);
+    const profileUpdate: Record<string, unknown> = {
+      xp_total: newXpTotal,
+      level: newLevel,
+    };
+    if (!isRetroactive) {
+      profileUpdate.current_streak = newStreak;
+      profileUpdate.best_streak = newBestStreak;
+      profileUpdate.last_challenge_date = session.challenge_date;
+    }
 
-    // ── 8. Update challenge_session ───────────────────────────────────────
+    await supabase.from('child_profiles').update(profileUpdate).eq('id', childId);
+
+    // ── 12. Upsert calendar_days ───────────────────────────────────────────
+    await supabase
+      .from('calendar_days')
+      .upsert({
+        child_id: childId,
+        day_date: session.challenge_date,
+        state: 'completed',
+        is_perfect: isPerfect,
+        session_id,
+      }, { onConflict: 'child_id,day_date' });
+
+    // ── 13. Append XP ledger ───────────────────────────────────────────────
+    const ledgerRows = [];
+    if (answerXp > 0) {
+      ledgerRows.push({ child_id: childId, source: 'correct_answer', amount: answerXp, reference_id: session_id });
+    }
+    ledgerRows.push({ child_id: childId, source: 'challenge_completion', amount: completionXp, reference_id: session_id });
+    if (perfectXp > 0) {
+      ledgerRows.push({ child_id: childId, source: 'challenge_completion', amount: perfectXp, reference_id: session_id });
+    }
+    await supabase.from('child_xp_ledger').insert(ledgerRows);
+
+    // ── 14. Trophy + Achievement evaluation (Phase 3 — completo) ─────────
+    const trophiesEarned: TrophyRow[] = [];
+    const achievementsEarned: AchievementRow[] = [];
+
+    try {
+      const now = new Date().toISOString();
+
+      // Carregar stats necessarios para avaliacao
+      const stats = await fetchGamificationStats(supabase, childId, session.challenge_date);
+
+      // Carregar catalogo de trophies + achievements
+      const [{ data: allTrophies }, { data: allAchievements }] = await Promise.all([
+        supabase.from('trophies').select('*').order('sort_order'),
+        supabase.from('achievements').select('*').order('sort_order'),
+      ]);
+
+      // Carregar o que o child ja tem
+      const [{ data: earnedTrophies }, { data: earnedAchievements }] = await Promise.all([
+        supabase.from('child_trophies').select('trophy_id').eq('child_id', childId),
+        supabase.from('child_achievements').select('achievement_id').eq('child_id', childId),
+      ]);
+
+      const earnedTrophyIds = new Set((earnedTrophies ?? []).map((r: { trophy_id: string }) => r.trophy_id));
+      const earnedAchievementIds = new Set((earnedAchievements ?? []).map((r: { achievement_id: string }) => r.achievement_id));
+
+      // Avaliar trophies
+      for (const trophy of (allTrophies ?? []) as TrophyRow[]) {
+        if (earnedTrophyIds.has(trophy.id)) continue;
+        if (checkTrophyCondition(trophy, stats, newStreak)) {
+          await supabase.from('child_trophies').upsert(
+            { child_id: childId, trophy_id: trophy.id, progress: trophy.requirement_value, earned_at: now },
+            { onConflict: 'child_id,trophy_id' },
+          );
+          trophiesEarned.push(trophy);
+        }
+      }
+
+      // Avaliar achievements (one-time only)
+      for (const ach of (allAchievements ?? []) as AchievementRow[]) {
+        if (earnedAchievementIds.has(ach.id)) continue;
+        if (checkAchievementCondition(ach, stats, newStreak, newLevel)) {
+          await supabase.from('child_achievements').upsert(
+            { child_id: childId, achievement_id: ach.id, progress: ach.condition_value ?? 1, earned_at: now },
+            { onConflict: 'child_id,achievement_id' },
+          );
+          achievementsEarned.push(ach);
+        }
+      }
+    } catch (gamErr) {
+      console.error('Gamification eval error (non-fatal):', gamErr);
+    }
+
+    // ── 15. Level reward unlock ────────────────────────────────────────────
+    let unlockedReward = null;
+    if (levelUp) {
+      try {
+        const { data: reward } = await supabase
+          .from('level_rewards').select('*').eq('unlock_level', newLevel).maybeSingle();
+        if (reward) {
+          await supabase.from('child_level_rewards')
+            .upsert({ child_id: childId, reward_id: reward.id }, { onConflict: 'child_id,reward_id' });
+          unlockedReward = reward;
+        }
+      } catch { /* non-fatal */ }
+    }
+
+    // ── 16. Marcar sessao como completa ────────────────────────────────────
     const { data: updatedSession } = await supabase
       .from('challenge_sessions')
       .update({
@@ -347,116 +504,37 @@ Deno.serve(async (req: Request) => {
         is_perfect: isPerfect,
         completed_at: new Date().toISOString(),
       })
-      .eq('id', effectiveSessionId)
+      .eq('id', session_id)
       .select()
       .single();
 
-    // ── 9. Update child_profiles ──────────────────────────────────────────
-    const profileUpdate: Record<string, unknown> = {
-      xp_total: newXpTotal,
-      level: newLevel,
-    };
-    if (!isRetroactive) {
-      profileUpdate.current_streak = newStreak;
-      profileUpdate.best_streak = newBestStreak;
-      profileUpdate.last_challenge_date = challenge_date;
-    }
+    return jsonOk({
+      session: updatedSession ?? { id: session_id, status: 'completed', correct_count: correctCount, xp_awarded: totalXpEarned, is_perfect: isPerfect },
+      xp_earned: totalXpEarned,
+      level_up: levelUp,
+      new_level: levelUp ? newLevel : null,
+      unlocked_reward: unlockedReward,
+      trophies_earned: trophiesEarned,
+      achievements_earned: achievementsEarned,
+    });
 
-    await supabase
-      .from('child_profiles')
-      .update(profileUpdate)
-      .eq('id', child_id);
-
-    // ── 10. Upsert calendar_days ──────────────────────────────────────────
-    await supabase
-      .from('calendar_days')
-      .upsert({
-        child_id,
-        day_date: challenge_date,
-        state: 'completed',
-        is_perfect: isPerfect,
-        session_id: effectiveSessionId,
-      }, { onConflict: 'child_id,day_date' });
-
-    // ── 11. Append XP ledger ──────────────────────────────────────────────
-    const ledgerRows = [];
-    if (answerXp > 0) {
-      ledgerRows.push({ child_id, source: 'correct_answer', amount: answerXp, reference_id: effectiveSessionId });
-    }
-    ledgerRows.push({ child_id, source: 'challenge_completion', amount: completionXp, reference_id: effectiveSessionId });
-    if (perfectXp > 0) {
-      ledgerRows.push({ child_id, source: 'challenge_completion', amount: perfectXp, reference_id: effectiveSessionId });
-    }
-    await supabase.from('child_xp_ledger').insert(ledgerRows);
-
-    // ── 12. Trophy evaluation (simplified for Phase 2) ────────────────────
-    // Full trophy logic in Phase 3; here we just update daily_trophy progress
-    const trophiesEarned: unknown[] = [];
-    try {
-      const { data: dailyTrophy } = await supabase
-        .from('trophies')
-        .select('id')
-        .eq('id', 'daily_trophy')
-        .maybeSingle();
-
-      if (dailyTrophy) {
-        await supabase
-          .from('child_trophies')
-          .upsert({ child_id, trophy_id: 'daily_trophy', progress: 1, earned_at: new Date().toISOString() },
-            { onConflict: 'child_id,trophy_id' });
-      }
-    } catch { /* trophy table may not exist yet — non-fatal */ }
-
-    // ── 13. Achievement evaluation (simplified for Phase 2) ──────────────
-    const achievementsEarned: unknown[] = [];
-
-    // ── 14. Level reward unlock ───────────────────────────────────────────
-    let unlockedReward = null;
-    if (levelUp) {
-      try {
-        const { data: reward } = await supabase
-          .from('level_rewards')
-          .select('*')
-          .eq('unlock_level', newLevel)
-          .maybeSingle();
-
-        if (reward) {
-          await supabase
-            .from('child_level_rewards')
-            .upsert({ child_id, reward_id: reward.id }, { onConflict: 'child_id,reward_id' });
-          unlockedReward = reward;
-        }
-      } catch { /* non-fatal */ }
-    }
-
-    // ── Response ──────────────────────────────────────────────────────────
-    return new Response(
-      JSON.stringify({
-        session: updatedSession ?? {
-          id: effectiveSessionId,
-          child_id,
-          challenge_date,
-          module_id,
-          status: 'completed',
-          correct_count: correctCount,
-          xp_awarded: totalXpEarned,
-          is_perfect: isPerfect,
-        },
-        xp_earned: totalXpEarned,
-        level_up: levelUp,
-        new_level: levelUp ? newLevel : null,
-        unlocked_reward: unlockedReward,
-        trophies_earned: trophiesEarned,
-        achievements_earned: achievementsEarned,
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
-
-  } catch (err) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('complete_challenge error:', err);
-    return new Response(
-      JSON.stringify({ error: 'INTERNAL_ERROR', message: (err as Error).message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+    return jsonError(500, 'INTERNAL_ERROR', message);
   }
 });
+
+function jsonOk(body: unknown) {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+function jsonError(status: number, code: string, message: string) {
+  return new Response(JSON.stringify({ error: code, message }), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}

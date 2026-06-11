@@ -33,6 +33,9 @@ import { useShallow } from 'zustand/react/shallow';
 import { ConfirmDialog, Text } from '@/components/ui';
 import { colors, fontFamily, radius, space, shadows } from '@/theme';
 import { CorrectOverlay } from '@/components/challenge/CorrectOverlay';
+import { LevelUpModal } from '@/components/challenge/LevelUpModal';
+import { TrophyEarnedModal } from '@/components/challenge/TrophyEarnedModal';
+import type { Achievement, LevelReward, Trophy } from '@/types/database.types';
 import {
   TimeExpiredScreen,
   WrongAnswerScreen,
@@ -48,9 +51,8 @@ import {
   selectUniqueCorrectCount,
 } from '@/stores/challenge.store';
 import { challengeService } from '@/services/challenge.service';
-import { getChildLocalSettings } from '@/services/child.service';
-import { generateQuestions, buildQuestionSeed } from '@/lib/question-generator';
-import { MODULE_ID, CHALLENGE, resolveQuestionCount } from '@/constants/config';
+import { useNetworkStatus } from '@/hooks/use-network-status';
+import { MODULE_ID, CHALLENGE } from '@/constants/config';
 
 // ─── Milo celebrate asset ─────────────────────────────────────────────────────
 const MILO_CELEBRATE = require('../../../assets/images/milo-celebrate.png') as number;
@@ -502,6 +504,8 @@ function useTimer(seconds: number, active: boolean, onExpire: () => void) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onExpireRef = useRef(onExpire);
   onExpireRef.current = onExpire;
+  // Tracks whether onExpire was already fired for the current run
+  const firedRef = useRef(false);
 
   const reset = useCallback(() => setRemaining(seconds), [seconds]);
 
@@ -510,12 +514,13 @@ function useTimer(seconds: number, active: boolean, onExpire: () => void) {
       if (intervalRef.current) clearInterval(intervalRef.current);
       return;
     }
+    firedRef.current = false;
     setRemaining(seconds);
     intervalRef.current = setInterval(() => {
+      // Pure updater — no side effects inside
       setRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(intervalRef.current!);
-          onExpireRef.current();
           return 0;
         }
         return prev - 1;
@@ -523,6 +528,15 @@ function useTimer(seconds: number, active: boolean, onExpire: () => void) {
     }, 1000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [active, seconds]);
+
+  // Fire onExpire outside of the state updater to avoid the
+  // "Cannot update a component while rendering" React warning.
+  useEffect(() => {
+    if (remaining === 0 && active && !firedRef.current) {
+      firedRef.current = true;
+      onExpireRef.current();
+    }
+  }, [remaining, active]);
 
   return { remaining, reset };
 }
@@ -542,6 +556,7 @@ function NumericKeypad({
   hasInput?: boolean;
   disabled?: boolean;
 }) {
+  const { t }   = useTranslation();
   const topKeys = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
   return (
     <View style={kpStyles.keypad}>
@@ -563,7 +578,7 @@ function NumericKeypad({
           [kpStyles.key, kpStyles.keyMuted, pressed && !disabled ? kpStyles.keyPressed : null, disabled ? kpStyles.keyDisabled : null] as StyleProp<ViewStyle>
         }
         onPress={() => { if (!disabled) onDelete(); }}
-        accessibilityLabel="Apagar"
+        accessibilityLabel={t('common.delete')}
       >
         <Ionicons name="backspace-outline" size={26} color="#6B7280" />
       </Pressable>
@@ -644,6 +659,7 @@ export default function ChallengeScreen() {
   const { date, retroactive } = useLocalSearchParams<{ date: string; retroactive?: string }>();
   const isRetroactive = retroactive === '1';
   const child = useProfileStore(selectActiveChild);
+  const network = useNetworkStatus();
 
   const phase = useChallengeStore((s) => s.phase);
   const sessionId = useChallengeStore((s) => s.sessionId);
@@ -678,6 +694,17 @@ export default function ChallengeScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
 
+  // Phase 3 — celebrações pós-challenge
+  const [levelUpData, setLevelUpData] = useState<{
+    newLevel: number;
+    xpEarned: number;
+    reward?: LevelReward | null;
+  } | null>(null);
+  const [earnedItems, setEarnedItems] = useState<
+    Array<{ type: 'trophy'; data: Trophy } | { type: 'achievement'; data: Achievement }>
+  >([]);
+  const pendingNavRef = useRef<(() => void) | null>(null);
+
   // Animations
   const progressWidth = useSharedValue(0);
   const questionScale = useSharedValue(1);
@@ -701,55 +728,50 @@ export default function ChallengeScreen() {
       if (!child || !date) return;
       storeActions.setPhase('loading');
 
-      // Ler número de questões das settings locais
-      const localSettings = await getChildLocalSettings(child.id);
-      const questionCount  = resolveQuestionCount(localSettings.questions_count, child.level);
+      // Phase 2.5+: challenge é online-only. Verificar conexão antes de tentar.
+      if (!network.isConnected) {
+        storeActions.setPhase('error');
+        return;
+      }
 
       const sid = randomUUID();
-      const seed = buildQuestionSeed(child.id, date, MODULE_ID.MULTIPLICATION);
-      const questions = generateQuestions(seed, child.multiplication_max, questionCount);
 
-      // Backend é best-effort — questões geradas localmente sempre funcionam.
-      // Se a EF falhar (offline, deploy pendente), a sessão local inicia igualmente
-      // e o payload é enviado no complete_challenge quando estiver disponível.
-      let resumeFromIndex = 0;
       try {
+        // Questões geradas adaptativamente pelo servidor
         const result = await challengeService.startChallenge({
           childId: child.id,
           challengeDate: date,
           moduleId: MODULE_ID.MULTIPLICATION,
           sessionId: sid,
-          questionSeed: seed,
           timerSeconds: child.timer_seconds,
-          multiplicationMax: child.multiplication_max,
         });
-        resumeFromIndex = result.resumeFromIndex;
-      } catch (backendErr) {
-        // Backend indisponível — continua com sessão local
-        console.warn('[Challenge] start_challenge indisponível, iniciando sessão local:', backendErr);
-      }
 
-      try {
+        // Mapear ChallengeQuestion[] → Question[] (formato do store)
+        const questions = result.questions.map((q) => ({
+          index: q.position - 1,
+          operand_a: q.operand_a,
+          operand_b: q.operand_b,
+          correct_answer: q.operand_a * q.operand_b,
+          fact_id: q.fact_id,
+        }));
+
         storeActions.startSession({
-          sessionId: sid,
+          sessionId: result.sessionId,
           childId: child.id,
           challengeDate: date,
           moduleId: MODULE_ID.MULTIPLICATION,
           questions,
           timerSeconds: child.timer_seconds,
-          totalQuestions: questionCount,
-          resumeFromIndex,
+          totalQuestions: questions.length,
         });
       } catch (e) {
+        console.error('[Challenge] start_challenge falhou:', e);
         storeActions.setPhase('error');
-        Alert.alert(t('common.error'), (e as Error).message, [
-          { text: t('common.ok'), onPress: () => router.back() },
-        ]);
       }
     }
     void init();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [child, date]);
+  }, [child, date, phase, network.isConnected]);
 
   // ─── Timer ───────────────────────────────────────────────────────────────
 
@@ -818,29 +840,46 @@ export default function ChallengeScreen() {
     setIsSubmitting(true);
     storeActions.setPhase('submitting');
 
-    // Guardar completion local sempre — garante que o calendário mostra o estado
-    // correcto mesmo quando a Edge Function complete_challenge não está deployada.
+    // Guardar completion local — garante que o calendário mostra o estado correcto
     const isPerfectLocal = uniqueCorrect === useChallengeStore.getState().totalQuestions;
     await challengeService.storeLocalCompletion(child.id, challengeDate!, isPerfectLocal, isRetroactive);
 
     try {
       const result = await challengeService.completeChallenge({
-        childId: child.id,
-        challengeDate: challengeDate!,
-        sessionId,
-        moduleId: moduleId as import('@/constants/config').ModuleId,
-        timerSeconds: child.timer_seconds,
-        multiplicationMax: child.multiplication_max,
+        sessionId: sessionId!,
         answers: allAnswers,
       });
-      if (result) {
-        useProfileStore.getState().updateChildXp(
-          result.session.xp_awarded,
-          result.new_level ?? child.level,
-        );
-      }
+      useProfileStore.getState().updateChildXp(
+        result.session.xp_awarded,
+        result.new_level ?? child.level,
+      );
       storeActions.reset();
-      router.replace('/(app)/(tabs)/');
+
+      // ── Phase 3: mostrar celebrações antes de navegar ──────────────────
+      const navigate = () => router.replace('/(app)/(tabs)/');
+
+      const items: Array<{ type: 'trophy'; data: Trophy } | { type: 'achievement'; data: Achievement }> = [
+        ...(result.trophies_earned ?? []).map(t => ({ type: 'trophy' as const, data: t })),
+        ...(result.achievements_earned ?? []).map(a => ({ type: 'achievement' as const, data: a })),
+      ];
+
+      if (result.level_up && result.new_level) {
+        // Level up → depois trophies/achievements → depois navega
+        pendingNavRef.current = items.length > 0
+          ? () => { setEarnedItems(items); pendingNavRef.current = navigate; }
+          : navigate;
+        setLevelUpData({
+          newLevel: result.new_level,
+          xpEarned: result.session.xp_awarded,
+          reward: result.unlocked_reward as LevelReward | null | undefined,
+        });
+      } else if (items.length > 0) {
+        // Sem level up mas há trophies/achievements
+        pendingNavRef.current = navigate;
+        setEarnedItems(items);
+      } else {
+        navigate();
+      }
     } catch (e) {
       storeActions.setPhase('error');
       Alert.alert(t('common.error'), (e as Error).message);
@@ -859,27 +898,30 @@ export default function ChallengeScreen() {
     );
   }
 
-  // ─── Error (EF failed) ────────────────────────────────────────────────────
+  // ─── Offline / Error ─────────────────────────────────────────────────────
 
   if (phase === 'error') {
+    const isOffline = !network.isConnected;
     return (
       <View style={[gs.container, gs.centered]}>
         <View style={{ alignItems: 'center', gap: 16, paddingHorizontal: 32 }}>
           <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="cloud-offline-outline" size={36} color={colors.error} />
+            <Ionicons name={isOffline ? 'wifi-outline' : 'cloud-offline-outline'} size={36} color={colors.error} />
           </View>
           <Text style={{ fontFamily: fontFamily.extraBold, fontSize: 20, color: colors.text.primary, textAlign: 'center' }}>
-            {t('common.error')}
+            {isOffline ? t('challenge.offlineTitle') : t('common.error')}
           </Text>
           <Text style={{ fontFamily: fontFamily.regular, fontSize: 14, color: colors.text.secondary, textAlign: 'center', lineHeight: 20 }}>
-            {t('challenge.errorSubmitMsg')}
+            {isOffline ? t('challenge.offlineMsg') : t('challenge.errorSubmitMsg')}
           </Text>
-          <Pressable
-            style={{ marginTop: 8, backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 32, paddingVertical: 14 }}
-            onPress={() => { storeActions.setPhase('completed'); }}
-          >
-            <Text style={{ fontFamily: fontFamily.bold, fontSize: 16, color: '#fff' }}>{t('challenge.errorRetry')}</Text>
-          </Pressable>
+          {!isOffline && (
+            <Pressable
+              style={{ marginTop: 8, backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 32, paddingVertical: 14 }}
+              onPress={() => { storeActions.reset(); }}
+            >
+              <Text style={{ fontFamily: fontFamily.bold, fontSize: 16, color: '#fff' }}>{t('challenge.errorRetry')}</Text>
+            </Pressable>
+          )}
           <Pressable onPress={() => { storeActions.reset(); router.back(); }} hitSlop={8}>
             <Text style={{ fontFamily: fontFamily.semiBold, fontSize: 14, color: colors.text.secondary }}>{t('challenge.exitLeave')}</Text>
           </Pressable>
@@ -988,6 +1030,29 @@ export default function ChallengeScreen() {
 
   return (
     <View style={gs.container}>
+      {/* Phase 3 — celebrações pós-challenge */}
+      <LevelUpModal
+        visible={levelUpData !== null}
+        newLevel={levelUpData?.newLevel ?? 1}
+        xpEarned={levelUpData?.xpEarned ?? 0}
+        unlockedReward={levelUpData?.reward}
+        onContinue={() => {
+          setLevelUpData(null);
+          const next = pendingNavRef.current;
+          pendingNavRef.current = null;
+          next?.();
+        }}
+      />
+      <TrophyEarnedModal
+        items={earnedItems}
+        onDone={() => {
+          setEarnedItems([]);
+          const next = pendingNavRef.current;
+          pendingNavRef.current = null;
+          next?.();
+        }}
+      />
+
       {/* Retroactive banner */}
       {isRetroactive && (
         <View style={gs.retroBanner}>

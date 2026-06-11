@@ -26,23 +26,45 @@ CLAUDE.md     → Instruções para agentes IA (root do projecto)
 
 ---
 
-## Status de Implementação (2026-06-08)
+## Status de Implementação (2026-06-11)
 
 ### Phase 0 — Foundation ✅ COMPLETO
 Design system, Expo Router skeleton, i18n, Supabase client, Zustand stores, tema.
 
 ### Phase 1 — Auth & Profiles ✅ COMPLETO
 
-- `src/services/auth.service.ts` — signUp, signIn, signOut, resetPassword (com error mapping para i18n keys)
-- `src/services/child.service.ts` — listChildren, createChild, updateChild, deactivateChild, isUsernameAvailable
+- `src/services/auth.service.ts` — signUp, signIn, signOut, resetPassword
+- `src/services/child.service.ts` — CRUD completo + isUsernameAvailable
 - `src/stores/profile.store.ts` — Zustand + AsyncStorage persist para activeChild
-- `src/hooks/use-auth.ts` — limpa activeChild no signout via onAuthStateChange
-- `app/index.tsx` — ponto de decisão de rota inicial (loading → welcome → profile-select → app)
-- `app/(app)/_layout.tsx` — guard que bloqueia acesso sem auth ou sem activeChild
-- Telas wired: login, register/parent (com checkbox terms), register/child (cria filho real no Supabase), forgot-password (com estado "enviado"), profile-select (filhos reais via TanStack Query)
-- `backend/` scaffolded: functions (complete_challenge, start_challenge, verify_parent_pin, send/respond_friend_request), migrations 001+002, seeds/level_thresholds
+- Telas wired: login, register/parent, register/child, forgot-password, profile-select
+- Tag: `v1.1-phase1-complete`
 
-### Phase 2 — Challenge Engine ⚠️ CÓDIGO COMPLETO / AGUARDANDO E2E
+### Phase 2.5 — Adaptive Multiplication System ✅ COMPLETO (2026-06-11)
+
+**Backend:**
+- `backend/migrations/006_multiplication_facts.sql` — 100 questões, tiers T1–T5
+- `backend/migrations/007_child_fact_mastery.sql` — mastery por (child_id, fact_id), timezone, colunas legacy deprecated
+- `backend/config/adaptive-rules.json` + schema — regras versionadas
+- `backend/functions/_shared/adaptive-rules.ts` — loader + A/B harness
+- `backend/functions/_shared/question-selector.ts` — algoritmo de seleção adaptativa
+- `backend/functions/_shared/mastery.ts` — updateMastery, computeStrength, nextState, comutatividade
+- `start_challenge` EF — geração server-side, persiste questions_payload (deployada)
+- `complete_challenge` EF — valida contra payload, atualiza mastery (deployada)
+- `recompute_mastery` EF — replay idempotente do histórico (deployada)
+- `adaptive-rules-v2.json` — variante experimental para A/B test
+
+**App cliente:**
+- `src/services/challenge.service.ts` — nova API: sem seed, sem offline queue, retorna ChallengeStartResponse
+- `src/hooks/use-network-status.ts` — hook de conectividade
+- `app/(app)/challenge/[date].tsx` — consome payload server-side, tela offline, sem PRNG local
+- `src/types/index.ts` — ChallengeQuestion, ChallengeStartResponse, MasteryState
+- `AnswerDraft.fact_id?` + `position?` propagados via submitAnswer
+
+**Migrations PENDENTES (aplicar no Supabase Studio):**
+- `006_multiplication_facts.sql`
+- `007_child_fact_mastery.sql`
+
+### Phase 2 — Challenge Engine ⚠️ CÓDIGO COMPLETO (substituído por Phase 2.5)
 
 **Implementado (commit f04109e + cb58193):**
 - `src/lib/question-generator.ts` — PRNG determinístico (djb2 + Mulberry32), 20 pares únicos por seed

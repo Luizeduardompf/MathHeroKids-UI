@@ -22,6 +22,8 @@ export interface Question {
   operand_a: number;
   operand_b: number;
   correct_answer: number;
+  /** Phase 2.5+: ID do catálogo quando questão vem do servidor (e.g. 'fact_7x8') */
+  fact_id?: string;
 }
 
 // ─── PRNG ─────────────────────────────────────────────────────────────────────

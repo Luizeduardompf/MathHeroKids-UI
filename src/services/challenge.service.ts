@@ -2,17 +2,20 @@
  * Challenge service — abstracts calls to start_challenge and complete_challenge
  * Edge Functions. All XP and progression mutations happen server-side.
  *
- * Offline strategy: if complete_challenge fails due to network, the payload is
- * stored in AsyncStorage under OFFLINE_QUEUE_KEY and retried on the next call.
+ * Phase 2.5+: start_challenge retorna questions geradas adaptativamente pelo servidor.
+ * O cliente apenas renderiza — sem geração local de questões.
+ *
+ * Online-only para challenges (decisão DP de Phase 2.5).
+ * Cache local apenas para: completions (calendário), activeChild, idioma, tema.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import type { CompleteChallengeResponse } from '@/types/database.types';
+import type { ChallengeStartResponse } from '@/types';
 import type { AnswerDraft } from '@/stores/challenge.store';
-import type { ModuleId, TimerOption, MultiplicationRange } from '@/constants/config';
+import type { ModuleId, TimerOption } from '@/constants/config';
 
-const OFFLINE_QUEUE_KEY      = 'math-hero-offline-challenge-queue-v1';
 const LOCAL_COMPLETIONS_KEY  = 'math-hero-local-completions-v1';
 
 // ─── Local completion record ─────────────────────────────────────────────────
@@ -35,25 +38,11 @@ export interface StartChallengeParams {
   challengeDate: string;  // YYYY-MM-DD
   moduleId: ModuleId;
   sessionId: string;      // client-generated UUID
-  questionSeed: string;
   timerSeconds: TimerOption;
-  multiplicationMax: MultiplicationRange;
-}
-
-export interface StartChallengeResult {
-  sessionId: string;
-  status: 'new' | 'resumed';
-  /** Last answered question_index if session was in_progress, else 0 */
-  resumeFromIndex: number;
 }
 
 export interface CompletePayload {
-  childId: string;
-  challengeDate: string;
   sessionId: string;
-  moduleId: ModuleId;
-  timerSeconds: TimerOption;
-  multiplicationMax: MultiplicationRange;
   answers: AnswerDraft[];
 }
 
@@ -64,8 +53,13 @@ export const challengeService = {
    * Create or resume a challenge session (idempotent).
    * Calls the start_challenge Edge Function.
    */
-  async startChallenge(params: StartChallengeParams): Promise<StartChallengeResult> {
-    const { data, error } = await supabase.functions.invoke<StartChallengeResult>(
+  /**
+   * Cria ou retoma uma sessão de challenge.
+   * Phase 2.5+: retorna questions geradas adaptativamente pelo servidor.
+   * Lança erro se offline — challenge é online-only (decisão Phase 2.5).
+   */
+  async startChallenge(params: StartChallengeParams): Promise<ChallengeStartResponse> {
+    const { data, error } = await supabase.functions.invoke<ChallengeStartResponse>(
       'start_challenge',
       {
         body: {
@@ -73,9 +67,7 @@ export const challengeService = {
           challenge_date: params.challengeDate,
           module_id: params.moduleId,
           session_id: params.sessionId,
-          question_seed: params.questionSeed,
           timer_seconds: params.timerSeconds,
-          multiplication_max: params.multiplicationMax,
         },
       },
     );
@@ -87,93 +79,36 @@ export const challengeService = {
   },
 
   /**
-   * Submit the completed challenge to the server.
-   * If offline, queues locally and returns null — caller should show a
-   * "will sync when online" message.
-   *
-   * Returns CompleteChallengeResponse on success, null if queued offline.
+   * Submete o challenge completo ao servidor.
+   * Phase 2.5+: answers devem conter position + fact_id quando vêm do servidor.
+   * Lança erro — o caller decide como apresentar o erro ao utilizador.
    */
   async completeChallenge(
     payload: CompletePayload,
-  ): Promise<CompleteChallengeResponse | null> {
-    try {
-      const { data, error } = await supabase.functions.invoke<CompleteChallengeResponse>(
-        'complete_challenge',
-        {
-          body: {
-            child_id: payload.childId,
-            challenge_date: payload.challengeDate,
-            session_id: payload.sessionId,
-            module_id: payload.moduleId,
-            timer_seconds: payload.timerSeconds,
-            multiplication_max: payload.multiplicationMax,
-            answers: payload.answers,
-          },
+  ): Promise<CompleteChallengeResponse> {
+    // Mapear AnswerDraft para o formato esperado pela EF Phase 2.5
+    const serverAnswers = payload.answers.map((a) => ({
+      position: a.position ?? a.question_index + 1,
+      fact_id: a.fact_id ?? `fact_${a.operand_a}x${a.operand_b}`,
+      child_answer: a.child_answer,
+      time_taken_ms: a.time_taken_ms ?? 0,
+      block_number: a.block_number,
+    }));
+
+    const { data, error } = await supabase.functions.invoke<CompleteChallengeResponse>(
+      'complete_challenge',
+      {
+        body: {
+          session_id: payload.sessionId,
+          answers: serverAnswers,
         },
-      );
+      },
+    );
 
-      if (error) throw error;
-      if (!data) throw new Error('errors.generic');
+    if (error) throw error;
+    if (!data) throw new Error('errors.generic');
 
-      // If we had queued items, try to flush them now
-      await challengeService.flushOfflineQueue();
-
-      return data;
-    } catch (e) {
-      const isNetworkError =
-        e instanceof Error &&
-        (e.message.includes('network') ||
-          e.message.includes('fetch') ||
-          e.message.includes('Failed to fetch'));
-
-      if (isNetworkError) {
-        await challengeService.queueOffline(payload);
-        return null;
-      }
-      throw e;
-    }
-  },
-
-  // ─── Offline queue ──────────────────────────────────────────────────────────
-
-  async queueOffline(payload: CompletePayload): Promise<void> {
-    try {
-      const raw = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
-      const queue: CompletePayload[] = raw ? (JSON.parse(raw) as CompletePayload[]) : [];
-      // Deduplicate by sessionId
-      const filtered = queue.filter((q) => q.sessionId !== payload.sessionId);
-      filtered.push(payload);
-      await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(filtered));
-    } catch {
-      // AsyncStorage failure is non-fatal — data loss acceptable offline edge case
-    }
-  },
-
-  async flushOfflineQueue(): Promise<void> {
-    try {
-      const raw = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
-      if (!raw) return;
-
-      const queue: CompletePayload[] = JSON.parse(raw) as CompletePayload[];
-      if (queue.length === 0) return;
-
-      const remaining: CompletePayload[] = [];
-      for (const payload of queue) {
-        try {
-          await challengeService.completeChallenge(payload);
-        } catch {
-          remaining.push(payload); // keep failed items for next attempt
-        }
-      }
-
-      if (remaining.length === 0) {
-        await AsyncStorage.removeItem(OFFLINE_QUEUE_KEY);
-      } else {
-        await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remaining));
-      }
-    } catch {
-      // Non-fatal
-    }
+    return data;
   },
 
   // ─── Local completion fallback ───────────────────────────────────────────────
@@ -244,14 +179,4 @@ export const challengeService = {
     }
   },
 
-  async hasPendingOffline(): Promise<boolean> {
-    try {
-      const raw = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
-      if (!raw) return false;
-      const queue = JSON.parse(raw) as CompletePayload[];
-      return queue.length > 0;
-    } catch {
-      return false;
-    }
-  },
 };

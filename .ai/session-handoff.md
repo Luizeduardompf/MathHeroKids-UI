@@ -4,13 +4,75 @@
 
 ---
 
-## Estado actual — 2026-06-11 18:30 UTC
+## Estado actual — 2026-06-11 20:44 UTC
 
 ### 🟢 Em curso
 ```
 ESTADO: LIVRE
-ÚLTIMO COMMIT: cfe72f6
+ÚLTIMO COMMIT: ab22820
 ```
+
+---
+
+### ✅ Concluído (sessão 6 — 2026-06-11) — Phase 2.5 completa
+
+**Tag git:**
+- `v1.1-phase1-complete` criada e publicada no remote
+
+**Sprint 2.5.1 — `backend/migrations/006_multiplication_facts.sql`:**
+- Catálogo estático de 100 questões (1×1 .. 10×10), tiers T1–T5
+- Distribuição validada: T1=19, T2=47, T3=14, T4=11, T5=9
+- RLS: leitura pública para autenticados
+
+**Sprint 2.5.2 — `backend/migrations/007_child_fact_mastery.sql`:**
+- `child_fact_mastery`: mastery por (child_id, fact_id), estados NEW/LEARNING/REVIEWING/MASTERED/WEAK
+- `child_profiles.timezone` adicionado (default 'America/Sao_Paulo')
+- `challenge_sessions`: colunas `questions_payload`, `rules_version`, `selection_metadata`; `question_seed` tornado nullable (deprecated)
+- `challenge_answers`: colunas `fact_id`, `response_time_ms`
+
+**Sprint 2.5.3 — Config JSON + Schema + Loader:**
+- `backend/config/adaptive-rules.json`: regras versionadas com pesos, thresholds, anti-repeat, progressão por tier
+- `backend/config/adaptive-rules.schema.json`: JSON Schema 2020-12 — validado com ajv
+- `backend/functions/_shared/adaptive-rules.ts`: loader com validação de invariantes no boot (soma pesos = 1.0)
+
+**Sprint 2.5.4 — Refactor `start_challenge`:**
+- Geração server-side via `selectQuestions()` em `_shared/question-selector.ts`
+- Payload de 20 questões persistido em `questions_payload`; retornado ao cliente
+- Cooldown cross-sessão (últimas 2 sessões excluídas), progressão de tiers, interleave por dificuldade
+- `question_seed` = null para novas sessões (legacy deprecated)
+
+**Sprint 2.5.5 — Refactor `complete_challenge`:**
+- Valida respostas contra `questions_payload` armazenado (não regenera seed)
+- `_shared/mastery.ts`: `updateMastery`, `computeStrength` (HLR decay), `nextState`, `applyCommutativity`
+- Preserva toda a lógica de XP/streak/calendar_days/trophies/level_rewards do v1
+- Sessões legacy sem payload retornam 409 `LEGACY_SESSION_UNSUPPORTED`
+
+**Sprint 2.5.6 — App cliente:**
+- `challenge.service.ts`: nova API sem seed, sem offline queue, `startChallenge` retorna `ChallengeStartResponse`
+- `challenge/[date].tsx`: consome `questions_payload` server-side, remove PRNG local
+- `src/hooks/use-network-status.ts`: hook + `checkNetworkOnce()`
+- `Question.fact_id?: string` adicionado; `AnswerDraft.fact_id?` + `position?` propagados no `submitAnswer`
+- `ChallengeQuestion`, `ChallengeStartResponse` em `src/types/index.ts`
+- i18n: `offlineTitle` + `offlineMsg` em pt/en/es/fr
+- `@react-native-community/netinfo` instalado
+- `supabase/config/`: criado para resolver imports relativos do CLI de deploy
+- EFs `start_challenge` + `complete_challenge` deployadas com sucesso
+
+**Sprint 2.5.7 — `recompute_mastery` EF:**
+- Replay idempotente do histórico de `challenge_answers` em ordem cronológica
+- Protegida por `X-Admin-Token` ou `service_role`
+- Deployada em produção
+
+**Sprint 2.5.8 — A/B harness:**
+- `adaptive-rules-v2.json`: variante experimental (4 sessões para REVIEWING, WEAK weight 35%)
+- `getRulesForChild(childId)`: atribuição estável 50/50 por hash(child_id) % 2
+- Controlado por `AB_TEST_ENABLED=true` env var na EF
+- `docs/ab-testing.md`: workflow completo, queries de análise SQL
+- EFs re-deployadas com v1+v2
+
+**Docs + CLAUDE.md:**
+- `docs/implementation-phases.md`: Phase 2.5 inserida com tabela de sprints
+- `CLAUDE.md`: seção Challenge atualizada (server-side, online-only, mastery), Fase atual atualizada, Offline atualizado
 
 ---
 
@@ -118,21 +180,27 @@ ESTADO: LIVRE
 
 ### ⏭️ Próximos passos (por prioridade)
 
-**A — Aplicar migrations pendentes no Supabase:**
+**A — Aplicar migrations no Supabase Studio (BLOCKER para Phase 2.5 funcionar):**
+- `006_multiplication_facts.sql` — catálogo 100 questões
+- `007_child_fact_mastery.sql` — mastery table, timezone, colunas legacy
+
+**B — Testar Phase 2.5 end-to-end:**
+- Verificar `start_challenge` retorna 20 questões adaptativas
+- Verificar `complete_challenge` atualiza `child_fact_mastery`
+- Testar tela offline (desligar WiFi antes de abrir o challenge)
+
+**C — Phase 3 — Gamification Core:**
+- Level Up Celebration modal (disparar quando `level_up: true` na resposta de `complete_challenge`)
+- Trophy/Achievement unlocks ligados ao retorno da EF
+- Ver `docs/implementation-phases.md` para detalhes completos
+
+**D — Migrations pendentes (de sessão anterior):**
 - Migration 004: INSERT RLS em friend_requests
 - Migration 005: last_seen_at em child_profiles
 
-**B — Gamification end-to-end:**
-- Integrar `start_challenge` + `complete_challenge` EFs no challengeStore / challenge screen
-- Level Up Celebration modal (disparar quando `level_up: true` na resposta)
-- Trophy/Achievement unlocks ligados ao retorno da EF
-
-**C — Avatar real em sugestões/amigos:**
-- `FriendAvatar` usa iniciais; mostrar imagem real quando `avatar_id` disponível
-
-**D — Push notifications em device:**
+**E — Push notifications em device:**
 - Mac Terminal: `bash .scripts/setup-push-notifications.sh`
 - EAS build Android (gratuito)
 
-**E — Optimização de assets:**
-- Redimensionar avatares para ≤200 KB
+**F — Assets:**
+- Avatares PNG ainda ~75 KB — ok para MVP

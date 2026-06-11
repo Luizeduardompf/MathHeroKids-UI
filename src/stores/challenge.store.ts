@@ -35,6 +35,10 @@ export interface AnswerDraft {
   operand_b: number;
   child_answer: number | null; // null = timeout
   time_taken_ms: number | null;
+  /** Phase 2.5+: fact_id do catálogo (e.g. 'fact_7x8'). Presente quando questões vêm do servidor. */
+  fact_id?: string;
+  /** Phase 2.5+: posição 1-based retornada pelo servidor */
+  position?: number;
 }
 
 interface ChallengeState {
@@ -206,6 +210,9 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
       operand_b: question.operand_b,
       child_answer: childAnswer,
       time_taken_ms: timeTakenMs,
+      // Phase 2.5+: presentes quando questões vêm do servidor
+      ...(question.fact_id != null ? { fact_id: question.fact_id } : {}),
+      ...(question.fact_id != null ? { position: question.index + 1 } : {}),
     };
 
     const newBlockAnswers = [...state.blockAnswers, draft];

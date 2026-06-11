@@ -71,25 +71,25 @@ const sectionIconStyles = StyleSheet.create({
 
 function SettingsHeader({ title, onBack }: { title: string; onBack?: () => void }) {
   return (
-    <LinearGradient
-      colors={[colors.primary, colors.primaryDark]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      <SafeAreaView edges={['top']}>
+    <SafeAreaView edges={['top']} style={{ backgroundColor: colors.primary }}>
+      <LinearGradient
+        colors={[colors.primary, colors.primaryDark]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
         <View style={[styles.header, onBack ? styles.headerWithBack : null]}>
           {onBack && (
             <Pressable onPress={onBack} style={styles.headerBackBtn} hitSlop={8}>
               <Ionicons name="chevron-back" size={22} color="#fff" />
             </Pressable>
           )}
-          <View style={{ flex: 1 }}>
+          <View>
             <Text variant="caption" style={styles.appName}>Math Hero Kids</Text>
             <Text variant="h1" color={colors.text.inverse}>{title}</Text>
           </View>
         </View>
-      </SafeAreaView>
-    </LinearGradient>
+      </LinearGradient>
+    </SafeAreaView>
   );
 }
 
@@ -440,6 +440,7 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
 // ─── Parent card ──────────────────────────────────────────────────────────────
 
 function ParentCard() {
+  const { t }         = useTranslation();
   const router        = useRouter();
   const user          = useAuthStore((s) => s.user);
   const parentProfile = useAuthStore((s) => s.parentProfile);
