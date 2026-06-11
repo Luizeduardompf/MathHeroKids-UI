@@ -79,7 +79,7 @@ function FriendCard({
 
   return (
     <View style={fc.card}>
-      <FriendAvatar name={profile.display_name} size={52} />
+      <FriendAvatar name={profile.display_name} avatarId={profile.avatar_id} size={52} />
       <View style={fc.mid}>
         <Text style={fc.name}>{profile.display_name}</Text>
         <Text style={fc.username}>@{profile.username}</Text>

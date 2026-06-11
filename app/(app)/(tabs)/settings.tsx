@@ -462,7 +462,7 @@ function ParentCard() {
       <TouchableOpacity
         onPress={() => router.push('/(app)/parent-area/edit-profile')}
         style={styles.editParentBtn}
-        accessibilityLabel="Editar dados do responsável"
+        accessibilityLabel={t('settings.editParentLabel')}
       >
         <Ionicons name="create-outline" size={18} color={colors.primary} />
       </TouchableOpacity>

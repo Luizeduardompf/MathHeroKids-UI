@@ -65,7 +65,7 @@ function PodiumSpot({
         { width: SIZE + 8, height: SIZE + 8, borderRadius: (SIZE + 8) / 2 },
         { borderColor: isTop ? '#F59E0B' : medalColors[position] },
       ]}>
-        <FriendAvatar name={ranked.child.display_name} size={SIZE} />
+        <FriendAvatar name={ranked.child.display_name} avatarId={ranked.child.avatar_id} size={SIZE} />
       </View>
       <View style={[pd.posBadge, { backgroundColor: medalColors[position] }]}>
         <Text style={pd.posNum}>{position}</Text>
@@ -111,7 +111,7 @@ function RankRow({ ranked }: { ranked: RankedFriend }) {
   return (
     <View style={[rr.row, highlight ? rr.rowHighlight : null]}>
       <RNText style={[rr.pos, highlight ? rr.posHighlight : null]}>#{ranked.position}</RNText>
-      <FriendAvatar name={ranked.child.display_name} size={44} />
+      <FriendAvatar name={ranked.child.display_name} avatarId={ranked.child.avatar_id} size={44} />
       <View style={rr.mid}>
         <RNText style={[rr.name, highlight ? rr.nameHighlight : null]}>
           {ranked.isSelf ? t('common.self') : ranked.child.display_name}

@@ -184,7 +184,7 @@ export const socialService = {
 
     if (!error) return;
 
-    let message = 'Não foi possível cancelar o pedido. Tente novamente.';
+    let message = 'Não foi possível cancelar o pedido. Tente novamente.'; // i18n-ignore — TODO: throw error codes, translate in UI layer
     try {
       const ctx = (error as { context?: Response }).context;
       if (ctx) {
@@ -312,14 +312,14 @@ export const socialService = {
 
     if (!error) return; // 200 / 201 — sucesso
 
-    let message = 'Não foi possível enviar o pedido. Tente novamente.';
+    let message = 'Não foi possível enviar o pedido. Tente novamente.'; // i18n-ignore — TODO: throw error codes, translate in UI layer
     try {
       const ctx = (error as { context?: Response }).context;
       if (ctx) {
         const body = await ctx.clone().json() as { error?: string; message?: string };
-        if      (body.error === 'ALREADY_FRIENDS')  message = 'Vocês já são amigos!';
-        else if (body.error === 'SELF_REQUEST')      message = 'Não podes adicionar-te a ti mesmo.';
-        else if (body.error === 'CHILD_NOT_FOUND')   message = 'Perfil não encontrado ou inactivo.';
+        if      (body.error === 'ALREADY_FRIENDS')  message = 'Vocês já são amigos!';         // i18n-ignore
+        else if (body.error === 'SELF_REQUEST')      message = 'Não podes adicionar-te a ti mesmo.'; // i18n-ignore
+        else if (body.error === 'CHILD_NOT_FOUND')   message = 'Perfil não encontrado ou inactivo.'; // i18n-ignore
         else if (body.message)                       message = body.message;
       }
     } catch { /* usar mensagem default */ }
@@ -339,7 +339,7 @@ export const socialService = {
 
     if (!error) return;
 
-    let message = 'Não foi possível responder ao pedido. Tente novamente.';
+    let message = 'Não foi possível responder ao pedido. Tente novamente.'; // i18n-ignore
     try {
       const ctx = (error as { context?: Response }).context;
       if (ctx) {

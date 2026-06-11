@@ -1,8 +1,11 @@
 {
   "common": {
     "back": "Voltar",
+    "confirm": "Confirmar",
     "continue": "Continuar",
     "cancel": "Cancelar",
+    "showPassword": "Mostrar senha",
+    "hidePassword": "Ocultar senha",
     "save": "Salvar",
     "next": "Próximo",
     "done": "Concluído",
@@ -38,7 +41,12 @@
       "title": "Math Hero Kids",
       "subtitle": "Aprenda matemática brincando com o Milo! Desafios divertidos, troféus e muita diversão.",
       "getStarted": "Começar agora",
-      "signIn": "Já tenho uma conta"
+      "signIn": "Já tenho uma conta",
+      "features": {
+        "trophies":   "Ganhe troféus e suba de nível",
+        "challenges": "Desafios diários com o Milo",
+        "profiles":   "Vários perfis para a família toda"
+      }
     },
     "login": {
       "title": "Entrar",
@@ -137,6 +145,7 @@
     "timerUnlimited": "∞",
     "category": "Tabuada da Multiplicação",
     "exitTitle": "Sair do desafio?",
+    "exitChallengeLabel": "Sair do desafio",
     "exitMessage": "Seu progresso desta questão não será salvo.",
     "exitConfirm": "Continuar",
     "exitLeave": "Sair",
@@ -321,6 +330,7 @@
     "sectionFriends": "Amigos",
     "sectionRanking": "Ranking",
     "blockTitle": "Bloquear utilizador",
+    "blockConfirm": "Tens a certeza que queres bloquear {{name}}?",
     "viewNotifications": "Ver notificações",
     "blockedUsers": "Utilizadores bloqueados",
     "chat": {
@@ -480,6 +490,7 @@
     "timerUnlimited": "Sem limite",
     "multiplicationTitle": "Tabuada",
     "multiplicationLabel": "Multiplicar até",
+    "editParentLabel": "Editar dados do responsável",
     "parentArea": "Área dos pais",
     "parentAreaSubtitle": "Controle parental",
     "questionsTitle": "Questões por sessão",

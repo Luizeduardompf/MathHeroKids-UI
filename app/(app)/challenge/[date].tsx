@@ -587,7 +587,7 @@ function NumericKeypad({
           ] as StyleProp<ViewStyle>
         }
         onPress={() => { if (hasInput && onSubmit) onSubmit(); }}
-        accessibilityLabel="Confirmar"
+        accessibilityLabel={t('common.confirm')}
         accessibilityState={{ disabled: !hasInput }}
       >
         <Ionicons name="checkmark" size={30} color="#fff" />
@@ -1010,7 +1010,7 @@ export default function ChallengeScreen() {
 
       {/* Header: [X] [Questão X de 20 + progress] [⏰ timer] */}
       <View style={gs.header}>
-        <Pressable onPress={() => setShowExitModal(true)} style={gs.exitBtn} accessibilityLabel="Sair do desafio">
+        <Pressable onPress={() => setShowExitModal(true)} style={gs.exitBtn} accessibilityLabel={t('challenge.exitChallengeLabel')}>
           <View style={gs.exitBtnCircle}>
             <Ionicons name="close" size={22} color="#4B5563" />
           </View>

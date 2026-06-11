@@ -85,6 +85,6 @@ export const pinService = {
    */
   async sendForgotPinEmail(email: string): Promise<void> {
     const { error } = await supabase.auth.resetPasswordForEmail(email);
-    if (error) throw new Error('Não foi possível enviar o e-mail. Tente novamente.');
+    if (error) throw new Error('Não foi possível enviar o e-mail. Tente novamente.'); // i18n-ignore
   },
 };

@@ -44,7 +44,7 @@ function RequestCard({
   const { t } = useTranslation();
   return (
     <View style={rc.card}>
-      <FriendAvatar name={request.from_child.display_name} size={48} />
+      <FriendAvatar name={request.from_child.display_name} avatarId={request.from_child.avatar_id} size={48} />
       <View style={rc.mid}>
         <Text style={rc.name}>{request.from_child.display_name}</Text>
         <Text style={rc.sub}>{t('common.level', { level: request.from_child.level })}</Text>
@@ -90,7 +90,7 @@ function FriendRow({
   return (
     <View style={fr.row}>
       <Text style={fr.rank}>#{rank}</Text>
-      <FriendAvatar name={friend.display_name} size={44} />
+      <FriendAvatar name={friend.display_name} avatarId={friend.avatar_id} size={44} />
       <View style={fr.mid}>
         <Text style={fr.name}>{friend.display_name}</Text>
         <Text style={fr.sub}>@{friend.username} · {t('common.level', { level: friend.level })}</Text>
@@ -326,11 +326,11 @@ export default function FriendsListScreen() {
                   onChat={() => router.push(`/(app)/friends/chat/${f.id}` as never)}
                   onBlock={() => {
                     Alert.alert(
-                      'Bloquear utilizador',
-                      `Tens a certeza que queres bloquear ${f.display_name}?`,
+                      t('friends.blockTitle'),
+                      t('friends.blockConfirm', { name: f.display_name }),
                       [
-                        { text: 'Cancelar', style: 'cancel' },
-                        { text: 'Bloquear', style: 'destructive', onPress: async () => {
+                        { text: t('common.cancel'), style: 'cancel' },
+                        { text: t('friends.block'), style: 'destructive', onPress: async () => {
                           if (!child) return;
                           await socialService.blockUser(child.id, f.id);
                           void queryClient.invalidateQueries({ queryKey: ['friends', child.id] });

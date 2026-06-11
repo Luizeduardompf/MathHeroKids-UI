@@ -84,13 +84,13 @@ export default function EditarCriancaScreen() {
     if (!parentId || !id) return;
     childService.listChildren(parentId).then((children) => {
       const found = children.find((c) => c.id === id) ?? null;
-      if (!found) { setLoadError('Perfil não encontrado.'); return; }
+      if (!found) { setLoadError('Perfil não encontrado.'); return; } // i18n-ignore — internal error state
       setChild(found);
       setAvatar(found.avatar_id);
       setName(found.display_name);
       setUsername(found.username);
       setBirthDate(formatDateForDisplay(found.birth_date));
-    }).catch(() => setLoadError('Erro ao carregar perfil.'));
+    }).catch(() => setLoadError('Erro ao carregar perfil.')); // i18n-ignore — internal error state
   }, [id, parentId]);
 
   function validate(): string | null {

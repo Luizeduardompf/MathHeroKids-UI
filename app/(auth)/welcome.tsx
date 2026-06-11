@@ -12,10 +12,10 @@ import { colors, radius, space } from '@/theme';
 
 // ─── Feature pills ────────────────────────────────────────────────────────────
 
-const FEATURES = [
-  { key: 'trophies',   icon: 'trophy'    as const, iconBg: colors.warning, label: 'Ganhe troféus e suba de nível'    },
-  { key: 'challenges', icon: 'sparkles'  as const, iconBg: colors.accent,  label: 'Desafios diários com o Milo'      },
-  { key: 'profiles',   icon: 'star'      as const, iconBg: colors.success, label: 'Vários perfis para a família toda' },
+const FEATURE_KEYS = [
+  { key: 'trophies',   icon: 'trophy'   as const, iconBg: colors.warning },
+  { key: 'challenges', icon: 'sparkles' as const, iconBg: colors.accent  },
+  { key: 'profiles',   icon: 'star'     as const, iconBg: colors.success },
 ] as const;
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -74,13 +74,13 @@ export default function WelcomeScreen() {
 
           {/* ── Feature pills ─────────────────────────────────────────────── */}
           <View style={styles.features}>
-            {FEATURES.map((f) => (
+            {FEATURE_KEYS.map((f) => (
               <View key={f.key} style={styles.pill}>
                 <View style={[styles.pillIcon, { backgroundColor: f.iconBg }]}>
                   <Ionicons name={f.icon} size={20} color="#fff" />
                 </View>
                 <Text variant="label" color={colors.text.inverse} style={styles.pillLabel}>
-                  {f.label}
+                  {t(`auth.welcome.features.${f.key}`)}
                 </Text>
               </View>
             ))}

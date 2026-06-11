@@ -1,8 +1,11 @@
 {
   "common": {
     "back": "Retour",
+    "confirm": "Confirmer",
     "continue": "Continuer",
     "cancel": "Annuler",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
     "save": "Enregistrer",
     "next": "Suivant",
     "done": "Terminé",
@@ -38,7 +41,12 @@
       "title": "Math Hero Kids",
       "subtitle": "Apprends les maths en t'amusant !",
       "getStarted": "Commencer",
-      "signIn": "J'ai déjà un compte"
+      "signIn": "J'ai déjà un compte",
+      "features": {
+        "trophies":   "Gagne des trophées et monte de niveau",
+        "challenges": "Défis quotidiens avec Milo",
+        "profiles":   "Plusieurs profils pour toute la famille"
+      }
     },
     "login": {
       "title": "Se connecter",
@@ -139,6 +147,8 @@
     "timerUnlimited": "Illimité",
     "multiplicationTitle": "Table de multiplication",
     "multiplicationLabel": "Multiplier jusqu'à",
+    "exitChallengeLabel": "Quitter le défi",
+    "editParentLabel": "Modifier les données du responsable",
     "parentArea": "Espace parents",
     "parentAreaSubtitle": "Contrôle parental",
     "questionsTitle": "Questions par session",
@@ -223,6 +233,7 @@
     "sectionFriends": "Amis",
     "sectionRanking": "Classement",
     "blockTitle": "Bloquer l'utilisateur",
+    "blockConfirm": "Êtes-vous sûr de vouloir bloquer {{name}} ?",
     "viewNotifications": "Voir les notifications",
     "blockedUsers": "Utilisateurs bloqués",
     "chat": {

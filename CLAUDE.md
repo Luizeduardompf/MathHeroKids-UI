@@ -60,6 +60,47 @@ Isto garante que se o contexto acabar a meio, o próximo chat sabe exactamente o
 
 ---
 
+## 🚨 Problemas conhecidos do ambiente (sandbox)
+
+### Git HEAD.lock — virtiofs não permite unlink
+
+O virtiofs bloqueia `unlink()` de lock files criados por bash calls anteriores que falharam/expiraram. `rm`, `mv` e `python3 os.remove()` falham todos com "Operation not permitted".
+
+**Workaround quando `git commit` falha com HEAD.lock:**
+```bash
+# 1. Criar commit object sem tocar no HEAD
+TREE=$(git write-tree)
+PARENT=$(git rev-parse HEAD)
+COMMIT=$(git commit-tree "$TREE" -p "$PARENT" -m "<mensagem>")
+
+# 2. Clonar para /tmp (filesystem local, sem locks)
+git clone /sessions/<session>/mnt/MathHeroKids-UI /tmp/push_tmp
+cd /tmp/push_tmp
+git remote set-url origin https://<token>@github.com/Luizeduardompf/MathHeroKids-UI.git
+git fetch /sessions/<session>/mnt/MathHeroKids-UI "$COMMIT"
+git reset --hard "$COMMIT"
+git push origin master:main
+```
+
+### Supabase CLI — `.bin/supabase`, sem Docker, dois paths para EFs
+
+- CLI em `.bin/supabase` (não no PATH global). Session-setup.sh faz login + link automaticamente.
+- Deploy **sem Docker**: usar `--use-api` sempre.
+- EFs devem existir em **dois locais**: `backend/functions/<nome>/` (source of truth) e `supabase/functions/<nome>/` (usado pelo CLI). Criar apenas em `backend/` faz o deploy falhar.
+
+**Workflow para nova Edge Function:**
+```bash
+# 1. Criar ficheiro em backend/functions/<nome>/index.ts  (source of truth)
+# 2. Copiar para supabase/functions/
+cp -r backend/functions/<nome> supabase/functions/
+# 3. Deploy
+.bin/supabase functions deploy <nome> --use-api
+# 4. Commitar ambos os paths
+git add backend/functions/<nome> supabase/functions/<nome>
+```
+
+---
+
 ## Stack
 
 | Camada | Tecnologia |

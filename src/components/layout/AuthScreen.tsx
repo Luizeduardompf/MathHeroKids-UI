@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { Text } from '@/components/ui/Text';
 import { colors, space } from '@/theme';
@@ -43,6 +44,7 @@ export function AuthScreen({
   children,
   contentStyle,
 }: AuthScreenProps) {
+  const { t } = useTranslation();
   return (
     <View style={styles.root}>
       {/* ── Header ── */}
@@ -59,7 +61,7 @@ export function AuthScreen({
                 onPress={onBack}
                 style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
                 accessibilityRole="button"
-                accessibilityLabel="Voltar"
+                accessibilityLabel={t('common.back')}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Ionicons name="chevron-back" size={22} color={colors.text.inverse} />

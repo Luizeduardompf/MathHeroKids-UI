@@ -11,7 +11,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "check:i18n": "python3 .scripts/check-hardcoded-pt.py"
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",

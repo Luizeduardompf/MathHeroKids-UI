@@ -32,7 +32,7 @@ function BlockedRow({ profile, onUnblock }: { profile: FriendProfile; onUnblock:
   const { t } = useTranslation();
   return (
     <View style={row.card}>
-      <FriendAvatar name={profile.display_name} size={44} />
+      <FriendAvatar name={profile.display_name} avatarId={profile.avatar_id} size={44} />
       <View style={row.mid}>
         <Text style={row.name}>{profile.display_name}</Text>
         <Text style={row.sub}>@{profile.username}</Text>

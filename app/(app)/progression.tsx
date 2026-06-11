@@ -33,7 +33,8 @@ function getXpRange(level: number) {
 
 // ─── Milestone data (from gamification-data.ts in zip) ───────────────────────
 
-type RewardType = 'Moldura' | 'Roupa do Milo' | 'Medalha' | 'Variante de Troféu' | 'Comemoração';
+// TODO Phase 3: extract reward catalog to i18n when finalized
+type RewardType = 'Moldura' | 'Roupa do Milo' | 'Medalha' | 'Variante de Troféu' | 'Comemoração'; // i18n-ignore
 type MilestoneStatus = 'unlocked' | 'current' | 'locked';
 
 interface Milestone {
@@ -42,24 +43,25 @@ interface Milestone {
   reward: { type: RewardType; name: string };
 }
 
-// Icon names per reward type — ported from design
+// Icon names per reward type — ported from design // i18n-ignore
 const REWARD_ICONS: Record<RewardType, IoniconsName> = {
-  'Moldura':             'image-outline',
-  'Roupa do Milo':       'shirt-outline',
-  'Medalha':             'ribbon-outline',
-  'Variante de Troféu':  'trophy-outline',
-  'Comemoração':         'sparkles-outline',
+  'Moldura':             'image-outline',   // i18n-ignore
+  'Roupa do Milo':       'shirt-outline',   // i18n-ignore
+  'Medalha':             'ribbon-outline',  // i18n-ignore
+  'Variante de Troféu':  'trophy-outline',  // i18n-ignore
+  'Comemoração':         'sparkles-outline', // i18n-ignore
 };
 
+// i18n-ignore — milestone catalog data (TODO Phase 3: move to DB seeds + i18n keys)
 const MILESTONES: Milestone[] = [
-  { level: 1,  title: 'Explorador',          reward: { type: 'Moldura',            name: 'Avatar inicial desbloqueado' } },
-  { level: 5,  title: 'Aventureiro',          reward: { type: 'Moldura',            name: 'Moldura de Aventureiro'      } },
-  { level: 10, title: 'Explorador Avançado',  reward: { type: 'Moldura',            name: 'Moldura Estrelas'            } },
-  { level: 11, title: 'Aventureiro',          reward: { type: 'Roupa do Milo',      name: 'Capa Mágica'                 } },
-  { level: 12, title: 'Herói da Matemática',  reward: { type: 'Medalha',            name: 'Medalha de Prata'            } },
-  { level: 13, title: 'Mago Aprendiz',        reward: { type: 'Variante de Troféu', name: 'Troféu Brilhante'            } },
-  { level: 15, title: 'Mestre dos Números',   reward: { type: 'Roupa do Milo',      name: 'Chapéu Galáctico'            } },
-  { level: 20, title: 'Lenda Matemática',     reward: { type: 'Comemoração',        name: 'Fogos Dourados'              } },
+  { level: 1,  title: 'Explorador',          reward: { type: 'Moldura',            name: 'Avatar inicial desbloqueado' } }, // i18n-ignore
+  { level: 5,  title: 'Aventureiro',          reward: { type: 'Moldura',            name: 'Moldura de Aventureiro'      } }, // i18n-ignore
+  { level: 10, title: 'Explorador Avançado',  reward: { type: 'Moldura',            name: 'Moldura Estrelas'            } }, // i18n-ignore
+  { level: 11, title: 'Aventureiro',          reward: { type: 'Roupa do Milo',      name: 'Capa Mágica'                 } }, // i18n-ignore
+  { level: 12, title: 'Herói da Matemática',  reward: { type: 'Medalha',            name: 'Medalha de Prata'            } }, // i18n-ignore
+  { level: 13, title: 'Mago Aprendiz',        reward: { type: 'Variante de Troféu', name: 'Troféu Brilhante'            } }, // i18n-ignore
+  { level: 15, title: 'Mestre dos Números',   reward: { type: 'Roupa do Milo',      name: 'Chapéu Galáctico'            } }, // i18n-ignore
+  { level: 20, title: 'Lenda Matemática',     reward: { type: 'Comemoração',        name: 'Fogos Dourados'              } }, // i18n-ignore
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────

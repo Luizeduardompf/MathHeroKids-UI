@@ -20,6 +20,7 @@ import React, { useCallback, useState } from 'react';
 import { Alert } from 'react-native'; // eslint-disable-line
 import {
   ActivityIndicator,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -47,6 +48,17 @@ import type { AvatarId } from '@/constants/config';
 
 type Section = 'friends' | 'ranking';
 
+// ─── Avatar images (static require map — Metro exige paths estáticos) ─────────
+
+const AVATAR_IMAGES: Record<string, number> = {
+  sofia: require('../../../../assets/images/avatars/avatar-sofia.png'),
+  lucas: require('../../../../assets/images/avatars/avatar-lucas.png'),
+  luna:  require('../../../../assets/images/avatars/avatar-luna.png'),
+  mia:   require('../../../../assets/images/avatars/avatar-mia.png'),
+  pedro: require('../../../../assets/images/avatars/avatar-pedro.png'),
+  theo:  require('../../../../assets/images/avatars/avatar-theo.png'),
+};
+
 // ─── Avatar initials (exportado para reutilização) ───────────────────────────
 
 const AVATAR_COLORS = [
@@ -67,7 +79,15 @@ function initials(name: string): string {
     : name.slice(0, 2).toUpperCase();
 }
 
-export function FriendAvatar({ name, size = 44 }: { name: string; size?: number }) {
+export function FriendAvatar({ name, avatarId, size = 44 }: { name: string; avatarId?: AvatarId; size?: number }) {
+  const src = avatarId ? AVATAR_IMAGES[avatarId] : null;
+  if (src) {
+    return (
+      <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: '#F3F4F6', flexShrink: 0 }}>
+        <Image source={src} style={{ width: size, height: size }} resizeMode="cover" />
+      </View>
+    );
+  }
   return (
     <View style={[av.circle, {
       width: size, height: size,
@@ -260,7 +280,7 @@ function RequestCard({ request, onAccept, onReject, loading }: {
   const { t } = useTranslation();
   return (
     <View style={rc.card}>
-      <FriendAvatar name={request.from_child.display_name} size={48} />
+      <FriendAvatar name={request.from_child.display_name} avatarId={request.from_child.avatar_id} size={48} />
       <View style={rc.mid}>
         <Text style={rc.name}>{request.from_child.display_name}</Text>
         <Text style={rc.sub}>{t('common.level', { level: request.from_child.level })}</Text>
@@ -304,7 +324,7 @@ function FriendRow({ friend, rank, onBlock, onChat, unreadCount }: {
   return (
     <View style={fr.row}>
       <Text style={fr.rank}>#{rank}</Text>
-      <FriendAvatar name={friend.display_name} size={44} />
+      <FriendAvatar name={friend.display_name} avatarId={friend.avatar_id} size={44} />
       <View style={fr.mid}>
         <Text style={fr.name}>{friend.display_name}</Text>
         <Text style={fr.sub}>@{friend.username} · {t('common.level', { level: friend.level })}</Text>
@@ -620,8 +640,8 @@ export default function AmigosScreen() {
                           onChat={() => router.push(`/(app)/friends/chat/${f.id}` as never)}
                           onBlock={() => {
                             Alert.alert(
-                              t('friends.blockTitle') ?? 'Bloquear utilizador',
-                              `Tens a certeza que queres bloquear ${f.display_name}?`,
+                              t('friends.blockTitle'),
+                              t('friends.blockConfirm', { name: f.display_name }),
                               [
                                 { text: t('common.cancel') ?? 'Cancelar', style: 'cancel' },
                                 { text: t('friends.block'), style: 'destructive', onPress: async () => {

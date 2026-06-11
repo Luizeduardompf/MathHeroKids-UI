@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import type { TextInputProps, StyleProp, ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Text } from './Text';
 import { colors, radius, space, textVariants } from '@/theme';
@@ -31,6 +32,7 @@ export function Input({
   containerStyle,
   ...rest
 }: InputProps) {
+  const { t } = useTranslation();
   const [isSecure, setIsSecure] = useState(isPassword);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -72,7 +74,7 @@ export function Input({
           <Pressable
             style={styles.eyeButton}
             onPress={() => setIsSecure((v) => !v)}
-            accessibilityLabel={isSecure ? 'Mostrar senha' : 'Ocultar senha'}
+            accessibilityLabel={isSecure ? t('common.showPassword') : t('common.hidePassword')}
           >
             <Ionicons
               name={isSecure ? 'eye-outline' : 'eye-off-outline'}

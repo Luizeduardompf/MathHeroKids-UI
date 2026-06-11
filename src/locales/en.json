@@ -1,8 +1,11 @@
 {
   "common": {
     "back": "Back",
+    "confirm": "Confirm",
     "continue": "Continue",
     "cancel": "Cancel",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "save": "Save",
     "next": "Next",
     "done": "Done",
@@ -38,7 +41,12 @@
       "title": "Math Hero Kids",
       "subtitle": "Learn math with fun!",
       "getStarted": "Get started",
-      "signIn": "I already have an account"
+      "signIn": "I already have an account",
+      "features": {
+        "trophies":   "Earn trophies and level up",
+        "challenges": "Daily challenges with Milo",
+        "profiles":   "Multiple profiles for the whole family"
+      }
     },
     "login": {
       "title": "Sign In",
@@ -137,6 +145,7 @@
     "timerUnlimited": "∞",
     "category": "Multiplication Table",
     "exitTitle": "Leave challenge?",
+    "exitChallengeLabel": "Leave challenge",
     "exitMessage": "Your progress on this question won't be saved.",
     "exitConfirm": "Continue",
     "exitLeave": "Leave",
@@ -310,6 +319,7 @@
     "sectionFriends": "Friends",
     "sectionRanking": "Ranking",
     "blockTitle": "Block user",
+    "blockConfirm": "Are you sure you want to block {{name}}?",
     "viewNotifications": "View notifications",
     "blockedUsers": "Blocked users",
     "chat": {
@@ -469,6 +479,7 @@
     "timerUnlimited": "Unlimited",
     "multiplicationTitle": "Multiplication table",
     "multiplicationLabel": "Multiply up to",
+    "editParentLabel": "Edit parent details",
     "parentArea": "Parent area",
     "parentAreaSubtitle": "Parental controls",
     "questionsTitle": "Questions per session",

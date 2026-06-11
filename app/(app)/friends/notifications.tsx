@@ -61,7 +61,7 @@ function NotifCard({
   const isRequest = notif.type === 'friend_request';
   return (
     <View style={nc.card}>
-      <FriendAvatar name={notif.profile.display_name} size={48} />
+      <FriendAvatar name={notif.profile.display_name} avatarId={notif.profile.avatar_id} size={48} />
       <View style={nc.body}>
         <Text style={nc.name}>{notif.profile.display_name}</Text>
         <Text style={nc.sub}>
