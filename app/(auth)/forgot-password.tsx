@@ -43,7 +43,7 @@ export default function ForgotPasswordScreen() {
         <View style={styles.header}>
           <Text variant="h1">{t('auth.forgotPassword.title')}</Text>
         </View>
-        <MiloMessage message="Enviamos as instruções para o seu e-mail. Verifique sua caixa de entrada!" style={styles.milo} />
+        <MiloMessage message={t('auth.forgotPassword.successMessage')} style={styles.milo} />
         <View style={styles.actions}>
           <Button
             label={t('auth.forgotPassword.backToLogin')}

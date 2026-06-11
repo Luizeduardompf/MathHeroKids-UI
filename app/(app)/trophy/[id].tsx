@@ -1,6 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import { PlaceholderScreen } from '@/components/layout/PlaceholderScreen';
-import { Icons } from '@/constants/icons';
 
 export default function TrophyDetailScreen() {
-  return <PlaceholderScreen emoji="🏅" title="Troféu" />;
+  const { t } = useTranslation();
+  return <PlaceholderScreen emoji="🏅" title={t('trophies.detailTitle')} />;
 }

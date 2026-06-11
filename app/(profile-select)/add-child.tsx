@@ -88,12 +88,12 @@ export default function AddChildScreen() {
 
   return (
     <AuthScreen
-      title="Adicionar criança"
+      title={t('profileSelect.addChild')}
       subtitle="Math Hero Kids"
       onBack={() => router.back()}
     >
       <MiloMessage
-        message="Vamos criar o perfil do novo herói da matemática! Escolha um avatar e preencha os dados."
+        message={t('profileSelect.addChildMiloMsg')}
         variant="orange"
       />
 
@@ -140,7 +140,7 @@ export default function AddChildScreen() {
           ) : null}
 
           <Button
-            label="Adicionar criança"
+            label={t('profileSelect.addChild')}
             loading={loading}
             onPress={handleCreate}
           />

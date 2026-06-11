@@ -173,7 +173,7 @@ export default function PinScreen({ onSuccess }: Props) {
           </Pressable>
           <View style={s.headerText}>
             <Text style={s.headerSub}>Math Hero Kids</Text>
-            <Text style={s.headerTitle}>Controle dos pais</Text>
+            <Text style={s.headerTitle}>{t('parentArea.controls.title')}</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -185,8 +185,8 @@ export default function PinScreen({ onSuccess }: Props) {
           <Ionicons name="lock-closed-outline" size={36} color={colors.primary} />
         </View>
 
-        <Text style={s.title}>Área dos pais</Text>
-        <Text style={s.subtitle}>Digite o PIN para continuar</Text>
+        <Text style={s.title}>{t('parentArea.pin.title')}</Text>
+        <Text style={s.subtitle}>{t('parentArea.pin.subtitle')}</Text>
 
         {/* PIN dots */}
         <PinDots count={digits.length} />
@@ -205,7 +205,7 @@ export default function PinScreen({ onSuccess }: Props) {
         <Pressable onPress={handleForgotPin} disabled={sending} style={s.forgotBtn} hitSlop={8}>
           {sending
             ? <ActivityIndicator color={colors.primary} size="small" />
-            : <Text style={s.forgotText}>Esqueci o PIN</Text>
+            : <Text style={s.forgotText}>{t('parentArea.pin.forgotPin')}</Text>
           }
         </Pressable>
       </View>

@@ -22,7 +22,9 @@
       "mins": "il y a {{n}}min",
       "now": "maintenant"
     },
-    "self": "Vous"
+    "self": "Vous",
+    "comingSoon": "Bientôt disponible",
+    "saving": "Enregistrement…"
   },
   "nav": {
     "home": "Accueil",
@@ -56,7 +58,8 @@
       "emailLabel": "E-mail du parent",
       "submit": "Envoyer les instructions",
       "rememberPassword": "Vous souvenez-vous ?",
-      "backToLogin": "Se connecter"
+      "backToLogin": "Se connecter",
+      "successMessage": "Nous avons envoyé les instructions à votre e-mail. Vérifiez votre boîte de réception !"
     },
     "register": {
       "parent": {
@@ -95,7 +98,8 @@
   "profileSelect": {
     "title": "Qui joue ?",
     "subtitle": "Appuyez sur un profil pour changer de joueur.",
-    "addChild": "Ajouter un enfant"
+    "addChild": "Ajouter un enfant",
+    "addChildMiloMsg": "Créons le profil du nouveau héros des mathématiques ! Choisissez un avatar et remplissez les données."
   },
   "home": {
     "switchProfile": "Changer de profil",
@@ -106,7 +110,8 @@
       "todaysChallenge": "Défi du jour",
       "continue": "Continuer le défi",
       "start": "Commencer le défi",
-      "questions": "{{current}} / {{total}} questions"
+      "questions": "{{current}} / {{total}} questions",
+      "xpReward": "+150 XP"
     },
     "recentTrophies": "Trophées récents",
     "trophy": {
@@ -158,8 +163,13 @@
       "invalidEmail": "Entrez un e-mail valide.",
       "usernameTaken": "Ce nom d'utilisateur est déjà pris.",
       "usernameFormat": "Utilisez uniquement des lettres, des chiffres et _",
-      "termsRequired": "Vous devez accepter les conditions pour continuer."
-    }
+      "termsRequired": "Vous devez accepter les conditions pour continuer.",
+      "passwordRequired": "Le nouveau mot de passe est obligatoire.",
+      "passwordMinLength": "Le mot de passe doit contenir au moins {{n}} caractères.",
+      "passwordMismatch": "Les mots de passe ne correspondent pas."
+    },
+    "notFound": "Page non trouvée",
+    "backToHome": "Retour à l'accueil"
   },
   "friends": {
     "title": "Amis",
@@ -194,7 +204,8 @@
       "noSuggestionsDesc": "Recherchez par nom d'utilisateur !",
       "result": "Résultat",
       "notFound": "Utilisateur introuvable",
-      "notFoundDesc": "Vérifiez que le nom d'utilisateur est correct"
+      "notFoundDesc": "Vérifiez que le nom d'utilisateur est correct",
+      "searchHint": "Recherchez par nom utilisateur ci-dessus !"
     },
     "ranking": {
       "title": "Classement des amis",
@@ -213,7 +224,8 @@
     "viewNotifications": "Voir les notifications",
     "blockedUsers": "Utilisateurs bloqués",
     "chat": {
-      "friendLabel": "Ami(e)"
+      "friendLabel": "Ami(e)",
+      "emptyTitle": "Commencez la conversation !"
     },
     "notifications": {
       "empty": "Aucune notification",
@@ -320,6 +332,26 @@
       "create": "Créer le profil",
       "registeredSince": "Membre depuis",
       "lastAccess": "Dernier accès"
+    },
+    "controls": {
+      "title": "Contrôle parental"
+    },
+    "nameLabel": "Nom du responsable",
+    "namePlaceholder": "Votre nom complet",
+    "emailReadOnly": "L'e-mail ne peut pas être modifié.",
+    "emailFixed": "fixe",
+    "profileUpdated": "✓ Données mises à jour !",
+    "saveChanges": "Enregistrer les modifications",
+    "passwordHint": "Modifier le mot de passe d'accès.",
+    "pinError4Digits": "Le PIN doit contenir exactement 4 chiffres.",
+    "pinErrorMismatch": "Les PINs ne correspondent pas.",
+    "password": {
+      "newLabel": "Nouveau mot de passe",
+      "newPlaceholder": "Min. {{n}} caractères",
+      "confirmLabel": "Confirmer le nouveau mot de passe",
+      "confirmPlaceholder": "Répétez le mot de passe",
+      "updated": "✓ Mot de passe modifié avec succès !",
+      "saveBtn": "Enregistrer le nouveau mot de passe"
     }
   },
   "progression": {
@@ -348,5 +380,9 @@
     "block_almost": "Presque ! Un autre essai et cette étoile parfaite est à toi.",
     "welcome": "Bonjour ! Je suis Milo. D'abord le parent crée le compte, puis on crée le profil de l'enfant.",
     "achievements": "Chaque réussite est une victoire ! Continue à collectionner."
+  },
+  "trophies": {
+    "miloMessage": "Regarde tous les trophées que tu as déjà ! Allons en gagner plus ?",
+    "detailTitle": "Détails du trophée"
   }
 }

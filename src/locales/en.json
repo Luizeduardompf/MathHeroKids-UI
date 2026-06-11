@@ -22,7 +22,9 @@
       "mins": "{{n}}m ago",
       "now": "just now"
     },
-    "self": "You"
+    "self": "You",
+    "comingSoon": "Coming soon",
+    "saving": "Saving…"
   },
   "nav": {
     "home": "Home",
@@ -56,7 +58,8 @@
       "emailLabel": "Parent email",
       "submit": "Send instructions",
       "rememberPassword": "Remember your password?",
-      "backToLogin": "Sign in"
+      "backToLogin": "Sign in",
+      "successMessage": "We've sent instructions to your email. Check your inbox!"
     },
     "register": {
       "parent": {
@@ -95,7 +98,8 @@
   "profileSelect": {
     "title": "Who's playing?",
     "subtitle": "Tap a profile to switch player.",
-    "addChild": "Add child"
+    "addChild": "Add child",
+    "addChildMiloMsg": "Let's create the new math hero's profile! Choose an avatar and fill in the details."
   },
   "home": {
     "switchProfile": "Switch profile",
@@ -106,7 +110,8 @@
       "todaysChallenge": "Today's Challenge",
       "continue": "Continue Challenge",
       "start": "Start Challenge",
-      "questions": "{{current}} / {{total}} questions"
+      "questions": "{{current}} / {{total}} questions",
+      "xpReward": "+150 XP"
     },
     "recentTrophies": "Recent trophies",
     "trophy": {
@@ -274,7 +279,8 @@
       "noSuggestionsDesc": "Search by username above!",
       "result": "Result",
       "notFound": "No user found",
-      "notFoundDesc": "Check if the username is correct"
+      "notFoundDesc": "Check if the username is correct",
+      "searchHint": "Search by username above!"
     },
     "ranking": {
       "title": "Friends ranking",
@@ -305,7 +311,8 @@
     "viewNotifications": "View notifications",
     "blockedUsers": "Blocked users",
     "chat": {
-      "friendLabel": "Friend"
+      "friendLabel": "Friend",
+      "emptyTitle": "Start the conversation!"
     },
     "notifications": {
       "empty": "No notifications",
@@ -337,7 +344,9 @@
       "diamond": "Diamond"
     },
     "earnedOn": "EARNED",
-    "howToEarn": "How to earn"
+    "howToEarn": "How to earn",
+    "miloMessage": "Look at all the trophies you already have! Let's earn more?",
+    "detailTitle": "Trophy details"
   },
   "achievements": {
     "title": "Achievements",
@@ -435,7 +444,24 @@
     "passwordSection": "Password",
     "title": "Parent area",
     "subtitle": "Manage children, PIN and settings",
-    "accessBtn": "Parent restricted area"
+    "accessBtn": "Parent restricted area",
+    "nameLabel": "Guardian name",
+    "namePlaceholder": "Your full name",
+    "emailReadOnly": "Email cannot be changed.",
+    "emailFixed": "fixed",
+    "profileUpdated": "✓ Profile updated!",
+    "saveChanges": "Save changes",
+    "passwordHint": "Change your account password.",
+    "pinError4Digits": "PIN must be exactly 4 digits.",
+    "pinErrorMismatch": "PINs do not match.",
+    "password": {
+      "newLabel": "New password",
+      "newPlaceholder": "Min. {{n}} characters",
+      "confirmLabel": "Confirm new password",
+      "confirmPlaceholder": "Repeat password",
+      "updated": "✓ Password changed successfully!",
+      "saveBtn": "Save new password"
+    }
   },
   "levelUp": {
     "title": "YOU LEVELED UP!",
@@ -492,7 +518,12 @@
       "nameTooShort": "Name must be at least 2 characters.",
       "usernameFormat": "Use only letters, numbers and _",
       "termsRequired": "You must accept the terms to continue.",
-      "invalidDate": "Use format dd/mm/yyyy (e.g. 15/03/2018)."
-    }
+      "invalidDate": "Use format dd/mm/yyyy (e.g. 15/03/2018).",
+      "passwordRequired": "New password is required.",
+      "passwordMinLength": "Password must be at least {{n}} characters.",
+      "passwordMismatch": "Passwords do not match."
+    },
+    "notFound": "Page not found",
+    "backToHome": "Back to home"
   }
 }

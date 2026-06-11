@@ -41,14 +41,6 @@ const RARITY: Record<Rarity, { label: string; bg: string; icon: string; chip: st
   diamante: { label: 'Diamante', bg: colors.primaryLight,             icon: colors.primary,        chip: colors.primaryLight,             chipText: colors.primary        },
 };
 
-const CATEGORY_LABELS: Record<TrophyCategory, string> = {
-  diario:    'Diários',
-  semanal:   'Semanais',
-  mensal:    'Mensais',
-  sequencia: 'Sequência',
-  especial:  'Especiais',
-};
-
 const CATEGORY_ORDER: TrophyCategory[] = ['diario', 'semanal', 'mensal', 'sequencia', 'especial'];
 
 // Data from gamification-data.ts
@@ -138,11 +130,11 @@ export default function TrophyRoomScreen() {
 
   return (
     <AuthScreen
-      title="Sala de Troféus"
+      title={t('trophies.title')}
       subtitle="Math Hero Kids"
       onBack={() => router.back()}
     >
-      <MiloMessage message="Olha quantos troféus você já tem! Vamos conquistar mais?" />
+      <MiloMessage message={t('trophies.miloMessage')} />
 
       {/* ── Stats row ─────────────────────────────────────────────────────── */}
       <View style={styles.statsRow}>
@@ -169,7 +161,7 @@ export default function TrophyRoomScreen() {
       {/* ── Next trophy ───────────────────────────────────────────────────── */}
       {nextTrophy?.progress && (
         <Card border shadow="sm">
-          <Text style={styles.nextLabel}>PRÓXIMO TROFÉU</Text>
+          <Text style={styles.nextLabel}>{t('trophies.nextTrophy')}</Text>
           <View style={styles.nextRow}>
             <View style={[styles.trophyIconWrapSm, { backgroundColor: colors.background.cardAlt }]}>
               <Ionicons name="lock-closed" size={20} color={colors.text.tertiary} />
@@ -197,7 +189,7 @@ export default function TrophyRoomScreen() {
         if (list.length === 0) return null;
         return (
           <View key={cat} style={styles.category}>
-            <Text variant="h3">{CATEGORY_LABELS[cat]}</Text>
+            <Text variant="h3">{t(`trophies.sections.${cat === 'diario' ? 'daily' : cat === 'semanal' ? 'weekly' : cat === 'mensal' ? 'monthly' : cat === 'sequencia' ? 'streak' : 'special'}`)}</Text>
             <View style={styles.trophyGrid}>
               {list.map((t) => (
                 <TrophyCard

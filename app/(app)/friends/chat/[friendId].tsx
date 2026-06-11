@@ -115,7 +115,7 @@ const LANG_TO_LOCALE: Record<string, string> = { pt: 'pt-BR', en: 'en-US', es: '
 
 export default function ChatScreen() {
   const { friendId } = useLocalSearchParams<{ friendId: string }>();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
@@ -223,7 +223,7 @@ export default function ChatScreen() {
         <Avatar name={friendName} size={38} />
         <View style={s.headerText}>
           <Text style={s.headerName}>{friendName}</Text>
-          <Text style={s.headerSub}>Amigo</Text>
+          <Text style={s.headerSub}>{t('friends.chat.friendLabel')}</Text>
         </View>
       </LinearGradient>
 
@@ -243,7 +243,7 @@ export default function ChatScreen() {
           {listItems.length === 0 ? (
             <View style={s.empty}>
               <Text style={s.emptyEmoji}>💬</Text>
-              <Text style={s.emptyTitle}>Começa a conversa!</Text>
+              <Text style={s.emptyTitle}>{t('friends.chat.emptyTitle')}</Text>
               <Text style={s.emptySub}>Manda uma mensagem para {friendName}</Text>
             </View>
           ) : (

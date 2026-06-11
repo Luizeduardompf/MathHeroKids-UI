@@ -245,8 +245,8 @@ export default function AddFriendScreen() {
               <ActivityIndicator color={colors.primary} size="small" style={{ marginTop: 16 }} />
             ) : suggestions.length === 0 ? (
               <View style={s.emptyWrap}>
-                <Text style={s.emptyText}>Sem sugestões por agora.</Text>
-                <Text style={s.emptySub}>Busca por username acima!</Text>
+                <Text style={s.emptyText}>{t('friends.add.noSuggestions')}</Text>
+                <Text style={s.emptySub}>{t('friends.add.noSuggestionsDesc')}</Text>
               </View>
             ) : (
               suggestions.map((p) => (

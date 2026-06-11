@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Text } from '@/components/ui';
 import { colors, space } from '@/theme';
 
@@ -15,6 +16,7 @@ interface PlaceholderScreenProps {
  */
 export function PlaceholderScreen({ emoji, title }: PlaceholderScreenProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <View style={styles.root}>
@@ -22,14 +24,14 @@ export function PlaceholderScreen({ emoji, title }: PlaceholderScreenProps) {
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
             <Text style={styles.backArrow}>‹</Text>
-            <Text variant="body" color={colors.primary}> Voltar</Text>
+            <Text variant="body" color={colors.primary}> {t('common.back')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
       <View style={styles.body}>
         <Text style={styles.emoji}>{emoji}</Text>
         <Text variant="h2">{title}</Text>
-        <Text variant="body" color={colors.text.secondary}>Em breve</Text>
+        <Text variant="body" color={colors.text.secondary}>{t('common.comingSoon')}</Text>
       </View>
     </View>
   );

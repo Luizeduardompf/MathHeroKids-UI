@@ -22,7 +22,9 @@
       "mins": "{{n}}min atrás",
       "now": "agora"
     },
-    "self": "Você"
+    "self": "Você",
+    "comingSoon": "Em breve",
+    "saving": "A guardar…"
   },
   "nav": {
     "home": "Início",
@@ -56,7 +58,8 @@
       "emailLabel": "E-mail do responsável",
       "submit": "Enviar instruções",
       "rememberPassword": "Lembrou a senha?",
-      "backToLogin": "Entrar"
+      "backToLogin": "Entrar",
+      "successMessage": "Enviamos as instruções para o seu e-mail. Verifique sua caixa de entrada!"
     },
     "register": {
       "parent": {
@@ -95,7 +98,8 @@
   "profileSelect": {
     "title": "Quem está jogando?",
     "subtitle": "Toque em um perfil para trocar de jogador.",
-    "addChild": "Adicionar criança"
+    "addChild": "Adicionar criança",
+    "addChildMiloMsg": "Vamos criar o perfil do novo herói da matemática! Escolha um avatar e preencha os dados."
   },
   "home": {
     "switchProfile": "Trocar perfil",
@@ -106,7 +110,8 @@
       "todaysChallenge": "Desafio de hoje",
       "continue": "Continuar Desafio",
       "start": "Iniciar Desafio",
-      "questions": "{{current}} / {{total}} questões"
+      "questions": "{{current}} / {{total}} questões",
+      "xpReward": "+150 XP"
     },
     "recentTrophies": "Troféus recentes",
     "trophy": {
@@ -285,7 +290,8 @@
       "noSuggestionsDesc": "Busca por username acima!",
       "result": "Resultado",
       "notFound": "Nenhum utilizador encontrado",
-      "notFoundDesc": "Verifica se o username está correcto"
+      "notFoundDesc": "Verifica se o username está correcto",
+      "searchHint": "Busca por username acima!"
     },
     "ranking": {
       "title": "Ranking de amigos",
@@ -316,7 +322,8 @@
     "viewNotifications": "Ver notificações",
     "blockedUsers": "Utilizadores bloqueados",
     "chat": {
-      "friendLabel": "Amigo"
+      "friendLabel": "Amigo",
+      "emptyTitle": "Começa a conversa!"
     },
     "notifications": {
       "empty": "Sem notificações",
@@ -348,7 +355,9 @@
       "diamond": "Diamante"
     },
     "earnedOn": "CONQUISTADO",
-    "howToEarn": "Como conquistar"
+    "howToEarn": "Como conquistar",
+    "miloMessage": "Olha quantos troféus você já tem! Vamos conquistar mais?",
+    "detailTitle": "Detalhes do troféu"
   },
   "achievements": {
     "title": "Conquistas",
@@ -446,7 +455,24 @@
     "passwordSection": "Senha",
     "title": "Área dos pais",
     "subtitle": "Gerencie filhos, PIN e configurações",
-    "accessBtn": "Área restrita dos pais"
+    "accessBtn": "Área restrita dos pais",
+    "nameLabel": "Nome do responsável",
+    "namePlaceholder": "Seu nome completo",
+    "emailReadOnly": "O e-mail não pode ser alterado.",
+    "emailFixed": "fixo",
+    "profileUpdated": "✓ Dados actualizados!",
+    "saveChanges": "Guardar alterações",
+    "passwordHint": "Alterar a senha de acesso à conta.",
+    "pinError4Digits": "O PIN deve ter exactamente 4 dígitos.",
+    "pinErrorMismatch": "Os PINs não coincidem.",
+    "password": {
+      "newLabel": "Nova senha",
+      "newPlaceholder": "Mínimo {{n}} caracteres",
+      "confirmLabel": "Confirmar nova senha",
+      "confirmPlaceholder": "Repita a senha",
+      "updated": "✓ Senha alterada com sucesso!",
+      "saveBtn": "Guardar nova senha"
+    }
   },
   "levelUp": {
     "title": "VOCÊ SUBIU DE NÍVEL!",
@@ -503,7 +529,12 @@
       "usernameTaken": "Este nome de usuário já está em uso.",
       "usernameFormat": "Use apenas letras, números e _",
       "termsRequired": "Você deve aceitar os termos para continuar.",
-      "invalidDate": "Use o formato dd/mm/aaaa (ex: 15/03/2018)."
-    }
+      "invalidDate": "Use o formato dd/mm/aaaa (ex: 15/03/2018).",
+      "passwordRequired": "A nova senha é obrigatória.",
+      "passwordMinLength": "A senha deve ter pelo menos {{n}} caracteres.",
+      "passwordMismatch": "As senhas não coincidem."
+    },
+    "notFound": "Página não encontrada",
+    "backToHome": "Voltar ao início"
   }
 }

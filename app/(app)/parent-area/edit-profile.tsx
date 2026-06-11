@@ -39,14 +39,14 @@ function PinSection({ userId }: { userId: string }) {
     })();
   }, [userId]);
 
-  const pinLabel  = hasPin ? 'Alterar PIN' : 'Definir PIN';
-  const pinHint   = 'Exactamente 4 dígitos numéricos';
+  const pinLabel  = hasPin ? t('parentArea.changePinLabel') : t('parentArea.setPinLabel');
+  const pinHint   = t('parentArea.pinHint');
 
   async function handleSavePin() {
     setError(null);
     setSuccess(false);
-    if (!/^\d{4}$/.test(pin)) { setError('O PIN deve ter exactamente 4 dígitos.'); return; }
-    if (pin !== confirmPin)   { setError('Os PINs não coincidem.'); return; }
+    if (!/^\d{4}$/.test(pin)) { setError(t('parentArea.pinError4Digits')); return; }
+    if (pin !== confirmPin)   { setError(t('parentArea.pinErrorMismatch')); return; }
 
     setSaving(true);
     try {
@@ -65,12 +65,12 @@ function PinSection({ userId }: { userId: string }) {
 
   async function handleClearPin() {
     Alert.alert(
-      'Remover PIN',
-      'Tens a certeza que queres remover o PIN? A área dos pais ficará acessível sem PIN.',
+      t('parentArea.removePinTitle'),
+      t('parentArea.removePinMsg'),
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Remover', style: 'destructive',
+          text: t('parentArea.removePinBtn'), style: 'destructive',
           onPress: async () => {
             await pinService.clearPin(userId);
             setHasPin(false);
@@ -95,7 +95,7 @@ function PinSection({ userId }: { userId: string }) {
         <View style={ps.headerText}>
           <Text variant="label">{t('parentArea.pinSection')}</Text>
           <Text variant="caption" color={colors.text.secondary}>
-            {hasPin ? 'PIN activo — área dos pais protegida' : 'Sem PIN — acesso livre à área dos pais'}
+            {hasPin ? t('parentArea.pinActive') : t('parentArea.pinInactive')}
           </Text>
         </View>
       </View>
@@ -113,7 +113,7 @@ function PinSection({ userId }: { userId: string }) {
           leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.text.tertiary} />}
         />
         <Input
-          label="Confirmar PIN"
+          label={t('parentArea.confirmPinLabel')}
           placeholder="••••"
           value={confirmPin}
           onChangeText={(v: string) => { setConfirmPin(v.replace(/\D/g, '').slice(0, 4)); setError(null); setSuccess(false); }}
@@ -124,10 +124,10 @@ function PinSection({ userId }: { userId: string }) {
         />
 
         {error && <Text variant="bodySmall" color={colors.error}>{error}</Text>}
-        {success && <Text variant="bodySmall" color={colors.success}>✓ PIN actualizado com sucesso!</Text>}
+        {success && <Text variant="bodySmall" color={colors.success}>{t('parentArea.pinUpdated')}</Text>}
 
         <Button
-          label={saving ? 'A guardar…' : pinLabel}
+          label={saving ? t('common.saving') : pinLabel}
           loading={saving}
           onPress={handleSavePin}
           icon="checkmark-outline"
@@ -135,7 +135,7 @@ function PinSection({ userId }: { userId: string }) {
 
         {hasPin && (
           <Button
-            label="Remover PIN"
+            label={t('parentArea.removePinBtn')}
             variant="secondary"
             onPress={handleClearPin}
           />
@@ -202,16 +202,16 @@ export default function EditProfileScreen() {
 
   return (
     <AuthScreen
-      title="Editar perfil"
-      subtitle="Dados do responsável"
+      title={t('parentArea.editProfile')}
+      subtitle={t('parentArea.editProfileSub')}
       onBack={() => router.back()}
     >
       {/* ── Name ─────────────────────────────────────────────────────── */}
       <Card border shadow="sm">
         <View style={styles.form}>
           <Input
-            label="Nome do responsável"
-            placeholder="Seu nome completo"
+            label={t('parentArea.nameLabel')}
+            placeholder={t('parentArea.namePlaceholder')}
             value={name}
             onChangeText={(v: string) => { setName(v); setError(null); setSuccess(false); }}
             autoCapitalize="words"
@@ -230,19 +230,19 @@ export default function EditProfileScreen() {
                 {email}
               </Text>
               <View style={styles.readOnlyBadge}>
-                <Text style={styles.readOnlyText}>fixo</Text>
+                <Text style={styles.readOnlyText}>{t('parentArea.emailFixed')}</Text>
               </View>
             </View>
             <Text variant="caption" color={colors.text.tertiary}>
-              O e-mail não pode ser alterado.
+              {t('parentArea.emailReadOnly')}
             </Text>
           </View>
 
           {error   && <Text variant="bodySmall" color={colors.error}>{error}</Text>}
-          {success && <Text variant="bodySmall" color={colors.success}>✓ Dados actualizados!</Text>}
+          {success && <Text variant="bodySmall" color={colors.success}>{t('parentArea.profileUpdated')}</Text>}
 
           <Button
-            label="Guardar alterações"
+            label={t('parentArea.saveChanges')}
             loading={loading}
             onPress={handleSave}
             icon="checkmark-outline"
@@ -262,12 +262,12 @@ export default function EditProfileScreen() {
           <View style={styles.passwordInfo}>
             <Text variant="label">{t('parentArea.passwordSection')}</Text>
             <Text variant="caption" color={colors.text.secondary}>
-              Alterar a senha de acesso à conta.
+              {t('parentArea.passwordHint')}
             </Text>
           </View>
         </View>
         <Button
-          label="Redefinir senha"
+          label={t('parentArea.changePassword')}
           variant="secondary"
           onPress={() => router.push('/(app)/parent-area/change-password')}
         />

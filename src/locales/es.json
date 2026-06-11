@@ -22,7 +22,9 @@
       "mins": "hace {{n}}min",
       "now": "ahora"
     },
-    "self": "Tú"
+    "self": "Tú",
+    "comingSoon": "Próximamente",
+    "saving": "Guardando…"
   },
   "nav": {
     "home": "Inicio",
@@ -56,7 +58,8 @@
       "emailLabel": "E-mail del responsable",
       "submit": "Enviar instrucciones",
       "rememberPassword": "¿Recordaste la contraseña?",
-      "backToLogin": "Entrar"
+      "backToLogin": "Entrar",
+      "successMessage": "Enviamos las instrucciones a tu correo. ¡Revisa tu bandeja de entrada!"
     },
     "register": {
       "parent": {
@@ -95,7 +98,8 @@
   "profileSelect": {
     "title": "¿Quién está jugando?",
     "subtitle": "Toca un perfil para cambiar de jugador.",
-    "addChild": "Agregar niño"
+    "addChild": "Agregar niño",
+    "addChildMiloMsg": "¡Vamos a crear el perfil del nuevo héroe de las matemáticas! Elige un avatar y completa los datos."
   },
   "home": {
     "switchProfile": "Cambiar perfil",
@@ -106,7 +110,8 @@
       "todaysChallenge": "Desafío de hoy",
       "continue": "Continuar Desafío",
       "start": "Iniciar Desafío",
-      "questions": "{{current}} / {{total}} preguntas"
+      "questions": "{{current}} / {{total}} preguntas",
+      "xpReward": "+150 XP"
     },
     "recentTrophies": "Trofeos recientes",
     "trophy": {
@@ -233,8 +238,13 @@
       "invalidEmail": "Ingresa un email válido.",
       "usernameTaken": "Este nombre de usuario ya está en uso.",
       "usernameFormat": "Usa solo letras, números y _",
-      "termsRequired": "Debes aceptar los términos para continuar."
-    }
+      "termsRequired": "Debes aceptar los términos para continuar.",
+      "passwordRequired": "La nueva contraseña es obligatoria.",
+      "passwordMinLength": "La contraseña debe tener al menos {{n}} caracteres.",
+      "passwordMismatch": "Las contraseñas no coinciden."
+    },
+    "notFound": "Página no encontrada",
+    "backToHome": "Volver al inicio"
   },
   "friends": {
     "title": "Amigos",
@@ -269,7 +279,8 @@
       "noSuggestionsDesc": "¡Busca por nombre de usuario arriba!",
       "result": "Resultado",
       "notFound": "Usuario no encontrado",
-      "notFoundDesc": "Verifica que el nombre sea correcto"
+      "notFoundDesc": "Verifica que el nombre sea correcto",
+      "searchHint": "¡Busca por username arriba!"
     },
     "ranking": {
       "title": "Ranking de amigos",
@@ -288,7 +299,8 @@
     "viewNotifications": "Ver notificaciones",
     "blockedUsers": "Usuarios bloqueados",
     "chat": {
-      "friendLabel": "Amigo"
+      "friendLabel": "Amigo",
+      "emptyTitle": "¡Empieza la conversación!"
     },
     "notifications": {
       "empty": "Sin notificaciones",
@@ -373,6 +385,26 @@
       "create": "Crear perfil",
       "registeredSince": "Miembro desde",
       "lastAccess": "Último acceso"
+    },
+    "controls": {
+      "title": "Control parental"
+    },
+    "nameLabel": "Nombre del responsable",
+    "namePlaceholder": "Tu nombre completo",
+    "emailReadOnly": "El correo no se puede cambiar.",
+    "emailFixed": "fijo",
+    "profileUpdated": "✓ Datos actualizados.",
+    "saveChanges": "Guardar cambios",
+    "passwordHint": "Cambiar la contraseña de acceso.",
+    "pinError4Digits": "El PIN debe tener exactamente 4 dígitos.",
+    "pinErrorMismatch": "Los PINs no coinciden.",
+    "password": {
+      "newLabel": "Nueva contraseña",
+      "newPlaceholder": "Mín. {{n}} caracteres",
+      "confirmLabel": "Confirmar nueva contraseña",
+      "confirmPlaceholder": "Repite la contraseña",
+      "updated": "✓ Contraseña cambiada con éxito.",
+      "saveBtn": "Guardar nueva contraseña"
     }
   },
   "progression": {
@@ -401,5 +433,9 @@
     "block_almost": "¡Casi! Un intento más y esa estrella perfecta es tuya.",
     "welcome": "¡Hola! Soy Milo. Primero el padre crea la cuenta, luego creamos el perfil del niño.",
     "achievements": "¡Cada logro es una victoria tuya! Sigue coleccionando."
+  },
+  "trophies": {
+    "miloMessage": "¡Mira cuántos trofeos tienes! ¿Vamos a ganar más?",
+    "detailTitle": "Detalles del trofeo"
   }
 }

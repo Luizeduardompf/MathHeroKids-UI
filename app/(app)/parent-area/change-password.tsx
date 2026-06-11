@@ -29,9 +29,9 @@ export default function ChangePasswordScreen() {
   const [success,   setSuccess]   = useState(false);
 
   function validate(): string | null {
-    if (!password)               return 'A nova senha é obrigatória.';
-    if (password.length < MIN_LEN) return `A senha deve ter pelo menos ${MIN_LEN} caracteres.`;
-    if (password !== confirm)    return 'As senhas não coincidem.';
+    if (!password)               return t('errors.validation.passwordRequired');
+    if (password.length < MIN_LEN) return t('errors.validation.passwordMinLength', { n: MIN_LEN });
+    if (password !== confirm)    return t('errors.validation.passwordMismatch');
     return null;
   }
 
@@ -57,16 +57,16 @@ export default function ChangePasswordScreen() {
 
   return (
     <AuthScreen
-      title="Redefinir senha"
-      subtitle="Cria uma nova senha de acesso"
+      title={t('parentArea.changePassword')}
+      subtitle={t('parentArea.changePasswordSub')}
       onBack={() => router.back()}
     >
       <Card border shadow="sm">
         <View style={styles.form}>
           <Input
-            label="Nova senha"
-            placeholder="Mínimo 8 caracteres"
-            hint={`Mínimo ${MIN_LEN} caracteres`}
+            label={t('parentArea.password.newLabel')}
+            placeholder={t('parentArea.password.newPlaceholder', { n: MIN_LEN })}
+            hint={t('parentArea.password.newPlaceholder', { n: MIN_LEN })}
             value={password}
             onChangeText={(v: string) => { setPassword(v); setError(null); setSuccess(false); }}
             isPassword
@@ -75,8 +75,8 @@ export default function ChangePasswordScreen() {
           />
 
           <Input
-            label="Confirmar nova senha"
-            placeholder="Repete a senha"
+            label={t('parentArea.password.confirmLabel')}
+            placeholder={t('parentArea.password.confirmPlaceholder')}
             value={confirm}
             onChangeText={(v: string) => { setConfirm(v); setError(null); setSuccess(false); }}
             isPassword
@@ -85,10 +85,10 @@ export default function ChangePasswordScreen() {
           />
 
           {error   && <Text variant="bodySmall" color={colors.error}>{error}</Text>}
-          {success && <Text variant="bodySmall" color={colors.success}>✓ Senha alterada com sucesso!</Text>}
+          {success && <Text variant="bodySmall" color={colors.success}>{t('parentArea.password.updated')}</Text>}
 
           <Button
-            label={loading ? 'A guardar…' : 'Guardar nova senha'}
+            label={loading ? t('common.saving') : t('parentArea.password.saveBtn')}
             loading={loading}
             onPress={handleSave}
             icon="checkmark-outline"

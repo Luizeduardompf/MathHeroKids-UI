@@ -1,18 +1,20 @@
 import { Link, Stack } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Text } from '@/components/ui';
 import { colors, space } from '@/theme';
 
 export default function NotFoundScreen() {
+  const { t } = useTranslation();
   return (
     <>
       <Stack.Screen options={{ title: 'Oops!' }} />
       <View style={styles.container}>
-        <Text variant="h1">Página não encontrada</Text>
+        <Text variant="h1">{t('errors.notFound')}</Text>
         <Link href="/(auth)/welcome" style={styles.link}>
           <Text variant="body" color={colors.primary}>
-            Voltar ao início
+            {t('errors.backToHome')}
           </Text>
         </Link>
       </View>

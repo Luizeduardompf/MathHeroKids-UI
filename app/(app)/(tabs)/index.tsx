@@ -369,7 +369,7 @@ export default function HomeScreen() {
               style={styles.challengeStatusBadge}
             />
             <View style={styles.xpBadge}>
-              <Text variant="caption" style={styles.xpBadgeText}>+150 XP</Text>
+              <Text variant="caption" style={styles.xpBadgeText}>{t('home.challenge.xpReward')}</Text>
             </View>
           </View>
           <Text variant="caption" color="rgba(255,255,255,0.70)" style={{ marginTop: space.sm }}>
