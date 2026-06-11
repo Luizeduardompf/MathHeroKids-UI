@@ -381,5 +381,25 @@
     "miloContinue": "¡Sigue completando desafíos para subir de nivel!",
     "milestonesTitle": "Hitos y recompensas",
     "milestoneLabel": "Nivel {{level}} · {{title}}"
+  },
+  "milo": {
+    "great_job": "¡Gran trabajo hoy!",
+    "keep_going": "¡Sigue así!",
+    "streak_zero": "¡Empieza hoy y construye tu racha! Yo creo en ti.",
+    "streak_start": "¡{{days}} día(s) seguido(s)! Gran comienzo, ¡sigue así!",
+    "streak_building": "¡Estás cogiendo el ritmo! No pares ahora.",
+    "streak_amazing": "¡Tu racha es increíble! No faltes hoy.",
+    "streak_hero": "¡{{days}} días! ¡Eres un verdadero héroe de las matemáticas!",
+    "streak_legend": "¡INCREÍBLE! {{days}} días sin parar. ¡Eres una leyenda!",
+    "streak_active": "¡Tu racha es increíble! {{days}} días seguidos.",
+    "streak_broken": "¿Qué tal empezar de nuevo hoy? ¡Cada día es una nueva oportunidad!",
+    "challenge_waiting": "¡Tu desafío de hoy te espera! ¿Vamos?",
+    "level_up": "¡Increíble! ¡Eres genial en matemáticas! ¡Sigue así, héroe!",
+    "close_to_next": "¡Estás muy cerca del siguiente nivel! ¡Vamos!",
+    "wrong_answer": "¡Equivocarse es parte del aprendizaje! Ya sabes esta. ¡Vamos a continuar!",
+    "timeout": "¡Sin prisa! Respira hondo e inténtalo de nuevo. ¡Yo creo en ti!",
+    "block_almost": "¡Casi! Un intento más y esa estrella perfecta es tuya.",
+    "welcome": "¡Hola! Soy Milo. Primero el padre crea la cuenta, luego creamos el perfil del niño.",
+    "achievements": "¡Cada logro es una victoria tuya! Sigue coleccionando."
   }
 }

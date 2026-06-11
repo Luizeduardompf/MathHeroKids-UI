@@ -545,13 +545,13 @@ const ps = StyleSheet.create({
 
 // ─── Milo message ─────────────────────────────────────────────────────────────
 
-function streakMessage(streak: number): string {
-  if (streak === 0)  return 'Comece hoje e construa sua sequência! Eu acredito em você.';
-  if (streak <= 2)   return `${streak} dia${streak > 1 ? 's' : ''} seguido${streak > 1 ? 's' : ''}! Ótimo começo, continue assim!`;
-  if (streak <= 6)   return 'Você está pegando o ritmo! Não pare agora.';
-  if (streak <= 13)  return 'Sua sequência está incrível! Não perca hoje.';
-  if (streak <= 29)  return `${streak} dias! Você é um verdadeiro herói da matemática!`;
-  return `INCRÍVEL! ${streak} dias sem parar. Você é uma lenda!`;
+function streakMessage(streak: number, t: (k: string, o?: Record<string, unknown>) => string): string {
+  if (streak === 0)  return t('milo.streak_zero');
+  if (streak <= 2)   return t('milo.streak_start',    { days: streak });
+  if (streak <= 6)   return t('milo.streak_building');
+  if (streak <= 13)  return t('milo.streak_amazing');
+  if (streak <= 29)  return t('milo.streak_hero',     { days: streak });
+  return t('milo.streak_legend', { days: streak });
 }
 
 // ─── Legend row (i18n-aware, includes 'late' state) ──────────────────────────
@@ -651,7 +651,7 @@ export default function CalendarioScreen() {
       {/* ── Scrollable content ────────────────────────────────────── */}
       <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-        <MiloMessage message={streakMessage(child.current_streak)} variant="blue" />
+        <MiloMessage message={streakMessage(child.current_streak, t)} variant="blue" />
 
         {/* Stats row */}
         <View style={s.statsRow}>

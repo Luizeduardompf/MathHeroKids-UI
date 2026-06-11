@@ -328,5 +328,25 @@
     "miloContinue": "Continue les défis pour monter de niveau !",
     "milestonesTitle": "Jalons et récompenses",
     "milestoneLabel": "Niveau {{level}} · {{title}}"
+  },
+  "milo": {
+    "great_job": "Super travail aujourd'hui !",
+    "keep_going": "Continue comme ça !",
+    "streak_zero": "Commence aujourd'hui et construis ta série ! Je crois en toi.",
+    "streak_start": "{{days}} jour(s) d'affilée ! Super début, continue ainsi !",
+    "streak_building": "Tu prends le rythme ! N'arrête pas maintenant.",
+    "streak_amazing": "Ta série est incroyable ! Ne manque pas aujourd'hui.",
+    "streak_hero": "{{days}} jours ! Tu es un vrai héros des maths !",
+    "streak_legend": "INCROYABLE ! {{days}} jours sans arrêt. Tu es une légende !",
+    "streak_active": "Ta série est incroyable ! {{days}} jours d'affilée.",
+    "streak_broken": "Et si tu recommençais aujourd'hui ? Chaque jour est une nouvelle chance !",
+    "challenge_waiting": "Ton défi d'aujourd'hui t'attend ! On y va ?",
+    "level_up": "Incroyable ! Tu es doué en maths ! Continue, héros !",
+    "close_to_next": "Tu es si proche du prochain niveau ! Allez !",
+    "wrong_answer": "Se tromper fait partie de l'apprentissage ! Tu connais celle-là maintenant. En avant !",
+    "timeout": "Sans pression ! Respire profondément et réessaie. Je crois en toi !",
+    "block_almost": "Presque ! Un autre essai et cette étoile parfaite est à toi.",
+    "welcome": "Bonjour ! Je suis Milo. D'abord le parent crée le compte, puis on crée le profil de l'enfant.",
+    "achievements": "Chaque réussite est une victoire ! Continue à collectionner."
   }
 }

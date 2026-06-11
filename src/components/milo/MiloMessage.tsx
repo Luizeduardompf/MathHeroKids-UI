@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 // @ts-expect-error RN 0.85 quirk — Image present at runtime
 import { Image } from 'react-native'; // eslint-disable-line
 import type { StyleProp, ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Text } from '@/components/ui/Text';
 import { colors, radius, shadows, space } from '@/theme';
@@ -23,6 +24,7 @@ interface MiloMessageProps {
 }
 
 export function MiloMessage({ message, variant = 'blue', style }: MiloMessageProps) {
+  const { t } = useTranslation();
   const gradient = variantGradients[variant];
 
   return (
@@ -49,7 +51,7 @@ export function MiloMessage({ message, variant = 'blue', style }: MiloMessagePro
 
       {/* Speech bubble */}
       <View style={styles.bubbleWrapper}>
-        <Text variant="caption" style={styles.label}>MILO DIZ</Text>
+        <Text variant="caption" style={styles.label}>{t('challenge.miloDizLabel')}</Text>
         <View style={styles.bubble}>
           <Text variant="body" style={styles.message} numberOfLines={3}>
             {message}

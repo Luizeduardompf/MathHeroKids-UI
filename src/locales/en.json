@@ -455,7 +455,13 @@
     "timeout": "No pressure! Take a deep breath and try again. I believe in you!",
     "block_almost": "So close! One more try and that perfect star is yours!",
     "welcome": "Hi! I'm Milo. First the parent creates the account, then we set up the child's profile!",
-    "achievements": "Every achievement is a victory! Keep collecting."
+    "achievements": "Every achievement is a victory! Keep collecting.",
+    "streak_zero": "Start today and build your streak! I believe in you.",
+    "streak_start": "{{days}} day(s) in a row! Great start, keep it up!",
+    "streak_building": "You're getting the rhythm! Don't stop now.",
+    "streak_amazing": "Your streak is incredible! Don't miss today.",
+    "streak_hero": "{{days}} days! You're a true math hero!",
+    "streak_legend": "INCREDIBLE! {{days}} days straight. You're a legend!"
   },
   "levels": {
     "explorador": "Explorer",

@@ -466,7 +466,13 @@
     "timeout": "Sem pressão! Respire fundo e tente outra vez. Eu acredito em você!",
     "block_almost": "Faltou pouquinho! Mais uma tentativa e essa estrela perfeita é sua!",
     "welcome": "Oi! Sou o Milo. Primeiro o responsável cria a conta, depois montamos o perfil da criança!",
-    "achievements": "Cada conquista é uma vitória sua! Continue colecionando."
+    "achievements": "Cada conquista é uma vitória sua! Continue colecionando.",
+    "streak_zero": "Comece hoje e construa sua sequência! Eu acredito em você.",
+    "streak_start": "{{days}} dia(s) seguido(s)! Ótimo começo, continue assim!",
+    "streak_building": "Você está pegando o ritmo! Não pare agora.",
+    "streak_amazing": "Sua sequência está incrível! Não perca hoje.",
+    "streak_hero": "{{days}} dias! Você é um verdadeiro herói da matemática!",
+    "streak_legend": "INCRÍVEL! {{days}} dias sem parar. Você é uma lenda!"
   },
   "levels": {
     "explorador": "Explorador",
