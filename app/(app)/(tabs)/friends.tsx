@@ -1,34 +1,51 @@
 /**
  * Amigos — Tab principal
  *
- * A tela principal é o RANKING de amigos.
- * Header: "Math Hero Kids" + "Amigos" + botão 👥 → lista de amigos
- * Layout pixel-faithful ao design 06-friends.zip (screenshots 1 + 3)
+ * Top-level toggle: Amigos (default) | Ranking
+ *
+ * Amigos panel:
+ *   - Search bar (inline no conteúdo)
+ *   - Pedidos pendentes (accept/reject)
+ *   - Lista de amigos com chat + block
+ *
+ * Ranking panel:
+ *   - Sub-toggle: Semanal | Mensal | Global
+ *   - Pódio + lista
+ *
+ * Header: ícone de notificações + ícone person-add → friends/add (buscar/sugestões)
  */
 
 import React, { useCallback, useState } from 'react';
+// @ts-expect-error RN strict typing quirk
+import { Alert } from 'react-native'; // eslint-disable-line
 import {
   ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   Text as RNText,
+  TextInput,
   View,
   type StyleProp,
   type TextStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Avatar, Text } from '@/components/ui';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
-import { socialService, type RankedFriend } from '@/services/social.service';
+import { socialService, type RankedFriend, type FriendProfile, type PendingRequest } from '@/services/social.service';
+import { chatService } from '@/services/chat.service';
 import { colors, fontFamily, radius, shadows } from '@/theme';
 import type { AvatarId } from '@/constants/config';
+
+// ─── Top-level section type ───────────────────────────────────────────────────
+
+type Section = 'friends' | 'ranking';
 
 // ─── Avatar initials (exportado para reutilização) ───────────────────────────
 
@@ -57,7 +74,6 @@ export function FriendAvatar({ name, size = 44 }: { name: string; size?: number 
       borderRadius: size / 2,
       backgroundColor: colorFromName(name),
     }]}>
-      {/* RNText evita quirks do Text customizado com fontes em círculos pequenos */}
       <RNText style={[av.text, { fontSize: Math.round(size * 0.33) }]}>
         {initials(name)}
       </RNText>
@@ -69,11 +85,44 @@ const av = StyleSheet.create({
   text:   { fontFamily: fontFamily.extraBold, color: '#fff', includeFontPadding: false },
 });
 
-// ─── Period toggle ────────────────────────────────────────────────────────────
+// ─── Top-level section toggle (Amigos | Ranking) ─────────────────────────────
+
+function SectionToggle({ value, onChange }: {
+  value: Section;
+  onChange: (v: Section) => void;
+}) {
+  const { t } = useTranslation();
+  const labels: Record<Section, string> = {
+    friends: t('friends.sectionFriends'),
+    ranking: t('friends.sectionRanking'),
+  };
+  return (
+    <View style={st.wrap}>
+      {(['friends', 'ranking'] as const).map((sec) => (
+        <Pressable
+          key={sec}
+          style={[st.btn, value === sec ? st.btnActive : null]}
+          onPress={() => onChange(sec)}
+        >
+          <RNText style={[st.label, value === sec ? st.labelActive : null]}>
+            {labels[sec]}
+          </RNText>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+const st = StyleSheet.create({
+  wrap:        { flexDirection: 'row', backgroundColor: '#DDDFF0', borderRadius: 999, padding: 4 },
+  btn:         { flex: 1, borderRadius: 999, paddingVertical: 10, alignItems: 'center' },
+  btnActive:   { backgroundColor: '#fff', ...shadows.sm },
+  label:       { fontFamily: fontFamily.bold, fontSize: 15, color: '#6B7280' },
+  labelActive: { fontFamily: fontFamily.bold, fontSize: 15, color: colors.primary },
+});
+
+// ─── Period toggle (Semanal | Mensal | Global) ────────────────────────────────
 
 export type RankingPeriod = 'weekly' | 'monthly' | 'global';
-
-// Period labels defined inline with t() — see PeriodToggle below
 
 function PeriodToggle({ value, onChange }: {
   value: RankingPeriod;
@@ -102,11 +151,11 @@ function PeriodToggle({ value, onChange }: {
   );
 }
 const pt = StyleSheet.create({
-  wrap:       { flexDirection: 'row', backgroundColor: '#DDDFF0', borderRadius: 999, padding: 4 },
-  btn:        { flex: 1, borderRadius: 999, paddingVertical: 10, alignItems: 'center' },
-  btnActive:  { backgroundColor: '#fff', ...shadows.sm },
-  label:      { fontFamily: fontFamily.bold, fontSize: 15, color: '#6B7280' },
-  labelActive:{ fontFamily: fontFamily.bold, fontSize: 15, color: colors.primary },
+  wrap:        { flexDirection: 'row', backgroundColor: '#DDDFF0', borderRadius: 999, padding: 4 },
+  btn:         { flex: 1, borderRadius: 999, paddingVertical: 10, alignItems: 'center' },
+  btnActive:   { backgroundColor: '#fff', ...shadows.sm },
+  label:       { fontFamily: fontFamily.bold, fontSize: 15, color: '#6B7280' },
+  labelActive: { fontFamily: fontFamily.bold, fontSize: 15, color: colors.primary },
 });
 
 // ─── Podium spot ──────────────────────────────────────────────────────────────
@@ -127,7 +176,6 @@ function PodiumSpot({ ranked, position }: {
       {position === 1 && (
         <RNText style={{ fontSize: 22, lineHeight: 28 }}>👑</RNText>
       )}
-      {/* Avatar real se disponível, senão iniciais */}
       <View style={[pd.ring, { borderColor: mc }]}>
         <Avatar
           avatarId={ranked.child.avatar_id as AvatarId}
@@ -161,7 +209,7 @@ const pd = StyleSheet.create({
   xp:      { fontFamily: fontFamily.bold, fontSize: 12, color: '#F59E0B' },
 });
 
-// ─── Rank row ─────────────────────────────────────────────────────────────────
+// ─── Rank row (ranking) ───────────────────────────────────────────────────────
 
 function RankRow({ ranked }: { ranked: RankedFriend }) {
   const hl = ranked.isSelf;
@@ -203,7 +251,124 @@ const rr = StyleSheet.create({
   xpHl:  { color: '#FDE68A' },
 });
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
+// ─── Request card ─────────────────────────────────────────────────────────────
+
+function RequestCard({ request, onAccept, onReject, loading }: {
+  request: PendingRequest; onAccept: () => void; onReject: () => void; loading: boolean;
+}) {
+  return (
+    <View style={rc.card}>
+      <FriendAvatar name={request.from_child.display_name} size={48} />
+      <View style={rc.mid}>
+        <Text style={rc.name}>{request.from_child.display_name}</Text>
+        <Text style={rc.sub}>Nível {request.from_child.level}</Text>
+      </View>
+      {loading ? (
+        <ActivityIndicator color={colors.primary} size="small" style={{ marginHorizontal: 12 }} />
+      ) : (
+        <View style={rc.actions}>
+          <Pressable style={rc.acceptBtn} onPress={onAccept} hitSlop={6}>
+            <Ionicons name="checkmark" size={20} color="#fff" />
+          </Pressable>
+          <Pressable style={rc.rejectBtn} onPress={onReject} hitSlop={6}>
+            <Ionicons name="close" size={20} color="#6B7280" />
+          </Pressable>
+        </View>
+      )}
+    </View>
+  );
+}
+const rc = StyleSheet.create({
+  card:      { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.xl, padding: 14, ...shadows.sm },
+  mid:       { flex: 1 },
+  name:      { fontFamily: fontFamily.extraBold, fontSize: 15, color: colors.text.primary },
+  sub:       { fontFamily: fontFamily.regular,   fontSize: 12, color: colors.text.secondary, marginTop: 1 },
+  actions:   { flexDirection: 'row', gap: 8 },
+  acceptBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#22C55E', alignItems: 'center', justifyContent: 'center', ...shadows.sm },
+  rejectBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+});
+
+// ─── Friend row ───────────────────────────────────────────────────────────────
+
+function FriendRow({ friend, rank, onBlock, onChat, unreadCount }: {
+  friend: FriendProfile;
+  rank: number;
+  onBlock: () => void;
+  onChat: () => void;
+  unreadCount: number;
+}) {
+  const { t } = useTranslation();
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  return (
+    <View style={fr.row}>
+      <Text style={fr.rank}>#{rank}</Text>
+      <FriendAvatar name={friend.display_name} size={44} />
+      <View style={fr.mid}>
+        <Text style={fr.name}>{friend.display_name}</Text>
+        <Text style={fr.sub}>@{friend.username} · Nível {friend.level}</Text>
+      </View>
+      <Pressable onPress={onChat} hitSlop={8} style={fr.chatBtn}>
+        <Ionicons name="chatbubble-outline" size={20} color={colors.primary} />
+        {unreadCount > 0 && (
+          <View style={fr.badge}>
+            <Text style={fr.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+          </View>
+        )}
+      </Pressable>
+      <Pressable onPress={() => setMenuOpen((v) => !v)} hitSlop={8} style={fr.menuBtn}>
+        <Ionicons name="ellipsis-vertical" size={18} color="#9CA3AF" />
+      </Pressable>
+      {menuOpen && (
+        <Pressable
+          style={fr.blockBtn}
+          onPress={() => { setMenuOpen(false); onBlock(); }}
+          hitSlop={4}
+        >
+          <Ionicons name="ban-outline" size={14} color={colors.error} />
+          <Text style={fr.blockText}>{t('friends.block')}</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+const fr = StyleSheet.create({
+  row:       { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.xl, padding: 14, ...shadows.sm, position: 'relative' },
+  rank:      { fontFamily: fontFamily.bold, fontSize: 13, color: colors.text.secondary, width: 24, textAlign: 'center' },
+  mid:       { flex: 1 },
+  name:      { fontFamily: fontFamily.extraBold, fontSize: 15, color: colors.text.primary },
+  sub:       { fontFamily: fontFamily.regular,   fontSize: 12, color: colors.text.secondary, marginTop: 1 },
+  chatBtn:   { padding: 4, position: 'relative' },
+  badge:     { position: 'absolute', top: -2, right: -2, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#EF4444', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
+  badgeText: { fontFamily: fontFamily.bold, fontSize: 9, color: '#fff' },
+  menuBtn:   { padding: 4 },
+  blockBtn:  { position: 'absolute', right: 12, top: 48, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', borderRadius: 8, padding: 10, zIndex: 10, borderWidth: 1, borderColor: '#F3F4F6', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  blockText: { fontFamily: fontFamily.semiBold, fontSize: 13, color: colors.error },
+});
+
+// ─── Empty states ─────────────────────────────────────────────────────────────
+
+function EmptyFriends({ onAdd }: { onAdd: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <View style={es.wrap}>
+      <Text style={es.emoji}>👥</Text>
+      <Text style={es.title}>{t('friends.noFriends')}</Text>
+      <Text style={es.sub}>{t('friends.noFriendsDesc')}</Text>
+      <Pressable style={es.btn} onPress={onAdd}>
+        <Ionicons name="person-add-outline" size={18} color="#fff" />
+        <Text style={es.btnText}>{t('friends.addFriendBtn')}</Text>
+      </Pressable>
+    </View>
+  );
+}
+const es = StyleSheet.create({
+  wrap:    { alignItems: 'center', paddingVertical: 40, gap: 8 },
+  emoji:   { fontSize: 48 },
+  title:   { fontFamily: fontFamily.extraBold, fontSize: 18, color: colors.text.primary },
+  sub:     { fontFamily: fontFamily.regular, fontSize: 14, color: colors.text.secondary, textAlign: 'center' },
+  btn:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 20, paddingVertical: 12, marginTop: 8 },
+  btnText: { fontFamily: fontFamily.bold, fontSize: 15, color: '#fff' },
+});
 
 function EmptyRanking({ onAdd }: { onAdd: () => void }) {
   const { t } = useTranslation();
@@ -237,9 +402,13 @@ export default function AmigosScreen() {
   const queryClient = useQueryClient();
   const child       = useProfileStore(selectActiveChild);
 
-  const [period, setPeriod] = useState<RankingPeriod>('weekly');
+  const [section, setSection]           = useState<Section>('friends');
+  const [period, setPeriod]             = useState<RankingPeriod>('weekly');
+  const [search, setSearch]             = useState('');
+  const [respondingId, setRespondingId] = useState<string | null>(null);
 
-  // Badge: pedidos pendentes
+  // ── Queries comuns ──────────────────────────────────────────────────────────
+
   const { data: requests = [] } = useQuery({
     queryKey: ['friend_requests', child?.id],
     queryFn:  () => socialService.getPendingRequests(child!.id),
@@ -250,11 +419,44 @@ export default function AmigosScreen() {
   useFocusEffect(
     useCallback(() => {
       if (child?.id) {
+        void queryClient.invalidateQueries({ queryKey: ['friends',         child.id] });
         void queryClient.invalidateQueries({ queryKey: ['friends_ranking', child.id] });
         void queryClient.invalidateQueries({ queryKey: ['friend_requests', child.id] });
       }
     }, [queryClient, child?.id]),
   );
+
+  // ── Queries — painel Amigos ─────────────────────────────────────────────────
+
+  const { data: friends = [], isLoading: lf } = useQuery({
+    queryKey: ['friends', child?.id],
+    queryFn:  () => socialService.getFriends(child!.id),
+    enabled:  !!child?.id,
+    staleTime: 30_000,
+  });
+
+  const { data: unreadMap = new Map<string, number>() } = useQuery({
+    queryKey: ['unread_by_friend', child?.id],
+    queryFn:  () => chatService.getUnreadCountByFriend(child!.id),
+    enabled:  !!child?.id,
+    staleTime: 10_000,
+    refetchInterval: 30_000,
+  });
+
+  const respondMutation = useMutation({
+    mutationFn: ({ requestId, accept }: { requestId: string; accept: boolean }) =>
+      socialService.respondToRequest(requestId, accept),
+    onMutate:  ({ requestId }) => setRespondingId(requestId),
+    onSettled: () => {
+      setRespondingId(null);
+      void queryClient.invalidateQueries({ queryKey: ['friends',         child?.id] });
+      void queryClient.invalidateQueries({ queryKey: ['friend_requests', child?.id] });
+      void queryClient.invalidateQueries({ queryKey: ['friends_ranking', child?.id] });
+    },
+    onError: (e) => Alert.alert('Erro', (e as Error).message),
+  });
+
+  // ── Queries — painel Ranking ────────────────────────────────────────────────
 
   const selfProfile = child ? {
     id: child.id, display_name: child.display_name,
@@ -263,7 +465,7 @@ export default function AmigosScreen() {
     xp_total: child.xp_total, current_streak: child.current_streak,
   } : null;
 
-  const { data: ranked = [], isLoading } = useQuery({
+  const { data: ranked = [], isLoading: lr } = useQuery({
     queryKey: ['friends_ranking', child?.id, period],
     queryFn:  () => socialService.getFriendsRanking(child!.id, selfProfile!, period),
     enabled:  !!child?.id && !!selfProfile,
@@ -272,16 +474,27 @@ export default function AmigosScreen() {
 
   if (!child) return null;
 
-  const top3 = ranked.slice(0, 3);
-  const rest = ranked.slice(3);
+  // ── Derivados ───────────────────────────────────────────────────────────────
+
+  const filtered = search.trim()
+    ? friends.filter((f) =>
+        f.display_name.toLowerCase().includes(search.toLowerCase()) ||
+        f.username.toLowerCase().includes(search.toLowerCase()),
+      )
+    : friends;
+
+  const top3   = ranked.slice(0, 3);
+  const rest   = ranked.slice(3);
   const first  = top3.find((r) => r.position === 1);
   const second = top3.find((r) => r.position === 2);
   const third  = top3.find((r) => r.position === 3);
 
+  // ── Render ──────────────────────────────────────────────────────────────────
+
   return (
     <View style={s.root}>
 
-      {/* ── Header — pixel-faithful ao design ─────────────────────── */}
+      {/* ── Header ─────────────────────────────────────────────────── */}
       <LinearGradient
         colors={['#2B52E5', '#1A3DB8']}
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
@@ -308,10 +521,10 @@ export default function AmigosScreen() {
               )}
             </Pressable>
 
-            {/* Gerir amigos */}
+            {/* Adicionar amigos → tela de busca/sugestões */}
             <Pressable
               style={s.iconBtn}
-              onPress={() => router.push('/(app)/friends/list')}
+              onPress={() => router.push('/(app)/friends/add')}
               hitSlop={8}
             >
               <Ionicons name="person-add-outline" size={22} color="#fff" />
@@ -321,29 +534,148 @@ export default function AmigosScreen() {
       </LinearGradient>
 
       {/* ── Content ────────────────────────────────────────────────── */}
-      <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
 
-        {/* Period toggle */}
-        <PeriodToggle value={period} onChange={setPeriod} />
+        {/* Top-level toggle */}
+        <SectionToggle value={section} onChange={(v) => { setSection(v); setSearch(''); }} />
 
-        {isLoading ? (
-          <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 40 }} />
-        ) : ranked.length === 0 ? (
-          <EmptyRanking onAdd={() => router.push('/(app)/friends/add')} />
-        ) : (
+        {/* ── Painel: Amigos ─────────────────────────────────────── */}
+        {section === 'friends' && (
           <>
-            {/* Pódio */}
-            <View style={s.podium}>
-              <PodiumSpot ranked={second} position={2} />
-              <PodiumSpot ranked={first}  position={1} />
-              <PodiumSpot ranked={third}  position={3} />
+            {/* Search bar */}
+            <View style={s.searchBar}>
+              <Ionicons name="search" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
+              <TextInput
+                style={s.searchInput}
+                placeholder={t('friends.searchPlaceholder')}
+                placeholderTextColor="#9CA3AF"
+                value={search}
+                onChangeText={setSearch}
+                autoCorrect={false}
+                autoCapitalize="none"
+                returnKeyType="search"
+              />
+              {search.length > 0 && (
+                <Pressable onPress={() => setSearch('')} hitSlop={8}>
+                  <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                </Pressable>
+              )}
             </View>
 
-            {/* Lista restante */}
-            {rest.length > 0 && (
+            {lf ? (
+              <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 24 }} />
+            ) : (
               <>
-                <View style={s.divider} />
-                {rest.map((r) => <RankRow key={r.child.id} ranked={r} />)}
+                {/* Pedidos pendentes */}
+                {requests.length > 0 && (
+                  <View style={s.section}>
+                    <View style={s.sectionHeader}>
+                      <Text style={s.sectionTitle}>{t('friends.pendingRequests')}</Text>
+                      <View style={s.pendingBadge}>
+                        <Text style={s.pendingBadgeText}>{requests.length}</Text>
+                      </View>
+                    </View>
+                    {requests.map((req) => (
+                      <RequestCard
+                        key={req.id}
+                        request={req}
+                        loading={respondingId === req.id}
+                        onAccept={() => respondMutation.mutate({ requestId: req.id, accept: true })}
+                        onReject={() => respondMutation.mutate({ requestId: req.id, accept: false })}
+                      />
+                    ))}
+                  </View>
+                )}
+
+                {/* Lista de amigos */}
+                <View style={s.section}>
+                  {filtered.length === 0 && !search ? (
+                    <EmptyFriends onAdd={() => router.push('/(app)/friends/add')} />
+                  ) : filtered.length === 0 ? (
+                    <View style={s.noResults}>
+                      <Text style={s.noResultsText}>{t('friends.noResults')}</Text>
+                    </View>
+                  ) : (
+                    <>
+                      <Text style={s.sectionTitle}>
+                        {search
+                          ? `Resultados (${filtered.length})`
+                          : `${friends.length} amigo${friends.length !== 1 ? 's' : ''}`}
+                      </Text>
+                      {filtered.map((f, i) => (
+                        <FriendRow
+                          key={f.id}
+                          friend={f}
+                          rank={i + 1}
+                          unreadCount={(unreadMap as Map<string, number>).get(f.id) ?? 0}
+                          onChat={() => router.push(`/(app)/friends/chat/${f.id}` as never)}
+                          onBlock={() => {
+                            Alert.alert(
+                              t('friends.blockTitle') ?? 'Bloquear utilizador',
+                              `Tens a certeza que queres bloquear ${f.display_name}?`,
+                              [
+                                { text: t('common.cancel') ?? 'Cancelar', style: 'cancel' },
+                                { text: t('friends.block'), style: 'destructive', onPress: async () => {
+                                    if (!child) return;
+                                    await socialService.blockUser(child.id, f.id);
+                                    void queryClient.invalidateQueries({ queryKey: ['friends', child.id] });
+                                  },
+                                },
+                              ],
+                            );
+                          }}
+                        />
+                      ))}
+                    </>
+                  )}
+                </View>
+
+                {/* Footer links */}
+                <View style={s.footerLinks}>
+                  <Pressable style={s.footerLink} onPress={() => router.push('/(app)/friends/notifications')}>
+                    <Ionicons name="notifications-outline" size={16} color={colors.primary} />
+                    <Text style={s.footerLinkText}>{t('friends.viewNotifications')}</Text>
+                  </Pressable>
+                  <Pressable style={s.footerLink} onPress={() => router.push('/(app)/friends/blocked')}>
+                    <Ionicons name="ban-outline" size={16} color={colors.text.secondary} />
+                    <Text style={[s.footerLinkText, { color: colors.text.secondary }]}>{t('friends.blockedUsers')}</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── Painel: Ranking ────────────────────────────────────── */}
+        {section === 'ranking' && (
+          <>
+            <PeriodToggle value={period} onChange={setPeriod} />
+
+            {lr ? (
+              <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 40 }} />
+            ) : ranked.length === 0 ? (
+              <EmptyRanking onAdd={() => router.push('/(app)/friends/add')} />
+            ) : (
+              <>
+                {/* Pódio */}
+                <View style={s.podium}>
+                  <PodiumSpot ranked={second} position={2} />
+                  <PodiumSpot ranked={first}  position={1} />
+                  <PodiumSpot ranked={third}  position={3} />
+                </View>
+
+                {/* Lista restante */}
+                {rest.length > 0 && (
+                  <>
+                    <View style={s.divider} />
+                    {rest.map((r) => <RankRow key={r.child.id} ranked={r} />)}
+                  </>
+                )}
               </>
             )}
           </>
@@ -359,11 +691,11 @@ export default function AmigosScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background.primary },
 
-  // Header — igual ao design: gradient azul, sem border radius no rodapé
-  header:    { paddingHorizontal: 20, paddingBottom: 24 },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  headerSub: { fontFamily: fontFamily.semiBold, fontSize: 13, color: 'rgba(255,255,255,0.75)', marginBottom: 2 },
-  headerTitle:{ fontFamily: fontFamily.extraBold, fontSize: 36, color: '#fff' },
+  // Header
+  header:         { paddingHorizontal: 20, paddingBottom: 24 },
+  headerRow:      { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  headerSub:      { fontFamily: fontFamily.semiBold, fontSize: 13, color: 'rgba(255,255,255,0.75)', marginBottom: 2 },
+  headerTitle:    { fontFamily: fontFamily.extraBold, fontSize: 36, color: '#fff' },
   iconBtn: {
     width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.18)',
@@ -380,10 +712,30 @@ const s = StyleSheet.create({
   },
   notifBadgeText: { fontFamily: fontFamily.extraBold, fontSize: 10, color: '#fff' },
 
-  scroll:  { flex: 1 },
-  content: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, gap: 16 },
+  // Scroll / content
+  scroll:   { flex: 1 },
+  content:  { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, gap: 16 },
 
-  podium:  {
+  // Search bar
+  searchBar:   { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 16, paddingVertical: 12, ...shadows.sm },
+  searchInput: { flex: 1, fontFamily: fontFamily.regular, fontSize: 15, color: colors.text.primary, padding: 0 },
+
+  // Friends list sections
+  section:         { gap: 10 },
+  sectionHeader:   { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 2 },
+  sectionTitle:    { fontFamily: fontFamily.extraBold, fontSize: 18, color: colors.text.primary },
+  pendingBadge:    { backgroundColor: '#F5722A', borderRadius: 999, minWidth: 26, height: 26, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 7 },
+  pendingBadgeText:{ fontFamily: fontFamily.extraBold, fontSize: 13, color: '#fff' },
+  noResults:       { alignItems: 'center', paddingVertical: 20 },
+  noResultsText:   { fontFamily: fontFamily.semiBold, fontSize: 14, color: colors.text.secondary },
+
+  // Footer links
+  footerLinks:    { gap: 8, marginTop: 4 },
+  footerLink:     { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, justifyContent: 'center' },
+  footerLinkText: { fontFamily: fontFamily.semiBold, fontSize: 14, color: colors.primary },
+
+  // Ranking
+  podium: {
     flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end',
     gap: 8, paddingVertical: 24, backgroundColor: '#fff',
     borderRadius: radius['2xl'], ...shadows.md,

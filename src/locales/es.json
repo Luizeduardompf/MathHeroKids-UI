@@ -275,6 +275,9 @@
     },
     "block": "Bloquear",
     "listTitle": "Amigos",
+    "sectionFriends": "Amigos",
+    "sectionRanking": "Ranking",
+    "blockTitle": "Bloquear usuario",
     "viewNotifications": "Ver notificaciones",
     "blockedUsers": "Usuarios bloqueados",
     "chat": {

@@ -292,6 +292,9 @@
     "you": "You",
     "block": "Block",
     "listTitle": "Friends",
+    "sectionFriends": "Friends",
+    "sectionRanking": "Ranking",
+    "blockTitle": "Block user",
     "viewNotifications": "View notifications",
     "blockedUsers": "Blocked users",
     "chat": {

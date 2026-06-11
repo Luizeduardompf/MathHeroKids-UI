@@ -303,6 +303,9 @@
     "you": "Você",
     "block": "Bloquear",
     "listTitle": "Amigos",
+    "sectionFriends": "Amigos",
+    "sectionRanking": "Ranking",
+    "blockTitle": "Bloquear utilizador",
     "viewNotifications": "Ver notificações",
     "blockedUsers": "Utilizadores bloqueados",
     "chat": {
