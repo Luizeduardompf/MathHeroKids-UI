@@ -3,7 +3,8 @@ import { ActivityIndicator, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 
 import { useAuthStore, selectAuthStatus } from '@/stores/auth.store';
-import { useProfileStore, selectHasActiveChild } from '@/stores/profile.store';
+import { useProfileStore, selectHasActiveChild, selectActiveChild } from '@/stores/profile.store';
+import { configureNotificationHandler, registerPushToken } from '@/services/notification.service';
 import { colors } from '@/theme';
 
 /**
@@ -18,11 +19,24 @@ const PARENT_ONLY_ROUTES = ['settings'];
 export default function AppLayout() {
   const status = useAuthStore(selectAuthStatus);
   const hasActiveChild = useProfileStore(selectHasActiveChild);
+  const activeChild = useProfileStore(selectActiveChild);
   const router = useRouter();
   const segments = useSegments();
 
   // True when the current route is a parent-only screen (no activeChild required)
   const isParentOnlyRoute = PARENT_ONLY_ROUTES.some((r) => segments.includes(r));
+
+  // Configure notification handler once on mount
+  useEffect(() => {
+    configureNotificationHandler();
+  }, []);
+
+  // Register push token when active child is set
+  useEffect(() => {
+    if (activeChild?.id) {
+      void registerPushToken(activeChild.id);
+    }
+  }, [activeChild?.id]);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -57,6 +71,10 @@ export default function AppLayout() {
       <Stack.Screen name="rewards" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="friends/ranking" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="friends/add" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="friends/list" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="friends/notifications" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="friends/blocked" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="friends/chat/[friendId]" options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="parent-area" options={{ animation: 'slide_from_bottom' }} />
     </Stack>
   );

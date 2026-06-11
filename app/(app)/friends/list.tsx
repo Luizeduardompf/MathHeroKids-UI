@@ -10,7 +10,7 @@
  */
 
 import React, { useCallback, useState } from 'react';
-// @ts-expect-error RN 0.85 quirk
+// @ts-expect-error RN strict typing quirk
 import { Alert } from 'react-native'; // eslint-disable-line
 import {
   ActivityIndicator,
@@ -20,8 +20,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-// @ts-expect-error RN 0.85 quirk — Alert present at runtime
-import { Alert } from 'react-native'; // eslint-disable-line
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -31,6 +29,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from '@/components/ui';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { socialService, type FriendProfile, type PendingRequest } from '@/services/social.service';
+import { chatService } from '@/services/chat.service';
 import { FriendAvatar } from './../../(app)/(tabs)/friends';
 import { colors, fontFamily, radius, shadows } from '@/theme';
 
@@ -75,7 +74,15 @@ const rc = StyleSheet.create({
 
 // ─── Friend row ───────────────────────────────────────────────────────────────
 
-function FriendRow({ friend, rank, onBlock }: { friend: FriendProfile; rank: number; onBlock: () => void }) {
+function FriendRow({
+  friend, rank, onBlock, onChat, unreadCount,
+}: {
+  friend: FriendProfile;
+  rank: number;
+  onBlock: () => void;
+  onChat: () => void;
+  unreadCount: number;
+}) {
   const [menuOpen, setMenuOpen] = React.useState(false);
   return (
     <View style={fr.row}>
@@ -85,10 +92,15 @@ function FriendRow({ friend, rank, onBlock }: { friend: FriendProfile; rank: num
         <Text style={fr.name}>{friend.display_name}</Text>
         <Text style={fr.sub}>@{friend.username} · Nível {friend.level}</Text>
       </View>
-      <View style={fr.xpCol}>
-        <Ionicons name="flash" size={13} color="#F59E0B" />
-        <Text style={fr.xp}>{friend.xp_total.toLocaleString('pt-BR')}</Text>
-      </View>
+      {/* Chat button */}
+      <Pressable onPress={onChat} hitSlop={8} style={fr.chatBtn}>
+        <Ionicons name="chatbubble-outline" size={20} color={colors.primary} />
+        {unreadCount > 0 && (
+          <View style={fr.badge}>
+            <Text style={fr.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+          </View>
+        )}
+      </Pressable>
       <Pressable onPress={() => setMenuOpen((v) => !v)} hitSlop={8} style={fr.menuBtn}>
         <Ionicons name="ellipsis-vertical" size={18} color="#9CA3AF" />
       </Pressable>
@@ -113,6 +125,9 @@ const fr = StyleSheet.create({
   sub:       { fontFamily: fontFamily.regular,   fontSize: 12, color: colors.text.secondary, marginTop: 1 },
   xpCol:     { flexDirection: 'row', alignItems: 'center', gap: 3 },
   xp:        { fontFamily: fontFamily.bold, fontSize: 13, color: '#F59E0B' },
+  chatBtn:   { padding: 4, position: 'relative' },
+  badge:     { position: 'absolute', top: -2, right: -2, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: '#EF4444', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
+  badgeText: { fontFamily: fontFamily.bold, fontSize: 9, color: '#fff' },
   menuBtn:   { padding: 4 },
   blockBtn:  { position: 'absolute', right: 12, top: 48, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', borderRadius: 8, padding: 10, zIndex: 10, borderWidth: 1, borderColor: '#F3F4F6', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   blockText: { fontFamily: fontFamily.semiBold, fontSize: 13, color: colors.error },
@@ -166,6 +181,14 @@ export default function FriendsListScreen() {
     queryKey: ['friends',         child?.id],
     queryFn:  () => socialService.getFriends(child!.id),
     enabled:  !!child?.id, staleTime: 30_000,
+  });
+
+  const { data: unreadMap = new Map<string, number>() } = useQuery({
+    queryKey: ['unread_by_friend', child?.id],
+    queryFn:  () => chatService.getUnreadCountByFriend(child!.id),
+    enabled:  !!child?.id,
+    staleTime: 10_000,
+    refetchInterval: 30_000,
   });
 
   const { data: requests = [], isLoading: lr } = useQuery({
@@ -294,6 +317,8 @@ export default function FriendsListScreen() {
                   key={f.id}
                   friend={f}
                   rank={i + 1}
+                  unreadCount={(unreadMap as Map<string, number>).get(f.id) ?? 0}
+                  onChat={() => router.push(`/(app)/friends/chat/${f.id}` as never)}
                   onBlock={() => {
                     Alert.alert(
                       'Bloquear utilizador',
