@@ -4,94 +4,100 @@
 
 ---
 
-## Estado actual — 2026-06-11 12:06 UTC
+## Estado actual — 2026-06-11 12:31 UTC
 
 ### 🟢 Em curso
 ```
 ESTADO: LIVRE
-ÚLTIMO COMMIT: dc74fd5
+ÚLTIMO COMMIT: 67a8d1c
 ```
+
+---
+
+### ✅ Concluído (sessão 3 — 2026-06-11)
+
+**Fix crítico — Edge Functions (corsHeaders inline):**
+- Todas as 5 EFs importavam `../\_shared/cors.ts` — o Management API deploy (body string único) não resolve imports relativos
+- Fix: corsHeaders inlined em cada EF; re-deploy de todas (start_challenge v5, complete_challenge v5, send_friend_request v2, respond_friend_request v2, verify_parent_pin v2)
+- `complete_challenge` v5: upsert da session antes de inserir answers (FK fix quando start_challenge falha offline)
+
+**Fix fonte iOS 26 (Nunito ExtraBold stylistic alternates):**
+- `src/components/ui/Text.tsx`: `fontVariant: ['tabular-nums']` + `allowFontScaling={false}` globais
+- `challenge/[date].tsx`: `operandText`, `operatorText`, `answerBoxText` com `fontVariant: ['tabular-nums']`
+- `src/components/challenge/StatusScreens.tsx`: `wa.num`, `wa.correct`, `be.num` com fontVariant; `sc.title` → `bold` (evita alternates do extraBold)
+
+**Calendar — dias passados tappáveis:**
+- `DayCell` convertido para Pressable; variantes `failed`/`missed` nos últimos 7 dias abrem `/(app)/challenge/{date}?retroactive=1`
+- `today` também é pressable (abre desafio directo)
+- `getPastCutoff()` helper para limitar janela de 7 dias
+
+**PIN keypad fixes:**
+- Keypad: grid com `flex: 1` em vez de `width: '30%'` (botões não cortam com gap no iOS)
+- Footer: `paddingBottom: insets.bottom + 16` (Forgot PIN + Sign out acima da tab bar)
+- Font: `fontFamily.bold` + `fontVariant: ['tabular-nums']` nos dígitos
+
+**i18n global — 10 ficheiros corrigidos:**
+- `settings.tsx`: logoutTitle, logoutMessage, logoutConfirm, questionsTitle, Editar, Esqueci o PIN, Sair da conta
+- `achievements.tsx`: Coleção completa, Conquistas, milo.achievements
+- `trophy-room.tsx`: Conquistados, Sequência
+- `calendar.tsx`: Sequência, Recorde, Seu progresso, Progresso do mês, Esta semana, Troféu mensal, XP no mês
+- `friends/list.tsx`: Bloquear, Nenhum amigo ainda, Adicionar amigo, Amigos, Pedidos pendentes, Nenhum amigo encontrado, Ver notificações, Utilizadores bloqueados
+- `friends/add.tsx`: Amigo, Enviado, Adicionar, Adicionar amigo, Nenhum utilizador encontrado, Resultado, Sugestões para você
+- `friends/ranking.tsx`: Sem dados de ranking, Ranking de amigos
+- `friends/notifications.tsx`: Sem notificações
+- `parent-area/edit-profile.tsx`: PIN parental, Senha
+- `StatusScreens.tsx`: respostas corretas, acertos, Meta: 100%
+- Locales (pt/en/es/fr): keys adicionadas para todas as novas strings
+
+**app.json fix:**
+- Removido plugin `expo-notifications` (não instalado → Metro crashava na inicialização)
 
 ---
 
 ### ✅ Concluído (sessão 2 — 2026-06-11)
 
 **Deploy todas as Edge Functions (Supabase ACTIVE):**
-- `send_friend_request` v1: valida, insere friend_request, envia push via Expo Push API
-- `respond_friend_request` v1: aceita/rejeita, friendships bidirecionais, push ao remetente
-- `verify_parent_pin` v1: bcrypt completo (verify/set/change/clear) + rate limiting 5 tentativas/30 min
-- `start_challenge` v4 + `complete_challenge` v3: updated no Supabase
+`send_friend_request`, `respond_friend_request`, `verify_parent_pin` (bcrypt), `start_challenge`, `complete_challenge`
 
-**Migration 003 — aplicada no DB remoto:**
-- Tabela `messages` (chat) com RLS + índices de conversação + unread
-- `child_profiles.expo_push_token TEXT`
-- Realtime habilitado na tabela `messages` via `supabase_realtime` publication
+**Migration 003:** tabela `messages` + `child_profiles.expo_push_token` + RLS + Realtime
 
-**Push notifications (`src/services/notification.service.ts`):**
-- Registo de token Expo ao selecionar filho (`registerPushToken` em `(app)/_layout.tsx`)
-- Graceful fallback: não crasha se `expo-notifications` não instalado (try/require)
-- `eas.json` criado (development/preview/production profiles)
-- `app.json` actualizado: expo-notifications plugin + iOS background modes + Android FCM config
-- Script `.scripts/setup-push-notifications.sh` para activar em device real (Mac Terminal)
+**Push notifications:** `notification.service.ts`, `eas.json`, app.json config, script setup
 
-**Chat entre amigos (Supabase Realtime):**
-- `src/services/chat.service.ts`: getConversation, sendMessage, markRead, unreadCount, subscribeToConversation, subscribeToUnread
-- `app/(app)/friends/chat/[friendId].tsx`: bolhas, input, live updates, date separators, empty state
-- `app/(app)/friends/list.tsx`: botão 💬 por amigo + badge de mensagens não lidas
-- `app/(app)/_layout.tsx`: Stack screens para chat e sub-rotas de friends
-
----
-
-### ✅ Concluído (sessão 1 — 2026-06-11)
-
-**Skill `context-checkpoint`:** monitoriza contexto, salva handoff, commit git, empacotada como `.skill`
-
-**R1 — Tab label + challenge header:** `tabLabelAccent` marginTop 18, header X borderRadius 12
-
-**R2 — Friends screen:** Global ranking filtra só amigos; header com bell + person-add
-
-**R3 — Avatar picker:** double ring azul + checkmark badge
-
-**R4 — PIN parental:** `pin.service.ts` completo; keypad numérico em settings; edit-profile com secção PIN
-
-**R5 — Change password:** `parent-area/change-password.tsx` com `supabase.auth.updateUser`
-
-**R6 — i18n global:** nav.* keys em 4 locales; challenge milestones, MiloBox, friends, calendar via i18n
-
-**R7 — Desafio retroativo:** 7 dias passados no tab challenge; banner âmbar; estado `'late'` no calendar
-
-**R8 — Amigos + notificações in-app:** getNotifications, blockUser/unblockUser; friends/notifications.tsx; friends/blocked.tsx
+**Chat entre amigos:** `chat.service.ts` (Realtime), `friends/chat/[friendId].tsx`, badge unread em friends/list
 
 ---
 
 ### ⚠️ Issues conhecidos
 
 - `expo-av` incompatível com SDK — sons comentados com TODO
-- `complete_challenge` EF: flag `is_retroactive` recebida mas lógica de "não actualizar streak" precisa de ser validada end-to-end
-- **Push em device real:** requer `npm install expo-notifications expo-device` (Mac Terminal) + EAS build — ver `.scripts/setup-push-notifications.sh`
+- `complete_challenge` EF: `is_retroactive` detectado via data (challenge_date !== today) — flag do cliente ignorada, lógica correcta
+- **Push em device real:** `npm install expo-notifications expo-device` (Mac Terminal) + EAS build
 - **Push iOS (APNs):** requer Apple Developer Program ($99/ano)
-- **Block list:** AsyncStorage MVP — migrar para tabela `blocked_users` no Supabase (Phase 5+)
-- Git locks virtiofs: usar `mv` nunca `rm` (ver CLAUDE.md)
-- Avatares PNG ~1.2 MB cada — optimizar para ≤200 KB antes de produção
+- **Block list:** AsyncStorage MVP — migrar para tabela `blocked_users` (Phase 5+)
+- Git locks virtiofs: `mv` nunca `rm`
+- Avatares PNG ~1.2 MB — optimizar para ≤200 KB antes de produção
+- `friends/list.tsx`: "Nível X" nos sub-labels ainda hardcoded (usa `common.level` se key existir)
+- Tela de amigos (friends/list): pesquisa está fora do header azul (no design está dentro) — redesign pendente
 
 ---
 
 ### ⏭️ Próximos passos (por prioridade)
 
-**A — Gamification end-to-end (alta):**
+**A — Gamification end-to-end:**
 - Integrar `start_challenge` + `complete_challenge` EFs no `challengeStore` / challenge screen
-- Verificar `is_retroactive`: complete_challenge não deve atribuir streak nem perfect-week bonus
-- Level Up Celebration modal (dispara se `level` mudou na resposta da EF)
-- Trophy/Achievement unlocks ligados ao retorno de `complete_challenge`
+- Level Up Celebration modal (disparar quando `level_up: true` na resposta)
+- Trophy/Achievement unlocks ligados ao retorno da EF
 
-**B — Push notifications em device:**
+**B — Friends list redesign:**
+- Search bar dentro do header azul (pixel-faithful ao design)
+- Remover footer text links; mover para ícones no header
+
+**C — Avatar em sugestões/amigos:**
+- `FriendAvatar` usa iniciais; mostrar imagem real do avatar quando `avatar_id` disponível
+
+**D — Push notifications em device:**
 - Mac Terminal: `bash .scripts/setup-push-notifications.sh`
-- `eas build --profile development --platform android`
-- Testar push de friend_request em device físico
+- EAS build Android (gratuito)
 
-**C — Optimização de assets:**
-- Redimensionar avatares para ≤200 KB (ImageMagick ou sharp)
-
-**D — EAS build iOS:**
-- Requer Apple Developer Program ($99/ano)
-- `eas credentials --platform ios` → `eas build --profile development --platform ios`
+**E — Optimização de assets:**
+- Redimensionar avatares para ≤200 KB

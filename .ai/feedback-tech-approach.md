@@ -119,3 +119,25 @@ O mount virtiofs (macOS→Linux sandbox) não suporta `unlink` — `rm -f` falha
 - Fix (requer utilizador admin do Mac): `sudo chown -R claudecode /opt/homebrew`
 - Depois: `brew install cocoapods && cd ios && pod install && npx expo run:ios`
 - O utilizador `claudecode` não tem sudo — operações que requerem sudo devem ser feitas pelo utilizador admin
+
+---
+
+**Supabase Edge Functions via Management API: NUNCA usar imports relativos.**
+- Deploy via `/v1/projects/{ref}/functions` com `body` string único NÃO resolve `../\_shared/cors.ts`
+- Fix obrigatório: inline todas as constantes partilhadas em cada EF (corsHeaders, etc.)
+- `supabase functions deploy` com Docker resolve imports — mas Docker não disponível no sandbox Linux
+- Padrão para novas EFs: tudo self-contained, sem imports de `_shared/`
+
+---
+
+**Nunito ExtraBold (800) + iOS 26: stylistic alternates distorcem letras e números.**
+- iOS 26 activa OpenType stylistic sets no Nunito_800ExtraBold a tamanhos grandes (>20px)
+- Fix: `fontVariant: ['tabular-nums']` em estilos numéricos; `fontFamily.bold` (700) em títulos grandes
+- Aplicado globalmente no `Text` component base: `fontVariant: ['tabular-nums']` + `allowFontScaling={false}`
+- Não afecta o Bold (700) — usar bold para headings grandes, reservar extraBold para tamanhos pequenos-médios
+
+---
+
+**app.json plugin `expo-notifications` só deve ser adicionado APÓS `npm install expo-notifications`.**
+- Plugin no app.json é avaliado pelo Metro na inicialização — se o pacote não existir → crash imediato
+- Nunca adicionar plugins ao app.json sem o pacote correspondente instalado
