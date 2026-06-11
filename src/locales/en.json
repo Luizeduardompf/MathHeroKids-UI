@@ -397,7 +397,43 @@
       "primeiros_passos": "First Steps",
       "sequencias": "Streaks",
       "habilidades": "Skills",
-      "especiais": "Special"
+      "especiais": "Special",
+      "desempenho": "Performance",
+      "colecao": "Collection"
+    },
+    "items": {
+      "a1": {
+        "name": "First Perfect Day",
+        "desc": "Got every answer right in one day."
+      },
+      "a2": {
+        "name": "First Login",
+        "desc": "Welcome to the app!"
+      },
+      "a3": {
+        "name": "7 Days in a Row",
+        "desc": "Completed challenges 7 days straight."
+      },
+      "a4": {
+        "name": "30 Days in a Row",
+        "desc": "A whole month of challenges!"
+      },
+      "a5": {
+        "name": "Perfect Score",
+        "desc": "Got all 20 questions right."
+      },
+      "a6": {
+        "name": "Speed Demon",
+        "desc": "Finished a challenge in under 3 min."
+      },
+      "a7": {
+        "name": "5 Trophies",
+        "desc": "Earned 5 trophies."
+      },
+      "a8": {
+        "name": "Level 10",
+        "desc": "Reached level 10!"
+      }
     }
   },
   "progression": {

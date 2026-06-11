@@ -476,5 +476,45 @@
         "howTo": "Acierta el 100% de los desafíos todo el mes."
       }
     }
+  },
+  "achievements": {
+    "categories": {
+      "desempenho": "Desempeño",
+      "colecao": "Colección"
+    },
+    "items": {
+      "a1": {
+        "name": "Primer Día Perfecto",
+        "desc": "Acertó todas las respuestas en un día."
+      },
+      "a2": {
+        "name": "Primer Acceso",
+        "desc": "¡Bienvenido a la app!"
+      },
+      "a3": {
+        "name": "7 Días Seguidos",
+        "desc": "Completó desafíos 7 días sin parar."
+      },
+      "a4": {
+        "name": "30 Días Seguidos",
+        "desc": "¡Un mes entero de desafíos!"
+      },
+      "a5": {
+        "name": "Nota 100",
+        "desc": "Acertó las 20 preguntas."
+      },
+      "a6": {
+        "name": "Velocista",
+        "desc": "Completó un desafío en menos de 3 min."
+      },
+      "a7": {
+        "name": "5 Trofeos",
+        "desc": "Ganó 5 trofeos."
+      },
+      "a8": {
+        "name": "Nivel 10",
+        "desc": "¡Llegó al nivel 10!"
+      }
+    }
   }
 }

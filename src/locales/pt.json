@@ -408,7 +408,43 @@
       "primeiros_passos": "Primeiros Passos",
       "sequencias": "Sequências",
       "habilidades": "Habilidades",
-      "especiais": "Especiais"
+      "especiais": "Especiais",
+      "desempenho": "Desempenho",
+      "colecao": "Coleção"
+    },
+    "items": {
+      "a1": {
+        "name": "Primeiro Dia Perfeito",
+        "desc": "Acertou todas as respostas em um dia."
+      },
+      "a2": {
+        "name": "Primeiro Acesso",
+        "desc": "Bem-vindo ao app!"
+      },
+      "a3": {
+        "name": "7 Dias Seguidos",
+        "desc": "Fez desafios 7 dias sem parar."
+      },
+      "a4": {
+        "name": "30 Dias Seguidos",
+        "desc": "Um mês inteiro de desafios!"
+      },
+      "a5": {
+        "name": "Nota 100",
+        "desc": "Acertou todas as 20 questões."
+      },
+      "a6": {
+        "name": "Velocista",
+        "desc": "Completou um desafio em menos de 3 min."
+      },
+      "a7": {
+        "name": "5 Troféus",
+        "desc": "Conquistou 5 troféus."
+      },
+      "a8": {
+        "name": "Nível 10",
+        "desc": "Chegou ao nível 10!"
+      }
     }
   },
   "progression": {

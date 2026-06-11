@@ -28,31 +28,38 @@ type AchievementIcon =
 
 interface Achievement {
   id: string;
-  name: string;
-  description: string;
+  /** i18n key — Phase 3: comes from DB name_key column. */
+  nameKey: string;
+  descKey: string;
+  /** i18n key for category label */
+  categoryKey: string;
   icon: AchievementIcon;
-  category: string;
   earned: boolean;
 }
 
+/**
+ * Static achievements catalog — Phase 3: replace with child_achievements DB query.
+ * nameKey / descKey / categoryKey map to i18n keys (same as DB name_key convention).
+ */
 const ACHIEVEMENTS: Achievement[] = [
   // Primeiros passos
-  { id: 'a1', name: 'Primeiro Dia Perfeito', description: 'Acertou todas as respostas em um dia.',    icon: 'star-outline',     category: 'Primeiros passos', earned: true  },
-  { id: 'a2', name: 'Primeiro Acesso',        description: 'Bem-vindo ao app!',                       icon: 'sparkles-outline', category: 'Primeiros passos', earned: true  },
+  { id: 'a1', nameKey: 'achievements.items.a1.name', descKey: 'achievements.items.a1.desc', icon: 'star-outline',     categoryKey: 'achievements.categories.primeiros_passos', earned: true  },
+  { id: 'a2', nameKey: 'achievements.items.a2.name', descKey: 'achievements.items.a2.desc', icon: 'sparkles-outline', categoryKey: 'achievements.categories.primeiros_passos', earned: true  },
   // Sequências
-  { id: 'a3', name: '7 Dias Seguidos',        description: 'Fez desafios 7 dias sem parar.',           icon: 'flame-outline',    category: 'Sequências',       earned: true  },
-  { id: 'a4', name: '30 Dias Seguidos',       description: 'Um mês inteiro de desafios!',              icon: 'flame-outline',    category: 'Sequências',       earned: false },
+  { id: 'a3', nameKey: 'achievements.items.a3.name', descKey: 'achievements.items.a3.desc', icon: 'flame-outline',    categoryKey: 'achievements.categories.sequencias',       earned: true  },
+  { id: 'a4', nameKey: 'achievements.items.a4.name', descKey: 'achievements.items.a4.desc', icon: 'flame-outline',    categoryKey: 'achievements.categories.sequencias',       earned: false },
   // Desempenho
-  { id: 'a5', name: 'Nota 100',               description: 'Acertou todas as 20 questões.',            icon: 'flash-outline',    category: 'Desempenho',       earned: false },
-  { id: 'a6', name: 'Velocista',              description: 'Completou um desafio em menos de 3 min.', icon: 'flash-outline',    category: 'Desempenho',       earned: false },
-  // Colecção
-  { id: 'a7', name: '5 Troféus',             description: 'Conquistou 5 troféus.',                    icon: 'trophy-outline',   category: 'Coleção',          earned: false },
-  { id: 'a8', name: 'Nível 10',              description: 'Chegou ao nível 10!',                      icon: 'ribbon-outline',   category: 'Coleção',          earned: false },
+  { id: 'a5', nameKey: 'achievements.items.a5.name', descKey: 'achievements.items.a5.desc', icon: 'flash-outline',    categoryKey: 'achievements.categories.desempenho',       earned: false },
+  { id: 'a6', nameKey: 'achievements.items.a6.name', descKey: 'achievements.items.a6.desc', icon: 'flash-outline',    categoryKey: 'achievements.categories.desempenho',       earned: false },
+  // Coleção
+  { id: 'a7', nameKey: 'achievements.items.a7.name', descKey: 'achievements.items.a7.desc', icon: 'trophy-outline',   categoryKey: 'achievements.categories.colecao',          earned: false },
+  { id: 'a8', nameKey: 'achievements.items.a8.name', descKey: 'achievements.items.a8.desc', icon: 'ribbon-outline',   categoryKey: 'achievements.categories.colecao',          earned: false },
 ];
 
 // ─── Achievement card ─────────────────────────────────────────────────────────
 
 function AchievementCard({ a }: { a: Achievement }) {
+  const { t } = useTranslation();
   return (
     <View style={[styles.achCard, a.earned ? styles.achCardEarned : styles.achCardLocked]}>
       <View style={[
@@ -72,7 +79,7 @@ function AchievementCard({ a }: { a: Achievement }) {
         style={styles.achName}
         numberOfLines={2}
       >
-        {a.name}
+        {t(a.nameKey)}
       </Text>
       <Text
         variant="caption"
@@ -81,7 +88,7 @@ function AchievementCard({ a }: { a: Achievement }) {
         style={styles.achDesc}
         numberOfLines={3}
       >
-        {a.description}
+        {t(a.descKey)}
       </Text>
     </View>
   );
@@ -97,7 +104,7 @@ export default function AchievementsScreen() {
   const total  = ACHIEVEMENTS.length;
   const pct    = Math.round((earned / total) * 100);
 
-  const categories = Array.from(new Set(ACHIEVEMENTS.map((a) => a.category)));
+  const categories = Array.from(new Set(ACHIEVEMENTS.map((a) => a.categoryKey)));
 
   return (
     <AuthScreen
@@ -121,16 +128,16 @@ export default function AchievementsScreen() {
           style={styles.progressBar}
         />
         <Text variant="body" color={colors.text.secondary} style={styles.progressHint}>
-          {earned} de {total} conquistas desbloqueadas
+          {t('achievements.unlocked', { count: earned, total })}
         </Text>
       </Card>
 
       {/* ── Category sections ─────────────────────────────────────────────── */}
       {categories.map((cat) => (
         <View key={cat} style={styles.category}>
-          <Text variant="h3">{cat}</Text>
+          <Text variant="h3">{t(cat)}</Text>
           <View style={styles.achGrid}>
-            {ACHIEVEMENTS.filter((a) => a.category === cat).map((a) => (
+            {ACHIEVEMENTS.filter((a) => a.categoryKey === cat).map((a) => (
               <AchievementCard key={a.id} a={a} />
             ))}
           </View>

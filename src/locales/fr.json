@@ -423,5 +423,45 @@
         "howTo": "Obtiens 100% à tous les défis du mois."
       }
     }
+  },
+  "achievements": {
+    "categories": {
+      "desempenho": "Performance",
+      "colecao": "Collection"
+    },
+    "items": {
+      "a1": {
+        "name": "Première Journée Parfaite",
+        "desc": "A toutes les réponses correctes en un jour."
+      },
+      "a2": {
+        "name": "Premier Accès",
+        "desc": "Bienvenue dans l'app !"
+      },
+      "a3": {
+        "name": "7 Jours de Suite",
+        "desc": "A complété des défis 7 jours sans arrêt."
+      },
+      "a4": {
+        "name": "30 Jours de Suite",
+        "desc": "Un mois entier de défis !"
+      },
+      "a5": {
+        "name": "Note Parfaite",
+        "desc": "A répondu correctement aux 20 questions."
+      },
+      "a6": {
+        "name": "Sprinter",
+        "desc": "A terminé un défi en moins de 3 min."
+      },
+      "a7": {
+        "name": "5 Trophées",
+        "desc": "A gagné 5 trophées."
+      },
+      "a8": {
+        "name": "Niveau 10",
+        "desc": "A atteint le niveau 10 !"
+      }
+    }
   }
 }
