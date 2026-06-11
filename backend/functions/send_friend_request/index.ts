@@ -69,9 +69,11 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Verify both children exist and are active ──────────────────────────
+    // expo_push_token is fetched separately (non-blocking) — this way the friend
+    // request works even if migration 003 hasn't been applied yet.
     const { data: children, error: childError } = await supabase
       .from('child_profiles')
-      .select('id, display_name, expo_push_token')
+      .select('id, display_name')
       .in('id', [from_child_id, to_child_id])
       .eq('is_active', true);
 
@@ -84,7 +86,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    type ChildRow = { id: string; display_name: string; expo_push_token: string | null };
+    type ChildRow = { id: string; display_name: string };
     const fromChild = (children as ChildRow[]).find((c) => c.id === from_child_id)!;
     const toChild   = (children as ChildRow[]).find((c) => c.id === to_child_id)!;
 
@@ -128,15 +130,23 @@ Deno.serve(async (req: Request) => {
 
     if (insertError) throw insertError;
 
-    // ── Push notification to target (best-effort) ─────────────────────────
-    if (toChild.expo_push_token) {
-      await sendExpoPush(
-        toChild.expo_push_token,
-        '🤝 Novo pedido de amizade',
-        `${fromChild.display_name} quer ser teu amigo!`,
-        { type: 'friend_request', requestId: newRequest.id, fromChildId: from_child_id },
-      );
-    }
+    // ── Push notification to target (best-effort, non-blocking) ─────────────
+    try {
+      const { data: tokenRow } = await supabase
+        .from('child_profiles')
+        .select('expo_push_token')
+        .eq('id', to_child_id)
+        .single();
+      const pushToken = (tokenRow as { expo_push_token?: string | null } | null)?.expo_push_token;
+      if (pushToken) {
+        await sendExpoPush(
+          pushToken,
+          '🤝 Novo pedido de amizade',
+          `${fromChild.display_name} quer ser teu amigo!`,
+          { type: 'friend_request', requestId: newRequest.id, fromChildId: from_child_id },
+        );
+      }
+    } catch { /* push is best-effort — never fail the main request */ }
 
     return new Response(
       JSON.stringify({ requestId: newRequest.id, status: 'created' }),

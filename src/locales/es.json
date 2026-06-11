@@ -190,7 +190,9 @@
     "correctAnswers": "respuestas correctas",
     "accuracy": "{{pct}}% aciertos",
     "target100": "★ Meta: 100%",
-    "yourAnswer": "Tu respuesta:"
+    "yourAnswer": "Tu respuesta:",
+    "errorSubmitMsg": "No se pudo enviar el desafío. Inténtalo de nuevo.",
+    "errorRetry": "Intentar de nuevo"
   },
   "settings": {
     "title": "Ajustes",
@@ -310,13 +312,39 @@
       "msg25": "¡Buen comienzo! Intenta completar más días.",
       "msg0": "¡Comencemos a marcar este mes!"
     },
-    "xpThisMonthLabel": "XP este mes"
+    "xpThisMonthLabel": "XP este mes",
+    "months": [
+      "Enero",
+      "Febrero",
+      "Marzo",
+      "Abril",
+      "Mayo",
+      "Junio",
+      "Julio",
+      "Agosto",
+      "Septiembre",
+      "Octubre",
+      "Noviembre",
+      "Diciembre"
+    ],
+    "weekdays": [
+      "D",
+      "L",
+      "M",
+      "X",
+      "J",
+      "V",
+      "S"
+    ]
   },
   "parentArea": {
     "pin": {
       "forgotPin": "Olvidé el PIN",
       "noPin": "Sin PIN — acceso directo."
     },
-    "passwordSection": "Contraseña"
+    "passwordSection": "Contraseña",
+    "title": "Área de padres",
+    "subtitle": "Gestiona hijos, PIN y ajustes",
+    "accessBtn": "Área restringida de padres"
   }
 }

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -14,8 +14,7 @@ import {
 import { Alert } from 'react-native'; // eslint-disable-line
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { useRouter, useFocusEffect } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 
 import { Avatar, Button, Card, ConfirmDialog, Text } from '@/components/ui';
 import { childService, getChildLocalSettings, setChildLocalSettings } from '@/services/child.service';
@@ -27,7 +26,7 @@ import { SUPPORTED_LOCALES, TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT
 import type { SupportedLocale, TimerOption, MultiplicationRange, QuestionCountOption } from '@/constants/config';
 import type { ChildProfile } from '@/types';
 import { changeLocale, LOCALE_STORAGE_KEY } from '@/lib/i18n';
-import { colors, fontFamily, radius, space } from '@/theme';
+import { colors, fontFamily, radius, shadows, space } from '@/theme';
 
 // ─── Locale labels ────────────────────────────────────────────────────────────
 
@@ -261,7 +260,7 @@ const pinStyles = StyleSheet.create({
   keyMuted:   { backgroundColor: '#EDEEF5' },
   keyPressed: { opacity: 0.7, transform: [{ scale: 0.95 }] },
   // bold (não extraBold) para evitar stylistic alternates do Nunito no iOS 26
-  keyText:    { fontFamily: fontFamily.bold, fontSize: 26, color: '#1A1F36', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
+  keyText:    { fontFamily: fontFamily.bold, fontSize: 28, lineHeight: 34, color: '#1A1F36', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
   footer:     { flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 8, marginTop: 4, paddingBottom: 16 },
 });
 
@@ -465,16 +464,7 @@ function ParentCard() {
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const router      = useRouter();
-  const parentId    = useAuthStore(selectParentId);
-  const [pinVerified, setPinVerified] = useState(false);
-
-  useFocusEffect(useCallback(() => { setPinVerified(false); }, []));
-
-  const { data: children = [], isLoading } = useQuery({
-    queryKey: ['children', parentId],
-    queryFn: () => childService.listChildren(parentId!),
-    enabled: !!parentId && pinVerified,
-  });
+  const [showPinGate, setShowPinGate] = useState(false);
 
   const currentLocale = i18n.language as SupportedLocale;
 
@@ -483,7 +473,18 @@ export default function SettingsScreen() {
     await AsyncStorage.setItem(LOCALE_STORAGE_KEY, locale);
   }
 
-  if (!pinVerified) return <PinGate onUnlock={() => setPinVerified(true)} />;
+  // Show PIN gate inline (full-screen, replaces settings content)
+  // On unlock → navigate to parent area
+  if (showPinGate) {
+    return (
+      <PinGate
+        onUnlock={() => {
+          setShowPinGate(false);
+          router.push('/(app)/parent-area/');
+        }}
+      />
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -530,14 +531,24 @@ export default function SettingsScreen() {
           </View>
         </Card>
 
-        {/* ── Per-child settings ────────────────────────────────────── */}
-        <View style={styles.sectionTitle}>
-          <SectionIcon name="people-outline" bg={colors.primaryLight} color={colors.primary} />
-          <Text variant="h3">{t('profileSelect.title')}</Text>
-        </View>
-
-        {isLoading && <ActivityIndicator color={colors.primary} />}
-        {children.map((child) => <ChildSettingsCard key={child.id} child={child} />)}
+        {/* ── Parent area ──────────────────────────────────────────── */}
+        <Pressable
+          style={styles.parentAreaBtn}
+          onPress={() => setShowPinGate(true)}
+        >
+          <View style={styles.parentAreaLeft}>
+            <View style={styles.parentAreaIcon}>
+              <Ionicons name="lock-closed" size={20} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.title')}</Text>
+              <Text variant="caption" color={colors.text.secondary} style={{ marginTop: 1 }}>
+                {t('parentArea.subtitle')}
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+        </Pressable>
 
       </ScrollView>
     </View>
@@ -560,7 +571,28 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   } as import('react-native').TextStyle,
 
-  // ── PIN gate ────────────────────────────────────────────────────────────────
+  // ── Parent area button ───────────────────────────────────────────────────────
+  parentAreaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: radius.xl,
+    paddingHorizontal: space.md,
+    paddingVertical: space.md,
+    ...shadows.sm,
+  },
+  parentAreaLeft: { flexDirection: 'row', alignItems: 'center', gap: space.md, flex: 1 },
+  parentAreaIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Parent card ─────────────────────────────────────────────────────────────
   parentCard: { flexDirection: 'row', alignItems: 'center', gap: space.md },
 
   // ── Parent card ─────────────────────────────────────────────────────────────

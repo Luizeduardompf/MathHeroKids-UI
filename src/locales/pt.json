@@ -201,7 +201,9 @@
     },
     "correctAnswers": "respostas corretas",
     "accuracy": "{{pct}}% acertos",
-    "target100": "★ Meta: 100%"
+    "target100": "★ Meta: 100%",
+    "errorSubmitMsg": "Não foi possível enviar o desafio. Tente novamente.",
+    "errorRetry": "Tentar novamente"
   },
   "calendar": {
     "title": "Calendário",
@@ -230,7 +232,30 @@
     },
     "streak": "Sequência",
     "record": "Recorde",
-    "xpThisMonthLabel": "XP no mês"
+    "xpThisMonthLabel": "XP no mês",
+    "months": [
+      "Janeiro",
+      "Fevereiro",
+      "Março",
+      "Abril",
+      "Maio",
+      "Junho",
+      "Julho",
+      "Agosto",
+      "Setembro",
+      "Outubro",
+      "Novembro",
+      "Dezembro"
+    ],
+    "weekdays": [
+      "D",
+      "S",
+      "T",
+      "Q",
+      "Q",
+      "S",
+      "S"
+    ]
   },
   "friends": {
     "title": "Amigos",
@@ -393,7 +418,10 @@
     "pinUpdated": "✓ PIN actualizado com sucesso!",
     "changePassword": "Redefinir senha",
     "changePasswordSub": "Cria uma nova senha de acesso",
-    "passwordSection": "Senha"
+    "passwordSection": "Senha",
+    "title": "Área dos pais",
+    "subtitle": "Gerencie filhos, PIN e configurações",
+    "accessBtn": "Área restrita dos pais"
   },
   "levelUp": {
     "title": "VOCÊ SUBIU DE NÍVEL!",

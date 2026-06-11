@@ -156,21 +156,37 @@ Deno.serve(async (req: Request) => {
     const { timer_seconds } = body;
 
     // ── 1. Idempotency check + session upsert ─────────────────────────────
-    // If start_challenge failed (e.g. EF was down), the session may not exist.
-    // Upsert ensures the row exists before we insert answers (FK constraint).
+    // Strategy: check by (child_id, challenge_date, module_id) first — this covers
+    // both the normal case (same session_id) and the edge case where start_challenge
+    // created a session with a DIFFERENT UUID (would violate the unique constraint
+    // if we tried to upsert by id). Then fallback to check by session_id.
     const today = new Date().toISOString().split('T')[0]!;
     const isRetroactivePre = challenge_date !== today;
     const questionSeedFallback = `${child_id}:${challenge_date}:${module_id}`;
 
-    const { data: existingSession } = await supabase
+    // Primary check: by (child_id, challenge_date, module_id)
+    const { data: byDay } = await supabase
+      .from('challenge_sessions')
+      .select('*')
+      .eq('child_id', child_id)
+      .eq('challenge_date', challenge_date)
+      .eq('module_id', module_id)
+      .maybeSingle();
+
+    // Secondary check: by session_id (if no row exists for this day yet)
+    const { data: byId } = !byDay ? await supabase
       .from('challenge_sessions')
       .select('*')
       .eq('id', session_id)
-      .maybeSingle();
+      .maybeSingle() : { data: null };
+
+    const existingSession = byDay ?? byId ?? null;
+    // Use the session id that actually exists in the DB (may differ from client's UUID)
+    const effectiveSessionId = existingSession?.id ?? session_id;
 
     if (!existingSession) {
       // Session was never created — create it now so FK on challenge_answers works
-      await supabase.from('challenge_sessions').upsert({
+      const { error: insertErr } = await supabase.from('challenge_sessions').insert({
         id: session_id,
         child_id,
         challenge_date,
@@ -184,7 +200,31 @@ Deno.serve(async (req: Request) => {
         is_perfect: false,
         timer_seconds: timer_seconds ?? 15,
         multiplication_max,
-      }, { onConflict: 'id' });
+      });
+      if (insertErr) {
+        // Race condition or unique violation — fetch the real session
+        const { data: raceSession } = await supabase
+          .from('challenge_sessions')
+          .select('*')
+          .eq('child_id', child_id)
+          .eq('challenge_date', challenge_date)
+          .eq('module_id', module_id)
+          .maybeSingle();
+        if (raceSession) {
+          // Re-run as if session existed — return cached or continue scoring
+          if (raceSession.status === 'completed') {
+            const { data: child } = await supabase.from('child_profiles')
+              .select('xp_total, level, current_streak, best_streak').eq('id', child_id).single();
+            return new Response(JSON.stringify({
+              session: raceSession, xp_earned: raceSession.xp_awarded,
+              level_up: false, new_level: child?.level ?? null,
+              unlocked_reward: null, trophies_earned: [], achievements_earned: [],
+            }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
+        } else {
+          throw new Error(`Session insert failed: ${insertErr.message}`);
+        }
+      }
     }
 
     if (existingSession?.status === 'completed') {
@@ -282,7 +322,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 7. Insert answers ─────────────────────────────────────────────────
     const answerRows = scoredAnswers.map((a) => ({
-      session_id,
+      session_id: effectiveSessionId,
       block_number: a.block_number,
       attempt_number: a.attempt_number,
       question_index: a.question_index,
@@ -307,7 +347,7 @@ Deno.serve(async (req: Request) => {
         is_perfect: isPerfect,
         completed_at: new Date().toISOString(),
       })
-      .eq('id', session_id)
+      .eq('id', effectiveSessionId)
       .select()
       .single();
 
@@ -335,17 +375,17 @@ Deno.serve(async (req: Request) => {
         day_date: challenge_date,
         state: 'completed',
         is_perfect: isPerfect,
-        session_id,
+        session_id: effectiveSessionId,
       }, { onConflict: 'child_id,day_date' });
 
     // ── 11. Append XP ledger ──────────────────────────────────────────────
     const ledgerRows = [];
     if (answerXp > 0) {
-      ledgerRows.push({ child_id, source: 'correct_answer', amount: answerXp, reference_id: session_id });
+      ledgerRows.push({ child_id, source: 'correct_answer', amount: answerXp, reference_id: effectiveSessionId });
     }
-    ledgerRows.push({ child_id, source: 'challenge_completion', amount: completionXp, reference_id: session_id });
+    ledgerRows.push({ child_id, source: 'challenge_completion', amount: completionXp, reference_id: effectiveSessionId });
     if (perfectXp > 0) {
-      ledgerRows.push({ child_id, source: 'challenge_completion', amount: perfectXp, reference_id: session_id });
+      ledgerRows.push({ child_id, source: 'challenge_completion', amount: perfectXp, reference_id: effectiveSessionId });
     }
     await supabase.from('child_xp_ledger').insert(ledgerRows);
 
@@ -393,7 +433,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         session: updatedSession ?? {
-          id: session_id,
+          id: effectiveSessionId,
           child_id,
           challenge_date,
           module_id,

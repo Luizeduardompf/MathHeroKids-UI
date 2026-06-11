@@ -39,11 +39,6 @@ import type { CalendarDay } from '@/types';
 
 const MONTHS_TO_SHOW = 4;
 const DAY_SIZE       = 44;
-const DOW_LABELS     = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
-const MONTH_NAMES_PT = [
-  'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
-  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro',
-];
 
 // ─── XP helpers ───────────────────────────────────────────────────────────────
 
@@ -261,12 +256,15 @@ function MonthCalendar({ year, month, calDays, sessions, localComps, today }: {
   calDays: CalendarDay[]; sessions: SessionFallback[];
   localComps: LocalCompletion[]; today: string;
 }) {
+  const { t } = useTranslation();
+  const monthNames = t('calendar.months', { returnObjects: true }) as unknown as string[];
+  const weekdays   = t('calendar.weekdays', { returnObjects: true }) as unknown as string[];
   const grid = buildDayGrid(year, month, calDays, sessions, localComps, today);
   return (
     <View style={mc.card}>
-      <Text style={mc.title}>{MONTH_NAMES_PT[month]} {year}</Text>
+      <Text style={mc.title}>{(monthNames[month] ?? '') + ' ' + year}</Text>
       <View style={mc.dowRow}>
-        {DOW_LABELS.map((lbl, i) => (
+        {weekdays.map((lbl, i) => (
           <RNText key={i} style={mc.dowLbl}>{lbl}</RNText>
         ))}
       </View>
@@ -434,11 +432,11 @@ function computeProgress(
     trophyProgress: completedThisMonth,
     trophyGoal: TROPHY_GOAL,
     monthlyXp: estimatedXp,
-    monthProgressMsg: monthPct >= 90 ? 'Você completou quase todos os dias. Incrível!'
-      : monthPct >= 70 ? 'Você completou seus desafios em quase todos os dias. Continue assim!'
-      : monthPct >= 50 ? 'Boa metade do mês! Continue o ritmo.'
-      : monthPct >= 25 ? 'Bom começo! Tenta completar mais dias.'
-      : 'Vamos começar a marcar este mês!',
+    monthProgressMsgKey: monthPct >= 90 ? 'calendar.progress.msg90'
+      : monthPct >= 70 ? 'calendar.progress.msg70'
+      : monthPct >= 50 ? 'calendar.progress.msg50'
+      : monthPct >= 25 ? 'calendar.progress.msg25'
+      : 'calendar.progress.msg0',
   };
 }
 
@@ -462,7 +460,7 @@ function ProgressSection({ data, today }: {
             <Ionicons name="calendar-outline" size={16} color="#22C55E" />
             <RNText style={ps.cardTitle}>{t('calendar.progress.monthProgress')}</RNText>
           </View>
-          <RNText style={ps.cardDesc}>{prog.monthProgressMsg}</RNText>
+          <RNText style={ps.cardDesc}>{t(prog.monthProgressMsgKey)}</RNText>
         </View>
       </View>
 
@@ -505,7 +503,7 @@ function ProgressSection({ data, today }: {
           <View style={ps.xpIconWrap}>
             <Ionicons name="flash" size={22} color="#fff" />
           </View>
-          <RNText style={ps.xpValue}>+{prog.monthlyXp.toLocaleString('pt-BR')}</RNText>
+          <RNText style={ps.xpValue}>+{prog.monthlyXp.toLocaleString()}</RNText>
           <RNText style={ps.xpLabel}>{t('calendar.xpThisMonthLabel')}</RNText>
         </LinearGradient>
       </View>
@@ -643,8 +641,8 @@ export default function CalendarioScreen() {
           <Text style={s.levelLabel}>Nível {child.level}</Text>
           <ProgressBar value={xpProgress} color={colors.primary} trackColor="#E4E5EF" height={6} style={{ marginTop: 4 }} />
           <View style={s.xpRow}>
-            <Text style={s.xpCurrent}>{child.xp_total.toLocaleString('pt-BR')} XP</Text>
-            <Text style={s.xpNext}>{xpCeil.toLocaleString('pt-BR')}</Text>
+            <Text style={s.xpCurrent}>{child.xp_total.toLocaleString()} XP</Text>
+            <Text style={s.xpNext}>{xpCeil.toLocaleString()}</Text>
           </View>
         </View>
       </View>

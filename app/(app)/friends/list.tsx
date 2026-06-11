@@ -256,7 +256,7 @@ export default function FriendsListScreen() {
           <Ionicons name="search" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
           <TextInput
             style={s.searchInput}
-            placeholder="Buscar por nome de usuário"
+            placeholder={t('friends.searchPlaceholder')}
             placeholderTextColor="#9CA3AF"
             value={search}
             onChangeText={setSearch}

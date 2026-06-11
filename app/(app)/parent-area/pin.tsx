@@ -95,7 +95,7 @@ const kp = StyleSheet.create({
   key:       { width: '30%', height: 72, backgroundColor: '#fff', borderRadius: 16, alignItems: 'center', justifyContent: 'center', ...shadows.sm },
   keyMuted:  { backgroundColor: '#EDEEF5' },
   keyPressed:{ opacity: 0.7, transform: [{ scale: 0.95 }] },
-  keyText:   { fontFamily: fontFamily.bold, fontSize: 28, color: '#1A1F36' },
+  keyText:   { fontFamily: fontFamily.bold, fontSize: 28, lineHeight: 34, color: '#1A1F36', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
 });
 
 // ─── Main screen ──────────────────────────────────────────────────────────────

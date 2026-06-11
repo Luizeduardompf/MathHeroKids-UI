@@ -859,6 +859,35 @@ export default function ChallengeScreen() {
     );
   }
 
+  // ─── Error (EF failed) ────────────────────────────────────────────────────
+
+  if (phase === 'error') {
+    return (
+      <View style={[gs.container, gs.centered]}>
+        <View style={{ alignItems: 'center', gap: 16, paddingHorizontal: 32 }}>
+          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#FEE2E2', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="cloud-offline-outline" size={36} color={colors.error} />
+          </View>
+          <Text style={{ fontFamily: fontFamily.extraBold, fontSize: 20, color: colors.text.primary, textAlign: 'center' }}>
+            {t('common.error')}
+          </Text>
+          <Text style={{ fontFamily: fontFamily.regular, fontSize: 14, color: colors.text.secondary, textAlign: 'center', lineHeight: 20 }}>
+            {t('challenge.errorSubmitMsg')}
+          </Text>
+          <Pressable
+            style={{ marginTop: 8, backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 32, paddingVertical: 14 }}
+            onPress={() => { storeActions.setPhase('completed'); }}
+          >
+            <Text style={{ fontFamily: fontFamily.bold, fontSize: 16, color: '#fff' }}>{t('challenge.errorRetry')}</Text>
+          </Pressable>
+          <Pressable onPress={() => { storeActions.reset(); router.back(); }} hitSlop={8}>
+            <Text style={{ fontFamily: fontFamily.semiBold, fontSize: 14, color: colors.text.secondary }}>{t('challenge.exitLeave')}</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   // ─── Correct overlay — CorrectOverlay com confetti animado ─────────────────
 
   if (phase === 'correct') {

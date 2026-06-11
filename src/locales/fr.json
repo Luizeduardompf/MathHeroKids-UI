@@ -237,7 +237,30 @@
       "msg25": "Bon début ! Essayez de compléter plus de jours.",
       "msg0": "Commençons à marquer ce mois !"
     },
-    "xpThisMonthLabel": "XP ce mois"
+    "xpThisMonthLabel": "XP ce mois",
+    "months": [
+      "Janvier",
+      "Février",
+      "Mars",
+      "Avril",
+      "Mai",
+      "Juin",
+      "Juillet",
+      "Août",
+      "Septembre",
+      "Octobre",
+      "Novembre",
+      "Décembre"
+    ],
+    "weekdays": [
+      "D",
+      "L",
+      "M",
+      "M",
+      "J",
+      "V",
+      "S"
+    ]
   },
   "challenge": {
     "miloDizLabel": "MILO DIT",
@@ -257,13 +280,18 @@
     "correctAnswers": "bonnes réponses",
     "accuracy": "{{pct}}% réussite",
     "target100": "★ Objectif: 100%",
-    "yourAnswer": "Ta réponse:"
+    "yourAnswer": "Ta réponse:",
+    "errorSubmitMsg": "Impossible d'envoyer le défi. Veuillez réessayer.",
+    "errorRetry": "Réessayer"
   },
   "parentArea": {
     "pin": {
       "forgotPin": "PIN oublié",
       "noPin": "Aucun PIN — accès direct."
     },
-    "passwordSection": "Mot de passe"
+    "passwordSection": "Mot de passe",
+    "title": "Espace parents",
+    "subtitle": "Gérez les enfants, le PIN et les paramètres",
+    "accessBtn": "Espace restreint parents"
   }
 }

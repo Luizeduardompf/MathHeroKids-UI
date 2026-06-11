@@ -38,9 +38,12 @@ function getPastDates(n: number): string[] {
   return dates;
 }
 
-function formatDate(dateStr: string): string {
+const LANG_TO_LOCALE: Record<string, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
+
+function formatDate(dateStr: string, language = 'en'): string {
   const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' });
+  const locale = LANG_TO_LOCALE[language] ?? 'en-US';
+  return d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
 // ─── Retroactive day card ──────────────────────────────────────────────────────
@@ -56,7 +59,7 @@ function DayCard({
   isCompleted: boolean;
   onPress: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <Pressable
       style={[s.dayCard, isCompleted ? s.dayCardDone : null]}
@@ -75,7 +78,7 @@ function DayCard({
         )}
         <View>
           <Text style={isCompleted ? [s.dayLabel, s.dayLabelDone] : s.dayLabel}>
-            {isToday ? t('challenge.retroactive.today') : formatDate(date)}
+            {isToday ? t('challenge.retroactive.today') : formatDate(date, i18n.language)}
           </Text>
           {!isCompleted && !isToday && (
             <Text style={s.dayXpHint}>{t('challenge.retroactive.xpOnly')}</Text>

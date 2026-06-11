@@ -26,6 +26,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -110,8 +111,11 @@ type ListItem =
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
+const LANG_TO_LOCALE: Record<string, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
+
 export default function ChatScreen() {
   const { friendId } = useLocalSearchParams<{ friendId: string }>();
+  const { i18n } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
@@ -190,7 +194,8 @@ export default function ChatScreen() {
     const items: ListItem[] = [];
     let lastDate = '';
     for (const msg of messages) {
-      const day = new Date(msg.created_at).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long' });
+      const chatLocale = LANG_TO_LOCALE[i18n.language] ?? 'en-US';
+      const day = new Date(msg.created_at).toLocaleDateString(chatLocale, { day: 'numeric', month: 'long' });
       if (day !== lastDate) {
         items.push({ type: 'separator', date: day });
         lastDate = day;
@@ -198,7 +203,7 @@ export default function ChatScreen() {
       items.push({ type: 'message', data: msg });
     }
     return items;
-  }, [messages]);
+  }, [messages, i18n.language]);
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
