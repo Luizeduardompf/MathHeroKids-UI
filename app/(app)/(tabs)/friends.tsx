@@ -51,12 +51,12 @@ type Section = 'friends' | 'ranking';
 // ─── Avatar images (static require map — Metro exige paths estáticos) ─────────
 
 const AVATAR_IMAGES: Record<string, number> = {
-  sofia: require('../../../../assets/images/avatars/avatar-sofia.png'),
-  lucas: require('../../../../assets/images/avatars/avatar-lucas.png'),
-  luna:  require('../../../../assets/images/avatars/avatar-luna.png'),
-  mia:   require('../../../../assets/images/avatars/avatar-mia.png'),
-  pedro: require('../../../../assets/images/avatars/avatar-pedro.png'),
-  theo:  require('../../../../assets/images/avatars/avatar-theo.png'),
+  sofia: require('../../../assets/images/avatars/avatar-sofia.png'),
+  lucas: require('../../../assets/images/avatars/avatar-lucas.png'),
+  luna:  require('../../../assets/images/avatars/avatar-luna.png'),
+  mia:   require('../../../assets/images/avatars/avatar-mia.png'),
+  pedro: require('../../../assets/images/avatars/avatar-pedro.png'),
+  theo:  require('../../../assets/images/avatars/avatar-theo.png'),
 };
 
 // ─── Avatar initials (exportado para reutilização) ───────────────────────────
