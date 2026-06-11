@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 // @ts-expect-error RN 0.85 quirk — Alert present at runtime
 import { Alert } from 'react-native'; // eslint-disable-line
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -106,6 +106,7 @@ function PinDots({ count, total = 4 }: { count: number; total?: number }) {
 function PinGate({ onUnlock }: { onUnlock: () => void }) {
   const { t } = useTranslation();
   const router   = useRouter();
+  const insets   = useSafeAreaInsets();
   const user     = useAuthStore((s) => s.user);
   const parentId = useAuthStore(selectParentId);
 
@@ -177,12 +178,12 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
     <View style={styles.root}>
       <ConfirmDialog
         visible={showLogoutModal}
-        title="Sair da conta?"
-        message="Precisarás fazer login novamente."
-        primaryLabel="Continuar"
+        title={t('settings.logoutTitle')}
+        message={t('settings.logoutMessage')}
+        primaryLabel={t('common.continue')}
         primaryVariant="primary"
         onPrimary={() => setShowLogoutModal(false)}
-        confirmLabel="Sair"
+        confirmLabel={t('settings.logoutConfirm')}
         confirmVariant="destructive"
         onConfirm={() => { void confirmLogout(); }}
         layout="stack"
@@ -227,18 +228,18 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
           </Pressable>
         </View>
 
-        {/* Forgot PIN */}
-        <View style={pinStyles.footer}>
+        {/* Forgot PIN + Sign out — acima da tab bar */}
+        <View style={[pinStyles.footer, { paddingBottom: insets.bottom + 16 }]}>
           <Pressable onPress={handleForgotPin} disabled={sending} hitSlop={8}>
             {sending
               ? <ActivityIndicator color={colors.primary} size="small" />
-              : <Text variant="bodySmall" color={colors.primary}>Esqueci o PIN</Text>
+              : <Text variant="bodySmall" color={colors.primary}>{t('parentArea.pin.forgotPin')}</Text>
             }
           </Pressable>
           <Pressable onPress={() => setShowLogoutModal(true)} hitSlop={8}>
             {loggingOut
               ? <ActivityIndicator color={colors.error} size="small" />
-              : <Text variant="bodySmall" color={colors.error}>Sair da conta</Text>
+              : <Text variant="bodySmall" color={colors.error}>{t('settings.logout')}</Text>
             }
           </Pressable>
         </View>
@@ -248,18 +249,20 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
 }
 
 const pinStyles = StyleSheet.create({
-  content:    { flex: 1, alignItems: 'center', paddingTop: 40, paddingHorizontal: 16, gap: 16 },
-  lockCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  content:    { flex: 1, alignItems: 'center', paddingTop: 32, paddingHorizontal: 20, gap: 14 },
+  lockCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   row:        { flexDirection: 'row', gap: 16 },
   dot:        { width: 16, height: 16, borderRadius: 8 },
   dotFilled:  { backgroundColor: colors.primary },
   dotEmpty:   { backgroundColor: 'transparent', borderWidth: 2, borderColor: '#CBD5E1' },
-  keypad:     { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 8, width: '100%' },
-  key:        { width: '30%', height: 68, backgroundColor: '#fff', borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  // Grid: 3 colunas fixas com flex, evita width:'30%' que quebra com gap no iOS
+  keypad:     { flexDirection: 'row', flexWrap: 'wrap', gap: 10, width: '100%' },
+  key:        { flex: 1, minWidth: 88, height: 72, backgroundColor: '#fff', borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginHorizontal: 0, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   keyMuted:   { backgroundColor: '#EDEEF5' },
   keyPressed: { opacity: 0.7, transform: [{ scale: 0.95 }] },
-  keyText:    { fontFamily: fontFamily.bold, fontSize: 26, color: '#1A1F36' } as import('react-native').TextStyle,
-  footer:     { flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 8, marginTop: 8 },
+  // bold (não extraBold) para evitar stylistic alternates do Nunito no iOS 26
+  keyText:    { fontFamily: fontFamily.bold, fontSize: 26, color: '#1A1F36', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
+  footer:     { flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 8, marginTop: 4, paddingBottom: 16 },
 });
 
 // ─── Per-child settings card ──────────────────────────────────────────────────
@@ -324,7 +327,7 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
           style={styles.editChildBtn}
         >
           <Ionicons name="create-outline" size={16} color={colors.primary} />
-          <Text variant="caption" color={colors.primary}>Editar</Text>
+          <Text variant="caption" color={colors.primary}>{t('common.edit')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -333,7 +336,7 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
         <View style={styles.subSectionHeader}>
           <View style={styles.subSectionTitle}>
             <SectionIcon name="list-outline" bg={colors.primaryLight} color={colors.primary} />
-            <Text variant="label">Questões por sessão</Text>
+            <Text variant="label">{t('settings.questionsTitle')}</Text>
           </View>
           {savingQuestions && <ActivityIndicator size="small" color={colors.primary} />}
         </View>

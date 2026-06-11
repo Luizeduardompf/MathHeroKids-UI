@@ -17,7 +17,11 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors.ts';
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
 // ─── Question generator (mirrors src/lib/question-generator.ts) ───────────────
 
@@ -149,13 +153,39 @@ Deno.serve(async (req: Request) => {
     };
 
     const { child_id, challenge_date, session_id, module_id, multiplication_max, answers } = body;
+    const { timer_seconds } = body;
 
-    // ── 1. Idempotency check ───────────────────────────────────────────────
+    // ── 1. Idempotency check + session upsert ─────────────────────────────
+    // If start_challenge failed (e.g. EF was down), the session may not exist.
+    // Upsert ensures the row exists before we insert answers (FK constraint).
+    const today = new Date().toISOString().split('T')[0]!;
+    const isRetroactivePre = challenge_date !== today;
+    const questionSeedFallback = `${child_id}:${challenge_date}:${module_id}`;
+
     const { data: existingSession } = await supabase
       .from('challenge_sessions')
       .select('*')
       .eq('id', session_id)
       .maybeSingle();
+
+    if (!existingSession) {
+      // Session was never created — create it now so FK on challenge_answers works
+      await supabase.from('challenge_sessions').upsert({
+        id: session_id,
+        child_id,
+        challenge_date,
+        module_id,
+        question_seed: questionSeedFallback,
+        status: 'in_progress',
+        total_questions: answers.length,
+        correct_count: 0,
+        xp_awarded: 0,
+        is_retroactive: isRetroactivePre,
+        is_perfect: false,
+        timer_seconds: timer_seconds ?? 15,
+        multiplication_max,
+      }, { onConflict: 'id' });
+    }
 
     if (existingSession?.status === 'completed') {
       // Already completed — return cached XP (no re-award)
@@ -229,8 +259,7 @@ Deno.serve(async (req: Request) => {
     const levelUp = newLevel > oldLevel;
 
     // ── 6. Streak calculation (non-retroactive only) ───────────────────────
-    const today = new Date().toISOString().split('T')[0]!;
-    const isRetroactive = challenge_date !== today;
+    const isRetroactive = isRetroactivePre;
     let newStreak = child.current_streak;
     let newBestStreak = child.best_streak;
 

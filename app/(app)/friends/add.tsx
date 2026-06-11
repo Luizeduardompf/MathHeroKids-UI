@@ -2,7 +2,7 @@
  * Add Friend screen
  *
  * Layout (pixel-faithful ao design 06-friends.zip screenshot 2):
- * - Header azul gradient: ← back + "Adicionar amigo"
+ * - Header azul gradient: ← back + {t('friends.add.title')}
  * - Campo de busca por username (executa ao submit/enter)
  * - Resultado: avatar + nome + @username + streak + botão Adicionar
  * - Sugestões (quando campo vazio): amigos-de-amigos
@@ -21,6 +21,7 @@ import {
 import { Alert } from 'react-native'; // eslint-disable-line
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -44,6 +45,7 @@ function FriendCard({
   state:    RequestState;
   onAdd:    () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <View style={fc.card}>
       <FriendAvatar name={profile.display_name} size={52} />
@@ -60,11 +62,11 @@ function FriendCard({
       {state === 'already_friend' ? (
         <View style={fc.friendedBadge}>
           <Ionicons name="checkmark" size={14} color="#22C55E" />
-          <Text style={fc.friendedText}>Amigo</Text>
+          <Text style={fc.friendedText}>{t('friends.add.alreadyFriend')}</Text>
         </View>
       ) : state === 'sent' ? (
         <View style={fc.sentBadge}>
-          <Text style={fc.sentText}>Enviado</Text>
+          <Text style={fc.sentText}>{t('friends.add.sent')}</Text>
         </View>
       ) : (
         <Pressable
@@ -77,7 +79,7 @@ function FriendCard({
           ) : (
             <>
               <Ionicons name="person-add-outline" size={16} color="#fff" />
-              <Text style={fc.addBtnText}>Adicionar</Text>
+              <Text style={fc.addBtnText}>{t('friends.add.addButton')}</Text>
             </>
           )}
         </Pressable>
@@ -106,6 +108,7 @@ const fc = StyleSheet.create({
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function AddFriendScreen() {
+  const { t } = useTranslation();
   const router      = useRouter();
   const insets      = useSafeAreaInsets();
   const queryClient = useQueryClient();
@@ -178,7 +181,7 @@ export default function AddFriendScreen() {
           <Pressable style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </Pressable>
-          <Text style={s.headerTitle}>Adicionar amigo</Text>
+          <Text style={s.headerTitle}>{t('friends.add.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -215,14 +218,14 @@ export default function AddFriendScreen() {
         {searchResult === 'not_found' && (
           <View style={s.notFound}>
             <Ionicons name="person-outline" size={40} color="#D1D5DB" />
-            <Text style={s.notFoundText}>Nenhum utilizador encontrado</Text>
-            <Text style={s.notFoundSub}>Verifica se o username está correcto</Text>
+            <Text style={s.notFoundText}>{t('friends.add.notFound')}</Text>
+            <Text style={s.notFoundSub}>{t('friends.add.notFoundDesc')}</Text>
           </View>
         )}
 
         {searchResult && searchResult !== 'not_found' && (
           <View style={s.section}>
-            <Text style={s.sectionTitle}>Resultado</Text>
+            <Text style={s.sectionTitle}>{t('friends.add.result')}</Text>
             <FriendCard
               profile={searchResult}
               state={getCardState(searchResult.id)}
@@ -234,7 +237,7 @@ export default function AddFriendScreen() {
         {/* Suggestions (only when no search active) */}
         {!query.trim() && (
           <View style={s.section}>
-            <Text style={s.sectionTitle}>Sugestões para você</Text>
+            <Text style={s.sectionTitle}>{t('friends.add.suggestions')}</Text>
             {loadingSugg ? (
               <ActivityIndicator color={colors.primary} size="small" style={{ marginTop: 16 }} />
             ) : suggestions.length === 0 ? (

@@ -109,10 +109,11 @@ const nc = StyleSheet.create({
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyNotifs() {
+  const { t } = useTranslation();
   return (
     <View style={en_.wrap}>
       <Ionicons name="notifications-outline" size={52} color="#D1D5DB" />
-      <Text style={en_.title}>Sem notificações</Text>
+      <Text style={en_.title}>{t('friends.notifications.empty')}</Text>
       <Text style={en_.sub}>Quando alguém te enviar um pedido de amizade, aparece aqui.</Text>
     </View>
   );

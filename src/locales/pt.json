@@ -14,7 +14,8 @@
     "no": "Não",
     "ok": "OK",
     "seeAll": "Ver tudo",
-    "level": "Nível {{level}}"
+    "level": "Nível {{level}}",
+    "edit": "Editar"
   },
   "nav": {
     "home": "Início",
@@ -197,7 +198,10 @@
       "startToday": "Ir",
       "startPast": "Fazer",
       "disclaimer": "Desafios atrasados acumulam XP mas não contam para sequências de dias ou semanas perfeitas."
-    }
+    },
+    "correctAnswers": "respostas corretas",
+    "accuracy": "{{pct}}% acertos",
+    "target100": "★ Meta: 100%"
   },
   "calendar": {
     "title": "Calendário",
@@ -225,7 +229,8 @@
       "msg0": "Vamos começar a marcar este mês!"
     },
     "streak": "Sequência",
-    "record": "Recorde"
+    "record": "Recorde",
+    "xpThisMonthLabel": "XP no mês"
   },
   "friends": {
     "title": "Amigos",
@@ -270,7 +275,18 @@
     "friendsCount_other": "{{count}} amigos",
     "searchResults": "Resultados ({{count}})",
     "noResults": "Nenhum amigo encontrado",
-    "you": "Você"
+    "you": "Você",
+    "block": "Bloquear",
+    "listTitle": "Amigos",
+    "viewNotifications": "Ver notificações",
+    "blockedUsers": "Utilizadores bloqueados",
+    "chat": {
+      "friendLabel": "Amigo"
+    },
+    "notifications": {
+      "empty": "Sem notificações",
+      "emptyDesc": "Não tens notificações por agora."
+    }
   },
   "trophies": {
     "title": "Sala de Troféus",
@@ -338,7 +354,11 @@
     "parentArea": "Área dos pais",
     "parentAreaSubtitle": "Controle parental",
     "questionsTitle": "Questões por sessão",
-    "questionsAuto": "AUTO"
+    "questionsAuto": "AUTO",
+    "logout": "Sair da conta",
+    "logoutTitle": "Sair da conta?",
+    "logoutMessage": "Precisarás fazer login novamente.",
+    "logoutConfirm": "Sair"
   },
   "parentArea": {
     "pin": {
@@ -372,7 +392,8 @@
     "removePinMsg": "Tens a certeza que queres remover o PIN?",
     "pinUpdated": "✓ PIN actualizado com sucesso!",
     "changePassword": "Redefinir senha",
-    "changePasswordSub": "Cria uma nova senha de acesso"
+    "changePasswordSub": "Cria uma nova senha de acesso",
+    "passwordSection": "Senha"
   },
   "levelUp": {
     "title": "VOCÊ SUBIU DE NÍVEL!",

@@ -1353,17 +1353,19 @@ const gs = StyleSheet.create({
   operandText: {
     fontFamily: fontFamily.extraBold,
     fontSize: 72,
-    lineHeight: 88,             // linha explícita previne clipping iOS
+    lineHeight: 88,
     color: '#1A1F36',
-  },
+    fontVariant: ['tabular-nums'],
+  } as import('react-native').TextStyle,
 
   // text-6xl font-black text-brand-blue (60px)
   operatorText: {
     fontFamily: fontFamily.extraBold,
     fontSize: 60,
-    lineHeight: 88,             // mesma altura de linha dos operandos — alinhamento vertical
+    lineHeight: 88,
     color: '#2B52E5',
-  },
+    fontVariant: ['tabular-nums'],
+  } as import('react-native').TextStyle,
 
   // h-24 min-w-24 rounded-3xl border-4 border-dashed px-3 border-brand-blue-soft
   // brand-blue-soft = oklch(0.93 0.04 255) ≈ #DCE2FF (leve, não saturado)
@@ -1392,5 +1394,6 @@ const gs = StyleSheet.create({
     fontSize: 72,
     lineHeight: 88,
     color: '#2B52E5',
-  },
+    fontVariant: ['tabular-nums'],
+  } as import('react-native').TextStyle,
 });

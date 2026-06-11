@@ -6,6 +6,7 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 import { Card, ProgressBar, Text } from '@/components/ui';
@@ -90,6 +91,7 @@ function AchievementCard({ a }: { a: Achievement }) {
 
 export default function AchievementsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   const earned = ACHIEVEMENTS.filter((a) => a.earned).length;
   const total  = ACHIEVEMENTS.length;
@@ -99,16 +101,16 @@ export default function AchievementsScreen() {
 
   return (
     <AuthScreen
-      title="Conquistas"
+      title={t('achievements.title')}
       subtitle="Math Hero Kids"
       onBack={() => router.back()}
     >
-      <MiloMessage message="Cada conquista é uma vitória sua! Continue colecionando." />
+      <MiloMessage message={t('milo.achievements')} />
 
       {/* ── Overall progress ──────────────────────────────────────────────── */}
       <Card border shadow="sm">
         <View style={styles.progressHeader}>
-          <Text variant="h3">Coleção completa</Text>
+          <Text variant="h3">{t('achievements.collection')}</Text>
           <Text style={styles.pctText}>{pct}%</Text>
         </View>
         <ProgressBar

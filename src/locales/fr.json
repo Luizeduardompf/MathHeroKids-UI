@@ -14,7 +14,8 @@
     "no": "Non",
     "ok": "OK",
     "seeAll": "Voir tout",
-    "level": "Niveau {{level}}"
+    "level": "Niveau {{level}}",
+    "edit": "Modifier"
   },
   "nav": {
     "home": "Accueil",
@@ -129,7 +130,11 @@
     "parentArea": "Espace parents",
     "parentAreaSubtitle": "Contrôle parental",
     "questionsTitle": "Questions par session",
-    "questionsAuto": "AUTO"
+    "questionsAuto": "AUTO",
+    "logout": "Se déconnecter",
+    "logoutTitle": "Se déconnecter ?",
+    "logoutMessage": "Vous devrez vous reconnecter.",
+    "logoutConfirm": "Quitter"
   },
   "errors": {
     "generic": "Quelque chose s'est mal passé. Veuillez réessayer.",
@@ -161,7 +166,7 @@
     "emptyRanking": "Pas encore de classement",
     "emptyRankingDesc": "Ajoute des amis et relève des défis pour apparaître dans le classement !",
     "noFriends": "Pas encore d'amis",
-    "noFriendsDesc": "Ajoute des amis pour voir le classement !",
+    "noFriendsDesc": "Ajoutez des amis pour voir le classement !",
     "addFriendBtn": "Ajouter un ami",
     "viewRanking": "Voir le classement des amis",
     "friendsCount_one": "{{count}} ami",
@@ -192,6 +197,17 @@
       "empty": "Pas de données",
       "emptyDesc": "Ajoutez des amis et relevez des défis pour voir le classement !",
       "global": "Mondial"
+    },
+    "block": "Bloquer",
+    "listTitle": "Amis",
+    "viewNotifications": "Voir les notifications",
+    "blockedUsers": "Utilisateurs bloqués",
+    "chat": {
+      "friendLabel": "Ami(e)"
+    },
+    "notifications": {
+      "empty": "Aucune notification",
+      "emptyDesc": "Vous n'avez pas encore de notifications."
     }
   },
   "calendar": {
@@ -220,7 +236,8 @@
       "msg50": "Bonne moitié du mois ! Gardez le rythme.",
       "msg25": "Bon début ! Essayez de compléter plus de jours.",
       "msg0": "Commençons à marquer ce mois !"
-    }
+    },
+    "xpThisMonthLabel": "XP ce mois"
   },
   "challenge": {
     "miloDizLabel": "MILO DIT",
@@ -236,12 +253,17 @@
       "startToday": "Aller",
       "startPast": "Faire",
       "disclaimer": "Les défis tardifs accumulent des XP mais ne comptent pas pour les séries ou semaines parfaites."
-    }
+    },
+    "correctAnswers": "bonnes réponses",
+    "accuracy": "{{pct}}% réussite",
+    "target100": "★ Objectif: 100%",
+    "yourAnswer": "Ta réponse:"
   },
   "parentArea": {
     "pin": {
       "forgotPin": "PIN oublié",
       "noPin": "Aucun PIN — accès direct."
-    }
+    },
+    "passwordSection": "Mot de passe"
   }
 }

@@ -14,7 +14,8 @@
     "no": "No",
     "ok": "OK",
     "seeAll": "See all",
-    "level": "Level {{level}}"
+    "level": "Level {{level}}",
+    "edit": "Edit"
   },
   "nav": {
     "home": "Home",
@@ -185,7 +186,11 @@
       "startToday": "Go",
       "startPast": "Do it",
       "disclaimer": "Late challenges earn XP but do not count for streaks or perfect weeks."
-    }
+    },
+    "correctAnswers": "correct answers",
+    "accuracy": "{{pct}}% accuracy",
+    "target100": "★ Target: 100%",
+    "yourAnswer": "Your answer:"
   },
   "calendar": {
     "title": "Calendar",
@@ -213,7 +218,8 @@
       "msg0": "Let's start marking this month!"
     },
     "streak": "Streak",
-    "record": "Record"
+    "record": "Record",
+    "xpThisMonthLabel": "XP this month"
   },
   "friends": {
     "title": "Friends",
@@ -258,7 +264,18 @@
     "friendsCount_other": "{{count}} friends",
     "searchResults": "Results ({{count}})",
     "noResults": "No friends found",
-    "you": "You"
+    "you": "You",
+    "block": "Block",
+    "listTitle": "Friends",
+    "viewNotifications": "View notifications",
+    "blockedUsers": "Blocked users",
+    "chat": {
+      "friendLabel": "Friend"
+    },
+    "notifications": {
+      "empty": "No notifications",
+      "emptyDesc": "You don't have any notifications yet."
+    }
   },
   "trophies": {
     "title": "Trophy Room",
@@ -326,7 +343,11 @@
     "parentArea": "Parent area",
     "parentAreaSubtitle": "Parental controls",
     "questionsTitle": "Questions per session",
-    "questionsAuto": "AUTO"
+    "questionsAuto": "AUTO",
+    "logout": "Sign out",
+    "logoutTitle": "Sign out?",
+    "logoutMessage": "You will need to sign in again.",
+    "logoutConfirm": "Sign out"
   },
   "parentArea": {
     "pin": {
@@ -360,7 +381,8 @@
     "removePinMsg": "Are you sure you want to remove the PIN?",
     "pinUpdated": "✓ PIN updated successfully!",
     "changePassword": "Reset password",
-    "changePasswordSub": "Create a new access password"
+    "changePasswordSub": "Create a new access password",
+    "passwordSection": "Password"
   },
   "levelUp": {
     "title": "YOU LEVELED UP!",

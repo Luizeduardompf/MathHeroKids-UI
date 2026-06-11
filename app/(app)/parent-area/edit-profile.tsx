@@ -24,6 +24,7 @@ import { colors, fontFamily, space } from '@/theme';
 // ─── PIN section ─────────────────────────────────────────────────────────────
 
 function PinSection({ userId }: { userId: string }) {
+  const { t } = useTranslation();
   const [hasPin,      setHasPin]      = useState<boolean | null>(null);
   const [pin,         setPin]         = useState('');
   const [confirmPin,  setConfirmPin]  = useState('');
@@ -92,7 +93,7 @@ function PinSection({ userId }: { userId: string }) {
           <Ionicons name="keypad-outline" size={22} color={colors.primary} />
         </View>
         <View style={ps.headerText}>
-          <Text variant="label">PIN parental</Text>
+          <Text variant="label">{t('parentArea.pinSection')}</Text>
           <Text variant="caption" color={colors.text.secondary}>
             {hasPin ? 'PIN activo — área dos pais protegida' : 'Sem PIN — acesso livre à área dos pais'}
           </Text>
@@ -259,7 +260,7 @@ export default function EditProfileScreen() {
             <Ionicons name="lock-closed-outline" size={22} color={colors.primary} />
           </View>
           <View style={styles.passwordInfo}>
-            <Text variant="label">Senha</Text>
+            <Text variant="label">{t('parentArea.passwordSection')}</Text>
             <Text variant="caption" color={colors.text.secondary}>
               Alterar a senha de acesso à conta.
             </Text>

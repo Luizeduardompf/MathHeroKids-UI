@@ -14,7 +14,8 @@
     "no": "No",
     "ok": "OK",
     "seeAll": "Ver todo",
-    "level": "Nivel {{level}}"
+    "level": "Nivel {{level}}",
+    "edit": "Editar"
   },
   "nav": {
     "home": "Inicio",
@@ -185,7 +186,11 @@
       "startToday": "Ir",
       "startPast": "Hacer",
       "disclaimer": "Los desafíos tardíos acumulan XP pero no cuentan para rachas ni semanas perfectas."
-    }
+    },
+    "correctAnswers": "respuestas correctas",
+    "accuracy": "{{pct}}% aciertos",
+    "target100": "★ Meta: 100%",
+    "yourAnswer": "Tu respuesta:"
   },
   "settings": {
     "title": "Ajustes",
@@ -198,7 +203,11 @@
     "parentArea": "Área de padres",
     "parentAreaSubtitle": "Control parental",
     "questionsTitle": "Preguntas por sesión",
-    "questionsAuto": "AUTO"
+    "questionsAuto": "AUTO",
+    "logout": "Cerrar sesión",
+    "logoutTitle": "¿Cerrar sesión?",
+    "logoutMessage": "Deberás iniciar sesión nuevamente.",
+    "logoutConfirm": "Salir"
   },
   "errors": {
     "generic": "Algo salió mal. Inténtalo de nuevo.",
@@ -230,7 +239,7 @@
     "emptyRanking": "Sin ranking aún",
     "emptyRankingDesc": "¡Añade amigos y completa desafíos para aparecer en el ranking!",
     "noFriends": "Sin amigos aún",
-    "noFriendsDesc": "¡Añade amigos para ver el ranking!",
+    "noFriendsDesc": "¡Agrega amigos para ver el ranking!",
     "addFriendBtn": "Añadir amigo",
     "viewRanking": "Ver ranking de amigos",
     "friendsCount_one": "{{count}} amigo",
@@ -261,6 +270,17 @@
       "empty": "Sin datos de ranking",
       "emptyDesc": "¡Añade amigos y completa desafíos para ver el ranking!",
       "global": "Global"
+    },
+    "block": "Bloquear",
+    "listTitle": "Amigos",
+    "viewNotifications": "Ver notificaciones",
+    "blockedUsers": "Usuarios bloqueados",
+    "chat": {
+      "friendLabel": "Amigo"
+    },
+    "notifications": {
+      "empty": "Sin notificaciones",
+      "emptyDesc": "No tienes notificaciones por ahora."
     }
   },
   "calendar": {
@@ -289,12 +309,14 @@
       "msg50": "¡Buena mitad del mes! Mantén el ritmo.",
       "msg25": "¡Buen comienzo! Intenta completar más días.",
       "msg0": "¡Comencemos a marcar este mes!"
-    }
+    },
+    "xpThisMonthLabel": "XP este mes"
   },
   "parentArea": {
     "pin": {
       "forgotPin": "Olvidé el PIN",
       "noPin": "Sin PIN — acceso directo."
-    }
+    },
+    "passwordSection": "Contraseña"
   }
 }

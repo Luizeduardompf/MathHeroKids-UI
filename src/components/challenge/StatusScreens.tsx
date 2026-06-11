@@ -303,16 +303,16 @@ const wa = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'center', gap: 8,
   },
-  num:     { fontFamily: fontFamily.extraBold, fontSize: 32, color: '#1A1F36' },
+  num:     { fontFamily: fontFamily.extraBold, fontSize: 32, color: '#1A1F36', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
   op:      { fontFamily: fontFamily.bold,      fontSize: 24, color: '#6B7280' },
-  correct: { fontFamily: fontFamily.extraBold, fontSize: 32, color: '#22C55E' },
+  correct: { fontFamily: fontFamily.extraBold, fontSize: 32, color: '#22C55E', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
   check:   { width: 24, height: 24, borderRadius: 12, backgroundColor: '#22C55E', alignItems: 'center', justifyContent: 'center' },
   userRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: '#F3F4F6', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 10,
   },
   userLabel: { fontFamily: fontFamily.semiBold, fontSize: 13, color: '#6B7280' },
-  userWrong: { fontFamily: fontFamily.extraBold, fontSize: 18, color: '#EF4444', textDecorationLine: 'line-through' },
+  userWrong: { fontFamily: fontFamily.extraBold, fontSize: 18, color: '#EF4444', textDecorationLine: 'line-through', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
 });
 
 // ─── BlockEndScreen ───────────────────────────────────────────────────────────
@@ -339,13 +339,13 @@ export function BlockEndScreen({ correct, total, onRetry, onGoHome }: {
         {/* Score card */}
         <View style={be.card}>
           <Text style={be.num}>{correct}<Text style={be.numTotal}>/{total}</Text></Text>
-          <Text style={be.numLabel}>respostas corretas</Text>
+          <Text style={be.numLabel}>{t('challenge.correctAnswers')}</Text>
           <View style={be.track}>
             <View style={[be.fill, { width: `${pct}%` as `${number}%` }]} />
           </View>
           <View style={be.footer}>
-            <Text style={be.footerTxt}>{pct}% acertos</Text>
-            <Text style={[be.footerTxt, { color: '#F59E0B' }]}>★ Meta: 100%</Text>
+            <Text style={be.footerTxt}>{t('challenge.accuracy', { pct })}</Text>
+            <Text style={[be.footerTxt, { color: '#F59E0B' }]}>{t('challenge.target100')}</Text>
           </View>
         </View>
       </EntranceView>
@@ -377,7 +377,7 @@ const be = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
-  num:      { fontFamily: fontFamily.extraBold, fontSize: 48, color: '#1A1F36', lineHeight: 56 },
+  num:      { fontFamily: fontFamily.extraBold, fontSize: 48, color: '#1A1F36', lineHeight: 56, fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
   numTotal: { fontFamily: fontFamily.bold,      fontSize: 24, color: '#6B7280' },
   numLabel: { fontFamily: fontFamily.bold,      fontSize: 13, color: '#6B7280', marginBottom: 4 },
   track:    { width: '100%', height: 12, backgroundColor: '#F3F4F6', borderRadius: 6, overflow: 'hidden', marginTop: 4 },
@@ -406,7 +406,7 @@ const sc = StyleSheet.create({
   textGroup: { alignItems: 'center', gap: 8 },
   // font-heading text-3xl font-extrabold text-foreground
   title: {
-    fontFamily: fontFamily.extraBold,
+    fontFamily: fontFamily.bold,
     fontSize: 28,
     color: '#1A1F36',
     textAlign: 'center',

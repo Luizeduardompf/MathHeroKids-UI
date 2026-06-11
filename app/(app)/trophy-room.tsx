@@ -7,6 +7,7 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { Card, ProgressBar, Text } from '@/components/ui';
@@ -128,6 +129,7 @@ function TrophyCard({ trophy, onPress }: { trophy: Trophy; onPress: () => void }
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function TrophyRoomScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const child  = useProfileStore(selectActiveChild);
 
@@ -150,7 +152,7 @@ export default function TrophyRoomScreen() {
           </View>
           <View>
             <Text style={styles.statValue}>{earnedCount}</Text>
-            <Text variant="caption" color={colors.text.secondary}>Conquistados</Text>
+            <Text variant="caption" color={colors.text.secondary}>{t('trophies.earned')}</Text>
           </View>
         </View>
         <View style={[styles.statPill, styles.statPillOrange]}>
@@ -159,7 +161,7 @@ export default function TrophyRoomScreen() {
           </View>
           <View>
             <Text style={styles.statValue}>{child?.current_streak ?? 0}</Text>
-            <Text variant="caption" color={colors.text.secondary}>Sequência</Text>
+            <Text variant="caption" color={colors.text.secondary}>{t('trophies.streak')}</Text>
           </View>
         </View>
       </View>

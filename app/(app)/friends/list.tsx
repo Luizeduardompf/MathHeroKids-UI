@@ -3,9 +3,9 @@
  * Acessível a partir do botão 👥 no header do tab Amigos (ranking).
  *
  * Layout pixel-faithful ao design 06-friends.zip screenshot 1:
- * - Header azul gradient: ← back + "Amigos" + botão person-add
+ * - Header azul gradient: ← back + {t('friends.listTitle')} + botão person-add
  * - Search bar
- * - "Pedidos pendentes" com count badge + accept/reject
+ * - {t('friends.pendingRequests')} com count badge + accept/reject
  * - Lista de amigos ordenada por XP
  */
 
@@ -23,6 +23,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -83,6 +84,7 @@ function FriendRow({
   onChat: () => void;
   unreadCount: number;
 }) {
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = React.useState(false);
   return (
     <View style={fr.row}>
@@ -111,7 +113,7 @@ function FriendRow({
           hitSlop={4}
         >
           <Ionicons name="ban-outline" size={14} color={colors.error} />
-          <Text style={fr.blockText}>Bloquear</Text>
+          <Text style={fr.blockText}>{t('friends.block')}</Text>
         </Pressable>
       )}
     </View>
@@ -136,14 +138,15 @@ const fr = StyleSheet.create({
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyFriends({ onAdd }: { onAdd: () => void }) {
+  const { t } = useTranslation();
   return (
     <View style={es.wrap}>
       <Text style={es.emoji}>👥</Text>
-      <Text style={es.title}>Nenhum amigo ainda</Text>
-      <Text style={es.sub}>Adiciona amigos para ver o ranking!</Text>
+      <Text style={es.title}>{t('friends.noFriends')}</Text>
+      <Text style={es.sub}>{t('friends.noFriendsDesc')}</Text>
       <Pressable style={es.btn} onPress={onAdd}>
         <Ionicons name="person-add-outline" size={18} color="#fff" />
-        <Text style={es.btnText}>Adicionar amigo</Text>
+        <Text style={es.btnText}>{t('friends.addFriendBtn')}</Text>
       </Pressable>
     </View>
   );
@@ -164,6 +167,7 @@ export default function FriendsListScreen() {
   const insets      = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const child       = useProfileStore(selectActiveChild);
+  const { t }       = useTranslation();
 
   const [search, setSearch]             = useState('');
   const [respondingId, setRespondingId] = useState<string | null>(null);
@@ -235,7 +239,7 @@ export default function FriendsListScreen() {
 
           <View style={s.headerCenter}>
             <Text style={s.headerSub}>Math Hero Kids</Text>
-            <Text style={s.headerTitle}>Amigos</Text>
+            <Text style={s.headerTitle}>{t('friends.listTitle')}</Text>
           </View>
 
           <Pressable
@@ -280,7 +284,7 @@ export default function FriendsListScreen() {
           {requests.length > 0 && (
             <View style={s.section}>
               <View style={s.sectionHeader}>
-                <Text style={s.sectionTitle}>Pedidos pendentes</Text>
+                <Text style={s.sectionTitle}>{t('friends.pendingRequests')}</Text>
                 <View style={s.badge}>
                   <Text style={s.badgeText}>{requests.length}</Text>
                 </View>
@@ -303,7 +307,7 @@ export default function FriendsListScreen() {
               <EmptyFriends onAdd={() => router.push('/(app)/friends/add')} />
             ) : filtered.length === 0 ? (
               <View style={s.noResults}>
-                <Text style={s.noResultsText}>Nenhum amigo encontrado</Text>
+                <Text style={s.noResultsText}>{t('friends.noResults')}</Text>
               </View>
             ) : (
               <>
@@ -346,14 +350,14 @@ export default function FriendsListScreen() {
               onPress={() => router.push('/(app)/friends/notifications')}
             >
               <Ionicons name="notifications-outline" size={16} color={colors.primary} />
-              <Text style={s.footerLinkText}>Ver notificações</Text>
+              <Text style={s.footerLinkText}>{t('friends.viewNotifications')}</Text>
             </Pressable>
             <Pressable
               style={s.footerLink}
               onPress={() => router.push('/(app)/friends/blocked')}
             >
               <Ionicons name="ban-outline" size={16} color={colors.text.secondary} />
-              <Text style={[s.footerLinkText, { color: colors.text.secondary }]}>Utilizadores bloqueados</Text>
+              <Text style={[s.footerLinkText, { color: colors.text.secondary }]}>{t('friends.blockedUsers')}</Text>
             </Pressable>
           </View>
 

@@ -46,9 +46,12 @@ export function Text({
   return (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     <RNText
+      allowFontScaling={false}
       style={[
         variantStyle as TextStyle,
-        { color: color ?? colors.text.primary },
+        // fontVariant: tabular-nums prevents Nunito ExtraBold from activating
+        // OpenType stylistic alternates on iOS 26 (distorted digits/letters)
+        { color: color ?? colors.text.primary, fontVariant: ['tabular-nums'] } as TextStyle,
         align ? { textAlign: align } : null,
         style as TextStyle,
       ] as unknown as TextStyle}

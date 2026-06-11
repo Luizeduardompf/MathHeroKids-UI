@@ -2,7 +2,7 @@
  * Friends Ranking screen
  *
  * Layout (pixel-faithful ao design 06-friends.zip screenshot 3):
- * - Header azul gradient: ← back + "Ranking de amigos"
+ * - Header azul gradient: ← back + {t('friends.ranking.title')}
  * - Toggle: Semanal | Mensal
  * - Pódio: 2º (esquerda, menor) | 1º (centro, crown, maior) | 3º (direita)
  * - Lista abaixo: posição + avatar + nome + XP
@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -176,10 +177,11 @@ const pt = StyleSheet.create({
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyRanking() {
+  const { t } = useTranslation();
   return (
     <View style={emp.wrap}>
       <Text style={emp.emoji}>🏆</Text>
-      <Text style={emp.title}>Sem dados de ranking</Text>
+      <Text style={emp.title}>{t('friends.ranking.empty')}</Text>
       <Text style={emp.sub}>Adiciona amigos e faz desafios para ver o ranking!</Text>
     </View>
   );
@@ -194,6 +196,7 @@ const emp = StyleSheet.create({
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function RankingScreen() {
+  const { t } = useTranslation();
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
   const child   = useProfileStore(selectActiveChild);
@@ -234,7 +237,7 @@ export default function RankingScreen() {
           <Pressable style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </Pressable>
-          <Text style={s.headerTitle}>Ranking de amigos</Text>
+          <Text style={s.headerTitle}>{t('friends.ranking.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
       </LinearGradient>

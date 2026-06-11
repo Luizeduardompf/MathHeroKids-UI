@@ -13,13 +13,14 @@
 import React, { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text as RNText,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -193,17 +194,42 @@ const DAY_STYLE: Record<DayVariant, { bg: string; iconColor: string; icon?: stri
   missed:    { bg: '#FECDD3', iconColor: '#F87171',  icon: 'trophy'      }, // Perdido
 };
 
-function DayCell({ info }: { info: DayInfo | null }) {
+function DayCell({ info, today }: { info: DayInfo | null; today: string }) {
+  const router = useRouter();
   if (!info) return <View style={dc.cell} />;
 
   const st = DAY_STYLE[info.variant];
 
+  // Dias clicáveis: passados não completados (failed/missed) + hoje
+  // Retroactive: qualquer dia passado não completado nos últimos 7 dias
+  const isTappable = info.variant === 'today' ||
+    info.variant === 'failed' ||
+    (info.variant === 'missed' && info.dateStr !== undefined && info.dateStr >= getPastCutoff(today));
+
+  function handlePress() {
+    if (!info?.dateStr) return;
+    const isRetro = info.dateStr !== today;
+    router.push(`/(app)/challenge/${info.dateStr}${isRetro ? '?retroactive=1' : ''}` as never);
+  }
+
   if (info.variant === 'today') {
     return (
-      <View style={[dc.cell, { backgroundColor: st.bg }]}>
+      <Pressable style={[dc.cell, { backgroundColor: st.bg }]} onPress={handlePress}>
         <RNText style={dc.todayNum}>{info.day}</RNText>
         <RNText style={dc.todayLbl}>HOJE</RNText>
-      </View>
+      </Pressable>
+    );
+  }
+
+  if (isTappable) {
+    return (
+      <Pressable
+        style={({ pressed }) => [dc.cell, { backgroundColor: st.bg }, pressed && { opacity: 0.75 }]}
+        onPress={handlePress}
+      >
+        {st.icon && <Ionicons name={st.icon as never} size={17} color={st.iconColor} />}
+        <RNText style={[dc.num, { color: st.iconColor }]}>{info.day}</RNText>
+      </Pressable>
     );
   }
 
@@ -213,6 +239,12 @@ function DayCell({ info }: { info: DayInfo | null }) {
       <RNText style={[dc.num, { color: st.iconColor }]}>{info.day}</RNText>
     </View>
   );
+}
+
+function getPastCutoff(today: string): string {
+  const d = new Date(today);
+  d.setDate(d.getDate() - 7);
+  return d.toISOString().split('T')[0]!;
 }
 
 const dc = StyleSheet.create({
@@ -239,7 +271,7 @@ function MonthCalendar({ year, month, calDays, sessions, localComps, today }: {
         ))}
       </View>
       <View style={mc.grid}>
-        {grid.map((info, i) => <DayCell key={i} info={info} />)}
+        {grid.map((info, i) => <DayCell key={i} info={info} today={today} />)}
       </View>
     </View>
   );
@@ -255,24 +287,26 @@ const mc = StyleSheet.create({
 // ─── Stats cards (Sequência + Recorde) ───────────────────────────────────────
 
 function StreakCard({ value }: { value: number }) {
+  const { t } = useTranslation();
   return (
     <LinearGradient colors={['#F5722A','#D45A18']} start={{x:0,y:0}} end={{x:1,y:1}} style={sc.card}>
       <View style={sc.iconCircleOrange}><Ionicons name="flame" size={22} color="#F5722A" /></View>
       <View style={sc.col}>
         <Text style={sc.valueWhite}>{value}</Text>
-        <Text style={sc.labelWhite}>Sequência</Text>
+        <Text style={sc.labelWhite}>{t('calendar.streak')}</Text>
       </View>
     </LinearGradient>
   );
 }
 
 function RecordCard({ value }: { value: number }) {
+  const { t } = useTranslation();
   return (
     <View style={[sc.card, sc.cardWhite]}>
       <View style={sc.iconCircleAmber}><Ionicons name="trophy" size={22} color="#F59E0B" /></View>
       <View style={sc.col}>
         <Text style={sc.valueAmber}>{value}</Text>
-        <Text style={sc.labelGray}>Recorde</Text>
+        <Text style={sc.labelGray}>{t('calendar.record')}</Text>
       </View>
     </View>
   );
@@ -411,13 +445,14 @@ function computeProgress(
 function ProgressSection({ data, today }: {
   data: CalendarData; today: string;
 }) {
+  const { t } = useTranslation();
   const prog = computeProgress(
     data.calDays, data.sessions, data.localComps, data.monthlyXp, today,
   );
 
   return (
     <View style={ps.wrap}>
-      <Text style={ps.sectionTitle}>Seu progresso</Text>
+      <Text style={ps.sectionTitle}>{t('calendar.progress.title')}</Text>
 
       {/* Progresso do mês */}
       <View style={ps.card}>
@@ -425,7 +460,7 @@ function ProgressSection({ data, today }: {
         <View style={ps.cardText}>
           <View style={ps.cardTitleRow}>
             <Ionicons name="calendar-outline" size={16} color="#22C55E" />
-            <RNText style={ps.cardTitle}>Progresso do mês</RNText>
+            <RNText style={ps.cardTitle}>{t('calendar.progress.monthProgress')}</RNText>
           </View>
           <RNText style={ps.cardDesc}>{prog.monthProgressMsg}</RNText>
         </View>
@@ -437,7 +472,7 @@ function ProgressSection({ data, today }: {
           <View style={ps.weekHeader}>
             <View style={ps.weekLeft}>
               <Ionicons name="calendar-outline" size={16} color="#F5722A" />
-              <RNText style={ps.weekTitle}>Esta semana</RNText>
+              <RNText style={ps.weekTitle}>{t('calendar.progress.thisWeek')}</RNText>
             </View>
             <RNText style={ps.weekCount}>{prog.completedThisWeek}/7 dias</RNText>
           </View>
@@ -454,7 +489,7 @@ function ProgressSection({ data, today }: {
           <View style={ps.trophyIcon}>
             <Ionicons name="trophy" size={22} color="#F59E0B" />
           </View>
-          <RNText style={ps.trophyTitle}>Troféu mensal</RNText>
+          <RNText style={ps.trophyTitle}>{t('calendar.progress.monthlyTrophy')}</RNText>
           <RNText style={ps.trophySub}>{prog.trophyProgress} de {prog.trophyGoal} dias</RNText>
           <View style={ps.trophyTrack}>
             <View style={[ps.trophyFill, { width: `${Math.min(100, (prog.trophyProgress / prog.trophyGoal) * 100)}%` as `${number}%` }]} />
@@ -471,7 +506,7 @@ function ProgressSection({ data, today }: {
             <Ionicons name="flash" size={22} color="#fff" />
           </View>
           <RNText style={ps.xpValue}>+{prog.monthlyXp.toLocaleString('pt-BR')}</RNText>
-          <RNText style={ps.xpLabel}>XP no mês</RNText>
+          <RNText style={ps.xpLabel}>{t('calendar.xpThisMonthLabel')}</RNText>
         </LinearGradient>
       </View>
     </View>
