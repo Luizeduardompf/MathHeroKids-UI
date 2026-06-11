@@ -4,13 +4,36 @@
 
 ---
 
-## Estado actual — 2026-06-11 17:10 UTC
+## Estado actual — 2026-06-11 15:37 UTC
 
 ### 🟢 Em curso
 ```
 ESTADO: LIVRE
-ÚLTIMO COMMIT: a797b58
+ÚLTIMO COMMIT: 6febc6d
 ```
+
+---
+
+### ✅ Concluído (sessão 5 — 2026-06-11)
+
+**Aba Amigos — reestruturação UI (toggle Amigos | Ranking):**
+- `(tabs)/friends.tsx` reescrito: toggle de topo "Amigos" (default) | "Ranking"
+- Painel Amigos: search bar inline, pedidos pendentes (accept/reject), lista de amigos com chat + block
+- Painel Ranking: sub-toggle Semanal/Mensal/Global + pódio + lista
+- Ícone `person-add` no header navega para `friends/add` (busca/sugestões) em vez de `friends/list`
+- Locales pt/en/es/fr: `sectionFriends`, `sectionRanking`, `blockTitle` adicionados
+
+**Fix sendFriendRequest / respondToRequest — erros da EF surfaçados:**
+- Ambos os métodos tinham `catch {}` silencioso que engolia o erro real da EF
+- Fallback de insert/update directo sempre falhava (sem RLS INSERT/UPDATE em friend_requests)
+- Fix: removido catch silencioso; FunctionsHttpError.context parseado para mostrar código real da EF
+
+**Fix BOOT_ERROR em todas as EFs — imports corrigidos:**
+- `https://esm.sh/@supabase/supabase-js@2` → `npm:@supabase/supabase-js@2` (5 EFs)
+- `verify_parent_pin`: `deno.land/x/bcrypt` (WASM + Worker, incompatível) → `npm:bcryptjs` (pure JS)
+- `bcrypt.hash(pin)` → `bcrypt.hash(pin, 10)` (bcryptjs exige salt rounds explícito)
+- Todas as 5 EFs confirmadas a responder correctamente ✅
+- Pedido de amizade confirmado a funcionar pelo utilizador ✅
 
 ---
 

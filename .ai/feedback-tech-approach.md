@@ -144,6 +144,24 @@ O mount virtiofs (macOS→Linux sandbox) não suporta `unlink` — `rm -f` falha
 
 ---
 
+**Supabase Edge Functions: usar `npm:` specifiers, nunca `https://esm.sh/` nem `https://deno.land/x/`.**
+- `https://esm.sh/@supabase/supabase-js@2` → causa BOOT_ERROR no runtime actual da Supabase
+- `https://deno.land/x/bcrypt` → usa WASM + Worker threads, incompatível com o edge runtime
+- Correcto: `import { createClient } from 'npm:@supabase/supabase-js@2'`
+- Correcto: `import * as bcrypt from 'npm:bcryptjs'` (pure JS, sem WASM)
+- `bcryptjs` exige salt rounds explícito: `bcrypt.hash(pin, 10)` — não tem default como o deno/bcrypt
+
+---
+
+**EFs: catch silencioso + fallback de insert directo é um anti-pattern perigoso.**
+- Padrão errado: `try { ef() } catch { /* swallow */ }` + fallback client insert
+- O catch esconde o erro real; o fallback falha sempre (RLS sem INSERT policy)
+- O utilizador via um erro genérico que não correspondia ao problema real
+- Correcto: sem catch silencioso; parsear `FunctionsHttpError.context.json()` para expor o código de erro da EF
+- `friend_requests` não tem (nem deve ter) política RLS INSERT — a EF com SERVICE_ROLE_KEY é o único caminho válido
+
+---
+
 **complete_challenge EF: idempotency por (child_id, challenge_date, module_id), não só por session_id.**
 - A tabela `challenge_sessions` tem unique constraint em (child_id, challenge_date, module_id)
 - Se start_challenge criou uma session com UUID diferente, upsert por `id` viola a constraint → 500
