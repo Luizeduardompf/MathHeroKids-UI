@@ -20,6 +20,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -72,16 +73,18 @@ const av = StyleSheet.create({
 
 export type RankingPeriod = 'weekly' | 'monthly' | 'global';
 
-const PERIOD_LABELS: Record<RankingPeriod, string> = {
-  weekly:  'Semanal',
-  monthly: 'Mensal',
-  global:  'Global',
-};
+// Period labels defined inline with t() — see PeriodToggle below
 
 function PeriodToggle({ value, onChange }: {
   value: RankingPeriod;
   onChange: (v: RankingPeriod) => void;
 }) {
+  const { t } = useTranslation();
+  const PERIOD_LABELS: Record<RankingPeriod, string> = {
+    weekly:  t('friends.ranking.weekly'),
+    monthly: t('friends.ranking.monthly'),
+    global:  t('friends.ranking.global'),
+  };
   return (
     <View style={pt.wrap}>
       {(['weekly', 'monthly', 'global'] as const).map((p) => (
@@ -113,6 +116,7 @@ const MEDAL_COLORS: Record<1|2|3, string> = { 1: '#F59E0B', 2: '#9CA3AF', 3: '#C
 function PodiumSpot({ ranked, position }: {
   ranked: RankedFriend | undefined; position: 1|2|3;
 }) {
+  const { t } = useTranslation();
   if (!ranked) return <View style={[pd.spot, pd[`spot${position}`]]} />;
 
   const avatarSize = position === 1 ? 'xl' as const : 'lg' as const;
@@ -135,7 +139,7 @@ function PodiumSpot({ ranked, position }: {
         <RNText style={pd.badgeNum}>{position}</RNText>
       </View>
       <RNText style={pd.name} numberOfLines={1}>
-        {ranked.isSelf ? 'Você' : ranked.child.display_name}
+        {ranked.isSelf ? t('friends.you') : ranked.child.display_name}
       </RNText>
       <View style={pd.xpRow}>
         <Ionicons name="flash" size={12} color="#F59E0B" />
@@ -202,14 +206,15 @@ const rr = StyleSheet.create({
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
 function EmptyRanking({ onAdd }: { onAdd: () => void }) {
+  const { t } = useTranslation();
   return (
     <View style={em.wrap}>
       <Text style={em.emoji}>🏆</Text>
-      <Text style={em.title}>Sem ranking ainda</Text>
-      <Text style={em.sub}>Adiciona amigos e faz desafios para aparecer no ranking!</Text>
+      <Text style={em.title}>{t('friends.emptyRanking')}</Text>
+      <Text style={em.sub}>{t('friends.emptyRankingDesc')}</Text>
       <Pressable style={em.btn} onPress={onAdd}>
         <Ionicons name="person-add-outline" size={18} color="#fff" />
-        <Text style={em.btnText}>Adicionar amigo</Text>
+        <Text style={em.btnText}>{t('friends.addFriendBtn')}</Text>
       </Pressable>
     </View>
   );
@@ -226,6 +231,7 @@ const em = StyleSheet.create({
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function AmigosScreen() {
+  const { t }       = useTranslation();
   const router      = useRouter();
   const insets      = useSafeAreaInsets();
   const queryClient = useQueryClient();
@@ -283,23 +289,34 @@ export default function AmigosScreen() {
       >
         <View style={s.headerRow}>
           <View>
-            <Text style={s.headerSub}>Math Hero Kids</Text>
-            <Text style={s.headerTitle}>Amigos</Text>
+            <Text style={s.headerSub}>{t('friends.mathHeroKids')}</Text>
+            <Text style={s.headerTitle}>{t('friends.title')}</Text>
           </View>
 
-          {/* Botão: ir para lista de amigos (com badge de pedidos pendentes) */}
-          <Pressable
-            style={s.iconBtn}
-            onPress={() => router.push('/(app)/friends/list')}
-            hitSlop={8}
-          >
-            <Ionicons name="people-outline" size={22} color="#fff" />
-            {requests.length > 0 && (
-              <View style={s.notifBadge}>
-                <RNText style={s.notifBadgeText}>{requests.length}</RNText>
-              </View>
-            )}
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            {/* Notificações */}
+            <Pressable
+              style={s.iconBtn}
+              onPress={() => router.push('/(app)/friends/notifications')}
+              hitSlop={8}
+            >
+              <Ionicons name="notifications-outline" size={22} color="#fff" />
+              {requests.length > 0 && (
+                <View style={s.notifBadge}>
+                  <RNText style={s.notifBadgeText}>{requests.length}</RNText>
+                </View>
+              )}
+            </Pressable>
+
+            {/* Gerir amigos */}
+            <Pressable
+              style={s.iconBtn}
+              onPress={() => router.push('/(app)/friends/list')}
+              hitSlop={8}
+            >
+              <Ionicons name="person-add-outline" size={22} color="#fff" />
+            </Pressable>
+          </View>
         </View>
       </LinearGradient>
 

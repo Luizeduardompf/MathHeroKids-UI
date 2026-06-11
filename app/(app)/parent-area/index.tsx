@@ -1,3 +1,8 @@
+/**
+ * Parent Area — children management.
+ * PIN verification happens in settings.tsx before navigating here.
+ */
+
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text as RNText, View } from 'react-native';
@@ -12,13 +17,13 @@ import { colors, space } from '@/theme';
 
 export default function ParentAreaScreen() {
   const { t } = useTranslation();
-  const router = useRouter();
+  const router   = useRouter();
   const parentId = useAuthStore(selectParentId);
 
   const { data: children = [], isLoading } = useQuery({
     queryKey: ['children', parentId],
-    queryFn: () => childService.listChildren(parentId!),
-    enabled: !!parentId,
+    queryFn:  () => childService.listChildren(parentId!),
+    enabled:  !!parentId,
   });
 
   return (
@@ -62,7 +67,7 @@ export default function ParentAreaScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background.primary },
+  root:       { flex: 1, backgroundColor: colors.background.primary },
   safeHeader: { backgroundColor: colors.primary },
   header: {
     flexDirection: 'row',
@@ -73,10 +78,10 @@ const styles = StyleSheet.create({
     paddingTop: space.sm,
     paddingBottom: space.lg,
   },
-  backBtn: { padding: 4 },
-  backArrow: { fontSize: 28, color: colors.text.inverse, lineHeight: 32 },
-  content: { padding: space.md, gap: space.md, paddingBottom: space['2xl'] },
+  backBtn:  { padding: 4 },
+  backArrow:{ fontSize: 28, color: colors.text.inverse, lineHeight: 32 },
+  content:  { padding: space.md, gap: space.md, paddingBottom: space['2xl'] },
   childRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  childInfo: { flex: 1, gap: 2 },
-  chevron: { fontSize: 22, color: colors.text.tertiary },
+  childInfo:{ flex: 1, gap: 2 },
+  chevron:  { fontSize: 22, color: colors.text.tertiary },
 });

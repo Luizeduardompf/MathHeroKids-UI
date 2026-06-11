@@ -16,6 +16,13 @@
     "seeAll": "See all",
     "level": "Level {{level}}"
   },
+  "nav": {
+    "home": "Home",
+    "calendar": "Calendar",
+    "challenge": "Challenge",
+    "friends": "Friends",
+    "settings": "Settings"
+  },
   "auth": {
     "welcome": {
       "title": "Math Hero Kids",
@@ -164,6 +171,20 @@
       "title": "Challenge complete!",
       "subtitle": "Amazing! You finished today's challenge. Milo is proud!",
       "continue": "Continue"
+    },
+    "miloDizLabel": "MILO SAYS",
+    "retroactive": {
+      "title": "Challenges",
+      "miloMessage": "Great news! Today's challenge is done. Want to earn extra XP by completing past days?",
+      "todayCompleted": "Today's challenge complete! 🎉",
+      "infoText": "You can complete challenges from the last 7 days. Late challenges only count as XP — not for streaks or perfect weeks.",
+      "pastDays": "Last 7 days",
+      "today": "Today",
+      "xpOnly": "XP only",
+      "alreadyDone": "Already done",
+      "startToday": "Go",
+      "startPast": "Do it",
+      "disclaimer": "Late challenges earn XP but do not count for streaks or perfect weeks."
     }
   },
   "calendar": {
@@ -173,7 +194,8 @@
       "perfect": "Perfect",
       "completed": "Completed",
       "failed": "Failed",
-      "locked": "Locked"
+      "locked": "Locked",
+      "late": "Late"
     },
     "progress": {
       "title": "Your progress",
@@ -309,7 +331,9 @@
   "parentArea": {
     "pin": {
       "title": "Parent area",
-      "subtitle": "Enter PIN to continue"
+      "subtitle": "Enter PIN to continue",
+      "forgotPin": "Forgot PIN",
+      "noPin": "No PIN set — direct access."
     },
     "controls": {
       "title": "Parental controls"
@@ -320,7 +344,23 @@
       "miloNewMessage": "Another hero arriving! Fill in the details to create the new profile.",
       "save": "Save profile",
       "create": "Create profile"
-    }
+    },
+    "editProfile": "Edit profile",
+    "editProfileSub": "Parent's data",
+    "pinSection": "Parental PIN",
+    "pinActive": "PIN active — parent area protected",
+    "pinInactive": "No PIN — open access to parent area",
+    "setPinLabel": "Set PIN",
+    "changePinLabel": "Change PIN",
+    "confirmPinLabel": "Confirm PIN",
+    "pinHint": "Exactly 4 numeric digits",
+    "savePinBtn": "Save PIN",
+    "removePinBtn": "Remove PIN",
+    "removePinTitle": "Remove PIN",
+    "removePinMsg": "Are you sure you want to remove the PIN?",
+    "pinUpdated": "✓ PIN updated successfully!",
+    "changePassword": "Reset password",
+    "changePasswordSub": "Create a new access password"
   },
   "levelUp": {
     "title": "YOU LEVELED UP!",

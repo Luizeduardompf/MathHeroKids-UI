@@ -20,10 +20,12 @@ const LOCAL_COMPLETIONS_KEY  = 'math-hero-local-completions-v1';
 // Serve como fallback para o calendário quando a Edge Function não está deployada.
 
 export interface LocalCompletion {
-  childId:       string;
-  challengeDate: string;   // YYYY-MM-DD
-  isPerfect:     boolean;
-  completedAt:   string;   // ISO timestamp
+  childId:        string;
+  challengeDate:  string;   // YYYY-MM-DD
+  isPerfect:      boolean;
+  completedAt:    string;   // ISO timestamp
+  /** True when completed after the challenge date (late — counts XP only, no streak/perfect week) */
+  isRetroactive?: boolean;
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -182,9 +184,10 @@ export const challengeService = {
    * Deduplica por (childId, challengeDate) — uma entrada por dia.
    */
   async storeLocalCompletion(
-    childId:       string,
-    challengeDate: string,
-    isPerfect:     boolean,
+    childId:        string,
+    challengeDate:  string,
+    isPerfect:      boolean,
+    isRetroactive?: boolean,
   ): Promise<void> {
     try {
       const raw      = await AsyncStorage.getItem(LOCAL_COMPLETIONS_KEY);
@@ -193,10 +196,28 @@ export const challengeService = {
       const filtered = existing.filter(
         (c) => !(c.childId === childId && c.challengeDate === challengeDate),
       );
-      filtered.push({ childId, challengeDate, isPerfect, completedAt: new Date().toISOString() });
+      filtered.push({ childId, challengeDate, isPerfect, isRetroactive, completedAt: new Date().toISOString() });
       await AsyncStorage.setItem(LOCAL_COMPLETIONS_KEY, JSON.stringify(filtered));
     } catch {
       // Non-fatal — calendar fallback simplesmente não funcionará
+    }
+  },
+
+  /** Returns whether a specific date has been completed (any completion, retroactive or not). */
+  async isDateCompleted(childId: string, date: string): Promise<boolean> {
+    const completions = await challengeService.getLocalCompletions(childId, date, date);
+    if (completions.length > 0) return true;
+    // Also check Supabase calendar_days
+    try {
+      const { data } = await supabase
+        .from('calendar_days')
+        .select('id')
+        .eq('child_id', childId)
+        .eq('challenge_date', date)
+        .maybeSingle();
+      return !!data;
+    } catch {
+      return false;
     }
   },
 

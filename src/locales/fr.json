@@ -16,6 +16,13 @@
     "seeAll": "Voir tout",
     "level": "Niveau {{level}}"
   },
+  "nav": {
+    "home": "Accueil",
+    "calendar": "Calendrier",
+    "challenge": "Défi",
+    "friends": "Amis",
+    "settings": "Réglages"
+  },
   "auth": {
     "welcome": {
       "title": "Math Hero Kids",
@@ -196,7 +203,8 @@
       "perfect": "Parfait",
       "completed": "Terminé",
       "failed": "Manqué",
-      "locked": "Bloqué"
+      "locked": "Bloqué",
+      "late": "Tardif"
     },
     "progress": {
       "title": "Vos progrès",
@@ -212,6 +220,28 @@
       "msg50": "Bonne moitié du mois ! Gardez le rythme.",
       "msg25": "Bon début ! Essayez de compléter plus de jours.",
       "msg0": "Commençons à marquer ce mois !"
+    }
+  },
+  "challenge": {
+    "miloDizLabel": "MILO DIT",
+    "retroactive": {
+      "title": "Défis",
+      "miloMessage": "Le défi d'aujourd'hui est terminé ! Tu veux gagner du XP en faisant les jours passés ?",
+      "todayCompleted": "Défi du jour complété ! 🎉",
+      "infoText": "Tu peux faire des défis des 7 derniers jours. Ils comptent uniquement en XP — pas pour les séries ou semaines parfaites.",
+      "pastDays": "7 derniers jours",
+      "today": "Aujourd'hui",
+      "xpOnly": "XP seulement",
+      "alreadyDone": "Déjà fait",
+      "startToday": "Aller",
+      "startPast": "Faire",
+      "disclaimer": "Les défis tardifs accumulent des XP mais ne comptent pas pour les séries ou semaines parfaites."
+    }
+  },
+  "parentArea": {
+    "pin": {
+      "forgotPin": "PIN oublié",
+      "noPin": "Aucun PIN — accès direct."
     }
   }
 }

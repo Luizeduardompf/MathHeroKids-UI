@@ -16,6 +16,13 @@
     "seeAll": "Ver tudo",
     "level": "Nível {{level}}"
   },
+  "nav": {
+    "home": "Início",
+    "calendar": "Calendário",
+    "challenge": "Desafio",
+    "friends": "Amigos",
+    "settings": "Ajustes"
+  },
   "auth": {
     "welcome": {
       "title": "Math Hero Kids",
@@ -176,7 +183,21 @@
       "questionsLabel": "{{done}}/{{total}} questões"
     },
     "miloDiz": "MILO DIZ",
-    "yourAnswer": "Sua resposta:"
+    "yourAnswer": "Sua resposta:",
+    "miloDizLabel": "MILO DIZ",
+    "retroactive": {
+      "title": "Desafios",
+      "miloMessage": "Boa notícia! O desafio de hoje está concluído. Queres ganhar XP extra fazendo os dias que ficaram para trás?",
+      "todayCompleted": "Desafio de hoje já realizado! 🎉",
+      "infoText": "Podes fazer desafios dos últimos 7 dias. Cada desafio atrasado conta apenas como XP — não conta para sequências nem semanas perfeitas.",
+      "pastDays": "Últimos 7 dias",
+      "today": "Hoje",
+      "xpOnly": "Conta apenas como XP",
+      "alreadyDone": "Já concluído",
+      "startToday": "Ir",
+      "startPast": "Fazer",
+      "disclaimer": "Desafios atrasados acumulam XP mas não contam para sequências de dias ou semanas perfeitas."
+    }
   },
   "calendar": {
     "title": "Calendário",
@@ -185,7 +206,8 @@
       "perfect": "Perfeito",
       "completed": "Concluído",
       "failed": "Perdido",
-      "locked": "Bloqueado"
+      "locked": "Bloqueado",
+      "late": "Atrasado"
     },
     "progress": {
       "title": "Seu progresso",
@@ -321,7 +343,9 @@
   "parentArea": {
     "pin": {
       "title": "Área dos pais",
-      "subtitle": "Digite o PIN para continuar"
+      "subtitle": "Digite o PIN para continuar",
+      "forgotPin": "Esqueci o PIN",
+      "noPin": "PIN não configurado — acesso direto."
     },
     "controls": {
       "title": "Controle dos pais"
@@ -332,7 +356,23 @@
       "miloNewMessage": "Mais um herói chegando! Preencha os dados para criar o novo perfil.",
       "save": "Salvar perfil",
       "create": "Criar perfil"
-    }
+    },
+    "editProfile": "Editar perfil",
+    "editProfileSub": "Dados do responsável",
+    "pinSection": "PIN parental",
+    "pinActive": "PIN activo — área dos pais protegida",
+    "pinInactive": "Sem PIN — acesso livre à área dos pais",
+    "setPinLabel": "Definir PIN",
+    "changePinLabel": "Alterar PIN",
+    "confirmPinLabel": "Confirmar PIN",
+    "pinHint": "Exactamente 4 dígitos numéricos",
+    "savePinBtn": "Guardar PIN",
+    "removePinBtn": "Remover PIN",
+    "removePinTitle": "Remover PIN",
+    "removePinMsg": "Tens a certeza que queres remover o PIN?",
+    "pinUpdated": "✓ PIN actualizado com sucesso!",
+    "changePassword": "Redefinir senha",
+    "changePasswordSub": "Cria uma nova senha de acesso"
   },
   "levelUp": {
     "title": "VOCÊ SUBIU DE NÍVEL!",

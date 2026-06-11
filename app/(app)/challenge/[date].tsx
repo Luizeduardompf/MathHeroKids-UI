@@ -153,38 +153,39 @@ function Confetti() {
 
 type MilestoneVariant = 'q5' | 'q10' | 'q15' | 'completed';
 
+// MILESTONE_CFG now only holds visual/numeric data — text comes from i18n
 const MILESTONE_CFG: Record<MilestoneVariant, {
   bg: string;
   badgeBg: string;
   badgeIcon: 'star' | 'trophy';
-  title: string;
-  subtitle: string;
+  titleKey: string;
+  subtitleKey: string;
   questions: number;
   pct: number;
   xp: number;
 }> = {
   q5: {
     bg: '#2B52E5', badgeBg: '#2B52E5', badgeIcon: 'star',
-    title: 'Mandou bem!',
-    subtitle: 'Você já completou 5 questões.\nContinue assim!',
+    titleKey: 'challenge.milestone.q5.title',
+    subtitleKey: 'challenge.milestone.q5.subtitle',
     questions: 5, pct: 25, xp: 50,
   },
   q10: {
     bg: '#F5722A', badgeBg: '#F5722A', badgeIcon: 'star',
-    title: 'Você está\nna metade!',
-    subtitle: '10 questões concluídas. Falta pouco\npara a estrela!',
+    titleKey: 'challenge.milestone.q10.title',
+    subtitleKey: 'challenge.milestone.q10.subtitle',
     questions: 10, pct: 50, xp: 100,
   },
   q15: {
     bg: '#16A34A', badgeBg: '#16A34A', badgeIcon: 'star',
-    title: 'Faltam só\nalgunas!',
-    subtitle: '15 questões! Você é um verdadeiro\nherói da matemática.',
+    titleKey: 'challenge.milestone.q15.title',
+    subtitleKey: 'challenge.milestone.q15.subtitle',
     questions: 15, pct: 75, xp: 150,
   },
   completed: {
     bg: '#F59E0B', badgeBg: '#D97706', badgeIcon: 'trophy',
-    title: 'Desafio\nconcluído!',
-    subtitle: 'Incrível! Você terminou o desafio de\nhoje. Milo está orgulhoso!',
+    titleKey: 'challenge.completed.title',
+    subtitleKey: 'challenge.completed.subtitle',
     questions: 20, pct: 100, xp: 300,
   },
 };
@@ -196,12 +197,13 @@ function MilestoneScreen({
   onContinue,
   isLoading,
 }: {
-  variant: MilestoneVariant;
+  variant: MilestoneVariant;  // eslint-disable-line
   xpOverride?: number;
   questionsCorrect?: number;
   onContinue: () => void;
   isLoading?: boolean;
 }) {
+  const { t } = useTranslation();
   const cfg = MILESTONE_CFG[variant];
   const xp = xpOverride ?? cfg.xp;
   const qs = questionsCorrect ?? cfg.questions;
@@ -248,14 +250,14 @@ function MilestoneScreen({
         </View>
 
         {/* Title */}
-        <Text style={msStyles.title}>{cfg.title}</Text>
-        <Text style={msStyles.subtitle}>{cfg.subtitle}</Text>
+        <Text style={msStyles.title}>{t(cfg.titleKey)}</Text>
+        <Text style={msStyles.subtitle}>{t(cfg.subtitleKey)}</Text>
 
         {/* Progress */}
         <View style={msStyles.progressSection}>
           <View style={msStyles.progressRow}>
             <Text style={msStyles.progressCount}>
-              {qs} / {useChallengeStore.getState().totalQuestions || CHALLENGE.TOTAL_QUESTIONS} questões
+              {t('challenge.completed.questionsLabel', { done: qs, total: useChallengeStore.getState().totalQuestions || CHALLENGE.TOTAL_QUESTIONS })}
             </Text>
             <Text style={msStyles.progressPct}>{pct}%</Text>
           </View>
@@ -269,7 +271,7 @@ function MilestoneScreen({
           <ActivityIndicator color="#fff" size="large" style={{ marginTop: 24 }} />
         ) : (
           <Pressable style={msStyles.continueBtn} onPress={onContinue}>
-            <Text style={[msStyles.continueBtnText, { color: cfg.bg }]}>Continuar</Text>
+            <Text style={[msStyles.continueBtnText, { color: cfg.bg }]}>{t('common.continue')}</Text>
           </Pressable>
         )}
       </View>
@@ -445,13 +447,14 @@ const msStyles = StyleSheet.create({
 // ─── Milo Box ─────────────────────────────────────────────────────────────────
 
 function MiloBox({ message, bg }: { message: string; bg: string }) {
+  const { t } = useTranslation();
   return (
     <View style={[miloBoxStyles.box, { backgroundColor: bg }]}>
       <View style={miloBoxStyles.avatarWrap}>
         <Image source={MILO_CELEBRATE} style={miloBoxStyles.avatar} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={miloBoxStyles.label}>MILO DIZ</Text>
+        <Text style={miloBoxStyles.label}>{t('challenge.miloDizLabel')}</Text>
         <Text style={miloBoxStyles.message}>{message}</Text>
       </View>
     </View>
@@ -638,7 +641,8 @@ const kpStyles = StyleSheet.create({
 export default function ChallengeScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { date } = useLocalSearchParams<{ date: string }>();
+  const { date, retroactive } = useLocalSearchParams<{ date: string; retroactive?: string }>();
+  const isRetroactive = retroactive === '1';
   const child = useProfileStore(selectActiveChild);
 
   const phase = useChallengeStore((s) => s.phase);
@@ -817,7 +821,7 @@ export default function ChallengeScreen() {
     // Guardar completion local sempre — garante que o calendário mostra o estado
     // correcto mesmo quando a Edge Function complete_challenge não está deployada.
     const isPerfectLocal = uniqueCorrect === useChallengeStore.getState().totalQuestions;
-    await challengeService.storeLocalCompletion(child.id, challengeDate!, isPerfectLocal);
+    await challengeService.storeLocalCompletion(child.id, challengeDate!, isPerfectLocal, isRetroactive);
 
     try {
       const result = await challengeService.completeChallenge({
@@ -955,6 +959,13 @@ export default function ChallengeScreen() {
 
   return (
     <View style={gs.container}>
+      {/* Retroactive banner */}
+      {isRetroactive && (
+        <View style={gs.retroBanner}>
+          <Ionicons name="time-outline" size={14} color="#92400E" />
+          <Text style={gs.retroBannerText}>{t('challenge.retroactive.xpOnly')}</Text>
+        </View>
+      )}
       <ConfirmDialog
         visible={showExitModal}
         title={t('challenge.exitTitle')}
@@ -972,7 +983,7 @@ export default function ChallengeScreen() {
       <View style={gs.header}>
         <Pressable onPress={() => setShowExitModal(true)} style={gs.exitBtn} accessibilityLabel="Sair do desafio">
           <View style={gs.exitBtnCircle}>
-            <Ionicons name="close" size={20} color={colors.text.secondary} />
+            <Ionicons name="close" size={22} color="#4B5563" />
           </View>
         </Pressable>
 
@@ -1211,6 +1222,24 @@ const gs = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  // Retroactive challenge banner (shown when date != today)
+  retroBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    alignSelf: 'center',
+    marginBottom: 8,
+  },
+  retroBannerText: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 12,
+    color: '#92400E',
+  },
+
   // header: flex items-center gap-3 px-4 pt-safe
   header: {
     flexDirection: 'row',
@@ -1221,12 +1250,11 @@ const gs = StyleSheet.create({
 
   exitBtn: {},
 
-  // h-10 w-10 rounded-full bg-muted text-ink-muted
+  // Design: rounded square (not full circle) with muted bg — matches screenshot header
   exitBtnCircle: {
     width: 40,
     height: 40,
-    borderRadius: 9999,
-    // bg-muted: oklch(0.95 0.01 255) — levemente azul-acinzentado, não branco puro
+    borderRadius: 12,
     backgroundColor: '#EDEEF5',
     alignItems: 'center',
     justifyContent: 'center',

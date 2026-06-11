@@ -10,6 +10,8 @@
  */
 
 import React, { useCallback, useState } from 'react';
+// @ts-expect-error RN 0.85 quirk
+import { Alert } from 'react-native'; // eslint-disable-line
 import {
   ActivityIndicator,
   Pressable,
@@ -73,7 +75,8 @@ const rc = StyleSheet.create({
 
 // ─── Friend row ───────────────────────────────────────────────────────────────
 
-function FriendRow({ friend, rank }: { friend: FriendProfile; rank: number }) {
+function FriendRow({ friend, rank, onBlock }: { friend: FriendProfile; rank: number; onBlock: () => void }) {
+  const [menuOpen, setMenuOpen] = React.useState(false);
   return (
     <View style={fr.row}>
       <Text style={fr.rank}>#{rank}</Text>
@@ -86,17 +89,33 @@ function FriendRow({ friend, rank }: { friend: FriendProfile; rank: number }) {
         <Ionicons name="flash" size={13} color="#F59E0B" />
         <Text style={fr.xp}>{friend.xp_total.toLocaleString('pt-BR')}</Text>
       </View>
+      <Pressable onPress={() => setMenuOpen((v) => !v)} hitSlop={8} style={fr.menuBtn}>
+        <Ionicons name="ellipsis-vertical" size={18} color="#9CA3AF" />
+      </Pressable>
+      {menuOpen && (
+        <Pressable
+          style={fr.blockBtn}
+          onPress={() => { setMenuOpen(false); onBlock(); }}
+          hitSlop={4}
+        >
+          <Ionicons name="ban-outline" size={14} color={colors.error} />
+          <Text style={fr.blockText}>Bloquear</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
 const fr = StyleSheet.create({
-  row:   { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#fff', borderRadius: radius.xl, padding: 14, ...shadows.sm },
-  rank:  { fontFamily: fontFamily.bold, fontSize: 13, color: colors.text.secondary, width: 24, textAlign: 'center' },
-  mid:   { flex: 1 },
-  name:  { fontFamily: fontFamily.extraBold, fontSize: 15, color: colors.text.primary },
-  sub:   { fontFamily: fontFamily.regular,   fontSize: 12, color: colors.text.secondary, marginTop: 1 },
-  xpCol: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  xp:    { fontFamily: fontFamily.bold, fontSize: 13, color: '#F59E0B' },
+  row:       { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.xl, padding: 14, ...shadows.sm, position: 'relative' },
+  rank:      { fontFamily: fontFamily.bold, fontSize: 13, color: colors.text.secondary, width: 24, textAlign: 'center' },
+  mid:       { flex: 1 },
+  name:      { fontFamily: fontFamily.extraBold, fontSize: 15, color: colors.text.primary },
+  sub:       { fontFamily: fontFamily.regular,   fontSize: 12, color: colors.text.secondary, marginTop: 1 },
+  xpCol:     { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  xp:        { fontFamily: fontFamily.bold, fontSize: 13, color: '#F59E0B' },
+  menuBtn:   { padding: 4 },
+  blockBtn:  { position: 'absolute', right: 12, top: 48, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff', borderRadius: 8, padding: 10, zIndex: 10, borderWidth: 1, borderColor: '#F3F4F6', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  blockText: { fontFamily: fontFamily.semiBold, fontSize: 13, color: colors.error },
 });
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
@@ -270,9 +289,47 @@ export default function FriendsListScreen() {
                     ? `Resultados (${filtered.length})`
                     : `${friends.length} amigo${friends.length !== 1 ? 's' : ''}`}
                 </Text>
-                {filtered.map((f, i) => <FriendRow key={f.id} friend={f} rank={i + 1} />)}
+                {filtered.map((f, i) => (
+                <FriendRow
+                  key={f.id}
+                  friend={f}
+                  rank={i + 1}
+                  onBlock={() => {
+                    Alert.alert(
+                      'Bloquear utilizador',
+                      `Tens a certeza que queres bloquear ${f.display_name}?`,
+                      [
+                        { text: 'Cancelar', style: 'cancel' },
+                        { text: 'Bloquear', style: 'destructive', onPress: async () => {
+                          if (!child) return;
+                          await socialService.blockUser(child.id, f.id);
+                          void queryClient.invalidateQueries({ queryKey: ['friends', child.id] });
+                        }},
+                      ],
+                    );
+                  }}
+                />
+              ))}
               </>
             )}
+          </View>
+
+          {/* Footer links */}
+          <View style={s.footerLinks}>
+            <Pressable
+              style={s.footerLink}
+              onPress={() => router.push('/(app)/friends/notifications')}
+            >
+              <Ionicons name="notifications-outline" size={16} color={colors.primary} />
+              <Text style={s.footerLinkText}>Ver notificações</Text>
+            </Pressable>
+            <Pressable
+              style={s.footerLink}
+              onPress={() => router.push('/(app)/friends/blocked')}
+            >
+              <Ionicons name="ban-outline" size={16} color={colors.text.secondary} />
+              <Text style={[s.footerLinkText, { color: colors.text.secondary }]}>Utilizadores bloqueados</Text>
+            </Pressable>
           </View>
 
         </ScrollView>
@@ -307,4 +364,8 @@ const s = StyleSheet.create({
   badgeText:    { fontFamily: fontFamily.extraBold, fontSize: 13, color: '#fff' },
   noResults:    { alignItems: 'center', paddingVertical: 20 },
   noResultsText:{ fontFamily: fontFamily.semiBold, fontSize: 14, color: colors.text.secondary },
+
+  footerLinks: { gap: 8, marginTop: 8 },
+  footerLink:  { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, justifyContent: 'center' },
+  footerLinkText: { fontFamily: fontFamily.semiBold, fontSize: 14, color: colors.primary },
 });

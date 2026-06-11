@@ -1,5 +1,5 @@
 /**
- * Social service — Friends, requests, ranking.
+ * Social service — Friends, requests, ranking, blocking.
  *
  * RLS constraints (sem EFs deployadas):
  * - friendships:    SELECT próprias (funciona)
@@ -7,12 +7,17 @@
  * - child_profiles: sem política cross-child — search/ranking requer EF ou política extra
  * - child_xp_ledger: só próprias crianças — ranking de amigos requer EF
  *
+ * Block list: stored in AsyncStorage for MVP (Supabase blocked_users table is Phase 5+).
+ *
  * Approach: implementação completa; erros de RLS retornam arrays vazios / null graciosamente.
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 import type { AvatarId } from '@/constants/config';
 import type { FriendRequest } from '@/types/database.types';
+
+const BLOCKED_KEY = (childId: string) => `social_blocked_${childId}`;
 
 // ─── Shapes ───────────────────────────────────────────────────────────────────
 
@@ -256,7 +261,10 @@ export const socialService = {
   },
 
   /**
-   * Ranking: amigos (semanal/mensal) ou global (todos os jogadores por xp_total).
+   * Ranking: amigos (semanal, mensal ou global).
+   * Todos os períodos mostram apenas amigos + self.
+   * - weekly/monthly: XP do período via child_xp_ledger
+   * - global: xp_total acumulado (entre amigos, não todos os jogadores)
    */
   async getFriendsRanking(
     childId:     string,
@@ -264,40 +272,28 @@ export const socialService = {
     period:      'weekly' | 'monthly' | 'global',
   ): Promise<RankedFriend[]> {
     try {
-      // ── Global: top jogadores por xp_total ─────────────────────────────────
+      const friends = await socialService.getFriends(childId);
+      const allChildren = [selfProfile, ...friends];
+
+      // ── Global: xp_total acumulado entre amigos ────────────────────────────
       if (period === 'global') {
-        const { data: topPlayers } = await supabase
-          .from('child_profiles')
-          .select('id, display_name, username, avatar_id, level, xp_total, current_streak')
-          .eq('is_active', true)
-          .order('xp_total', { ascending: false })
-          .limit(50);
-
-        const players = (topPlayers ?? []) as FriendProfile[];
-
-        // Garantir que self aparece mesmo que não esteja no top 50
-        const selfInList = players.some((p) => p.id === childId);
-        const allPlayers = selfInList ? players : [...players, selfProfile];
-
-        return allPlayers
-          .sort((a, b) => b.xp_total - a.xp_total)
-          .map((child, i) => ({
+        return allChildren
+          .map((child) => ({
             child,
-            xp:     child.xp_total,
-            position: i + 1,
-            isSelf: child.id === childId,
-          }));
+            xp:       child.xp_total,
+            position: 0,
+            isSelf:   child.id === childId,
+          }))
+          .sort((a, b) => b.xp - a.xp)
+          .map((item, i) => ({ ...item, position: i + 1 }));
       }
 
-      // ── Amigos: semanal ou mensal via child_xp_ledger ──────────────────────
-      const friends = await socialService.getFriends(childId);
-
+      // ── Semanal / Mensal: XP do período via child_xp_ledger ───────────────
       const now        = new Date();
       const weekStart  = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0,0,0,0);
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
       const periodStart = period === 'weekly' ? weekStart : monthStart;
 
-      const allChildren = [selfProfile, ...friends];
       const allIds = allChildren.map((c) => c.id);
 
       const { data: ledgerRows } = await supabase
@@ -324,4 +320,115 @@ export const socialService = {
       return [];
     }
   },
+
+  // ─── Block list (AsyncStorage for MVP) ──────────────────────────────────────
+
+  async getBlockedIds(childId: string): Promise<string[]> {
+    try {
+      const raw = await AsyncStorage.getItem(BLOCKED_KEY(childId));
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch { return []; }
+  },
+
+  async blockUser(childId: string, targetId: string): Promise<void> {
+    const current = await socialService.getBlockedIds(childId);
+    if (!current.includes(targetId)) {
+      current.push(targetId);
+      await AsyncStorage.setItem(BLOCKED_KEY(childId), JSON.stringify(current));
+    }
+    // Also reject any pending friend request from this user
+    try {
+      const { data: reqs } = await supabase
+        .from('friend_requests')
+        .select('id')
+        .eq('from_child_id', targetId)
+        .eq('to_child_id', childId)
+        .eq('status', 'pending');
+      for (const req of (reqs ?? []) as Array<{ id: string }>) {
+        await socialService.respondToRequest(req.id, false);
+      }
+    } catch { /* best effort */ }
+  },
+
+  async unblockUser(childId: string, targetId: string): Promise<void> {
+    const current = await socialService.getBlockedIds(childId);
+    const updated = current.filter((id) => id !== targetId);
+    await AsyncStorage.setItem(BLOCKED_KEY(childId), JSON.stringify(updated));
+  },
+
+  /**
+   * Returns blocked profiles (fetches child_profiles for each blocked ID).
+   * Best-effort — returns empty array if RLS blocks the query.
+   */
+  async getBlockedProfiles(childId: string): Promise<FriendProfile[]> {
+    const ids = await socialService.getBlockedIds(childId);
+    if (ids.length === 0) return [];
+    try {
+      const { data } = await supabase
+        .from('child_profiles')
+        .select('id, display_name, username, avatar_id, level, xp_total, current_streak')
+        .in('id', ids)
+        .eq('is_active', true);
+      return (data ?? []) as FriendProfile[];
+    } catch { return []; }
+  },
+
+  // ─── Notifications ───────────────────────────────────────────────────────────
+
+  /**
+   * Returns in-app notifications:
+   * - Pending requests received (type: 'request')
+   * - Recently accepted requests sent by this child (type: 'accepted') — last 7 days
+   */
+  async getNotifications(childId: string): Promise<AppNotification[]> {
+    try {
+      const [pendingRes, acceptedRes] = await Promise.all([
+        supabase
+          .from('friend_requests')
+          .select(`id, from_child_id, created_at, from_child:from_child_id(id, display_name, username, avatar_id, level, xp_total, current_streak)`)
+          .eq('to_child_id', childId)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('friend_requests')
+          .select(`id, to_child_id, responded_at, to_child:to_child_id(id, display_name, username, avatar_id, level, xp_total, current_streak)`)
+          .eq('from_child_id', childId)
+          .eq('status', 'accepted')
+          .gte('responded_at', new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString())
+          .order('responded_at', { ascending: false }),
+      ]);
+
+      const notifications: AppNotification[] = [];
+
+      type PendingRow = { id: string; from_child_id: string; created_at: string; from_child: FriendProfile | FriendProfile[] | null };
+      type AcceptedRow = { id: string; to_child_id: string; responded_at: string; to_child: FriendProfile | FriendProfile[] | null };
+
+      for (const row of (pendingRes.data ?? []) as unknown as PendingRow[]) {
+        const fc = Array.isArray(row.from_child) ? row.from_child[0] : row.from_child;
+        if (!fc) continue;
+        notifications.push({ id: `req_${row.id}`, type: 'friend_request', requestId: row.id, profile: fc, at: row.created_at, read: false });
+      }
+
+      for (const row of (acceptedRes.data ?? []) as unknown as AcceptedRow[]) {
+        const tc = Array.isArray(row.to_child) ? row.to_child[0] : row.to_child;
+        if (!tc) continue;
+        notifications.push({ id: `acc_${row.id}`, type: 'request_accepted', requestId: row.id, profile: tc, at: row.responded_at ?? '', read: false });
+      }
+
+      return notifications;
+    } catch {
+      return [];
+    }
+  },
 };
+
+// ─── Notification type ────────────────────────────────────────────────────────
+
+export interface AppNotification {
+  id:        string;
+  type:      'friend_request' | 'request_accepted';
+  requestId: string;
+  profile:   FriendProfile;
+  at:        string;
+  read:      boolean;
+}

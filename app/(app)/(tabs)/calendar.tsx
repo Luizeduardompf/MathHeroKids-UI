@@ -21,6 +21,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -126,7 +127,7 @@ async function fetchCalendarData(childId: string): Promise<CalendarData> {
 
 // ─── Day grid ─────────────────────────────────────────────────────────────────
 
-type DayVariant = 'perfect' | 'completed' | 'failed' | 'today' | 'future' | 'missed';
+type DayVariant = 'perfect' | 'completed' | 'late' | 'failed' | 'today' | 'future' | 'missed';
 
 interface DayInfo { day: number; dateStr: string; variant: DayVariant }
 
@@ -156,7 +157,8 @@ function buildDayGrid(
     } else if (session) {
       variant = session.is_perfect ? 'perfect' : 'completed';
     } else if (localComp) {
-      variant = localComp.isPerfect ? 'perfect' : 'completed';
+      if (localComp.isRetroactive) variant = 'late';
+      else variant = localComp.isPerfect ? 'perfect' : 'completed';
     } else if (dateStr === today) {
       variant = 'today';
     } else if (dateStr > today) {
@@ -184,6 +186,7 @@ function buildDayGrid(
 const DAY_STYLE: Record<DayVariant, { bg: string; iconColor: string; icon?: string }> = {
   perfect:   { bg: '#F59E0B', iconColor: '#fff',     icon: 'star'        },
   completed: { bg: '#4ADE80', iconColor: '#fff',     icon: 'trophy'      },
+  late:      { bg: '#FDE68A', iconColor: '#92400E',  icon: 'time'        }, // Feito atrasado — âmbar claro
   failed:    { bg: '#FECDD3', iconColor: '#F87171',  icon: 'trophy'      },
   today:     { bg: '#2B52E5', iconColor: '#fff'                          },
   future:    { bg: '#E5E7EB', iconColor: '#9CA3AF',  icon: 'lock-closed' },
@@ -518,6 +521,31 @@ function streakMessage(streak: number): string {
   return `INCRÍVEL! ${streak} dias sem parar. Você é uma lenda!`;
 }
 
+// ─── Legend row (i18n-aware, includes 'late' state) ──────────────────────────
+
+function LegendRow() {
+  const { t } = useTranslation();
+  const items = [
+    { bg: '#F59E0B', icon: 'star',        label: t('calendar.legend.perfect'),   iconColor: '#fff'     },
+    { bg: '#4ADE80', icon: 'trophy',      label: t('calendar.legend.completed'), iconColor: '#fff'     },
+    { bg: '#FDE68A', icon: 'time',        label: t('calendar.legend.late'),      iconColor: '#92400E'  },
+    { bg: '#FECDD3', icon: 'trophy',      label: t('calendar.legend.failed'),    iconColor: '#F87171'  },
+    { bg: '#E5E7EB', icon: 'lock-closed', label: t('calendar.legend.locked'),    iconColor: '#9CA3AF'  },
+  ] as const;
+  return (
+    <View style={[s.legend, { flexWrap: 'wrap', justifyContent: 'center', gap: 8 }]}>
+      {items.map((item) => (
+        <View key={item.label} style={s.legendItem}>
+          <View style={[s.legendDot, { backgroundColor: item.bg }]}>
+            <Ionicons name={item.icon as never} size={16} color={item.iconColor} />
+          </View>
+          <RNText style={s.legendLabel}>{item.label}</RNText>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function CalendarioScreen() {
@@ -612,21 +640,7 @@ export default function CalendarioScreen() {
         )}
 
         {/* Legenda */}
-        <View style={s.legend}>
-          {[
-            { bg: '#F59E0B', icon: 'star',        label: 'Perfeito',   iconColor: '#fff'    },
-            { bg: '#4ADE80', icon: 'trophy',      label: 'Concluído',  iconColor: '#fff'    },
-            { bg: '#FECDD3', icon: 'trophy',      label: 'Perdido',    iconColor: '#F87171' },
-            { bg: '#E5E7EB', icon: 'lock-closed', label: 'Bloqueado',  iconColor: '#9CA3AF' },
-          ].map((item) => (
-            <View key={item.label} style={s.legendItem}>
-              <View style={[s.legendDot, { backgroundColor: item.bg }]}>
-                <Ionicons name={item.icon as never} size={16} color={item.iconColor} />
-              </View>
-              <RNText style={s.legendLabel}>{item.label}</RNText>
-            </View>
-          ))}
-        </View>
+        <LegendRow />
 
         {/* Seu progresso */}
         {data && <ProgressSection data={data} today={today} />}

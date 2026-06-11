@@ -7,10 +7,11 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+// @ts-expect-error RN 0.85 quirk — Alert present at runtime
+import { Alert } from 'react-native'; // eslint-disable-line
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -19,6 +20,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Avatar, Button, Card, ConfirmDialog, Text } from '@/components/ui';
 import { childService, getChildLocalSettings, setChildLocalSettings } from '@/services/child.service';
 import { authService } from '@/services/auth.service';
+import { pinService } from '@/services/pin.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { useProfileStore } from '@/stores/profile.store';
 import { SUPPORTED_LOCALES, TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT_OPTIONS } from '@/constants/config';
@@ -85,39 +87,72 @@ function SettingsHeader({ title }: { title: string }) {
   );
 }
 
+// ─── PIN dots ─────────────────────────────────────────────────────────────────
+
+function PinDots({ count, total = 4 }: { count: number; total?: number }) {
+  return (
+    <View style={pinStyles.row}>
+      {Array.from({ length: total }).map((_, i) => (
+        <View key={i} style={[pinStyles.dot, i < count ? pinStyles.dotFilled : pinStyles.dotEmpty]} />
+      ))}
+    </View>
+  );
+}
+
 // ─── PIN Gate ─────────────────────────────────────────────────────────────────
+// Full-screen PIN verification with numeric keypad — shown before settings open.
+// If no PIN is set → calls onUnlock() immediately on mount.
 
 function PinGate({ onUnlock }: { onUnlock: () => void }) {
   const { t } = useTranslation();
-  const router        = useRouter();
-  const parentProfile = useAuthStore((s) => s.parentProfile);
-  const user          = useAuthStore((s) => s.user);
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const router   = useRouter();
+  const user     = useAuthStore((s) => s.user);
+  const parentId = useAuthStore(selectParentId);
+
+  const [digits,    setDigits]    = useState<number[]>([]);
+  const [error,     setError]     = useState<string | null>(null);
+  const [checking,  setChecking]  = useState(true);
+  const [sending,   setSending]   = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const hasPinSet = !!parentProfile?.pin_hash;
-  const rawName = (parentProfile?.name as string | undefined)
-    ?? (user?.user_metadata?.name as string | undefined)
-    ?? user?.email?.split('@')[0] ?? '—';
-  const email   = user?.email ?? '—';
-  const initials = rawName.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
+  // Check on mount: if no PIN, go straight through
+  useEffect(() => {
+    if (!parentId) { onUnlock(); return; }
+    void (async () => {
+      const pin = await pinService.getPin(parentId);
+      if (!pin) onUnlock();
+      else setChecking(false);
+    })();
+  }, [parentId, onUnlock]);
 
-  async function handleVerify() {
-    if (!hasPinSet) { onUnlock(); return; }
-    if (pin.length < 4) { setError('Digite os 4 dígitos do PIN.'); return; }
+  function handleDigit(d: number) {
     setError(null);
-    setLoading(true);
+    setDigits((prev) => {
+      if (prev.length >= 4) return prev;
+      const next = [...prev, d];
+      if (next.length === 4) void verify(next.join(''));
+      return next;
+    });
+  }
+
+  async function verify(pin: string) {
+    if (!parentId) return;
+    const ok = await pinService.verify(parentId, pin);
+    if (ok) { onUnlock(); }
+    else    { setDigits([]); setError('PIN incorreto. Tente novamente.'); }
+  }
+
+  async function handleForgotPin() {
+    const email = user?.email;
+    if (!email) return;
+    setSending(true);
     try {
-      // TODO Phase 7: call verify_parent_pin Edge Function
-      onUnlock();
-    } catch {
-      setError('PIN incorreto. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
+      await pinService.sendForgotPinEmail(email);
+      Alert.alert('E-mail enviado', `Enviamos instruções de redefinição para ${email}.`, [{ text: 'OK' }]);
+    } catch (e) {
+      Alert.alert('Erro', (e as Error).message);
+    } finally { setSending(false); }
   }
 
   async function confirmLogout() {
@@ -128,12 +163,22 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
     router.replace('/(auth)/welcome');
   }
 
+  if (checking) {
+    return (
+      <View style={[styles.root, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
+  }
+
+  const topKeys = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+
   return (
     <View style={styles.root}>
       <ConfirmDialog
         visible={showLogoutModal}
         title="Sair da conta?"
-        message="Você precisará fazer login novamente para acessar o app."
+        message="Precisarás fazer login novamente."
         primaryLabel="Continuar"
         primaryVariant="primary"
         onPrimary={() => setShowLogoutModal(false)}
@@ -145,63 +190,77 @@ function PinGate({ onUnlock }: { onUnlock: () => void }) {
 
       <SettingsHeader title={t('settings.title')} />
 
-      <ScrollView
-        contentContainerStyle={styles.pinGateScroll}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Parent info card */}
-        <Card border shadow="sm" style={styles.parentCard}>
-          <View style={styles.parentAvatar}>
-            <Text style={styles.parentInitials}>{initials}</Text>
-          </View>
-          <View style={styles.parentInfo}>
-            <Text variant="h3">{rawName}</Text>
-            <Text variant="caption" color={colors.text.secondary}>{email}</Text>
-          </View>
-        </Card>
+      <View style={pinStyles.content}>
+        {/* Lock icon */}
+        <View style={pinStyles.lockCircle}>
+          <Ionicons name="lock-closed-outline" size={36} color={colors.primary} />
+        </View>
 
-        {/* PIN gate */}
-        <Card border shadow="sm" style={styles.pinCard}>
-          <Text style={styles.pinLock}>🔒</Text>
-          <Text variant="h2" align="center">{t('parentArea.pin.title')}</Text>
-          <Text variant="body" color={colors.text.secondary} align="center">
-            {hasPinSet ? t('parentArea.pin.subtitle') : 'PIN não configurado — acesso direto.'}
-          </Text>
+        <Text variant="h2" align="center">{t('parentArea.pin.title')}</Text>
+        <Text variant="body" color={colors.text.secondary} align="center" style={{ marginTop: -4 }}>
+          {t('parentArea.pin.subtitle')}
+        </Text>
 
-          {hasPinSet && (
-            <TextInput
-              style={styles.pinInput}
-              value={pin}
-              onChangeText={(v) => { setPin(v.replace(/\D/g, '').slice(0, 4)); setError(null); }}
-              keyboardType="number-pad"
-              maxLength={4}
-              secureTextEntry
-              placeholder="• • • •"
-              placeholderTextColor={colors.text.tertiary}
-              textAlign="center"
-            />
-          )}
+        <PinDots count={digits.length} />
 
-          {error && <Text variant="bodySmall" color={colors.error} align="center">{error}</Text>}
+        {error
+          ? <Text variant="bodySmall" color={colors.error} align="center">{error}</Text>
+          : <View style={{ height: 18 }} />
+        }
 
-          <Button
-            label={hasPinSet ? 'Confirmar' : 'Entrar nas configurações'}
-            loading={loading}
-            onPress={handleVerify}
-          />
-        </Card>
+        {/* Numeric keypad */}
+        <View style={pinStyles.keypad}>
+          {topKeys.map((k) => (
+            <Pressable key={k} style={({ pressed }) => [pinStyles.key, pressed ? pinStyles.keyPressed : null]}
+              onPress={() => handleDigit(k)}>
+              <Text style={pinStyles.keyText}>{k}</Text>
+            </Pressable>
+          ))}
+          <View style={pinStyles.key} />
+          <Pressable style={({ pressed }) => [pinStyles.key, pressed ? pinStyles.keyPressed : null]}
+            onPress={() => handleDigit(0)}>
+            <Text style={pinStyles.keyText}>0</Text>
+          </Pressable>
+          <Pressable style={({ pressed }) => [pinStyles.key, pinStyles.keyMuted, pressed ? pinStyles.keyPressed : null]}
+            onPress={() => setDigits((p) => { setError(null); return p.slice(0, -1); })}>
+            <Ionicons name="backspace-outline" size={26} color="#6B7280" />
+          </Pressable>
+        </View>
 
-        <Button
-          variant="destructive"
-          label={loggingOut ? 'Saindo...' : 'Sair da conta'}
-          loading={loggingOut}
-          onPress={() => setShowLogoutModal(true)}
-        />
-      </ScrollView>
+        {/* Forgot PIN */}
+        <View style={pinStyles.footer}>
+          <Pressable onPress={handleForgotPin} disabled={sending} hitSlop={8}>
+            {sending
+              ? <ActivityIndicator color={colors.primary} size="small" />
+              : <Text variant="bodySmall" color={colors.primary}>Esqueci o PIN</Text>
+            }
+          </Pressable>
+          <Pressable onPress={() => setShowLogoutModal(true)} hitSlop={8}>
+            {loggingOut
+              ? <ActivityIndicator color={colors.error} size="small" />
+              : <Text variant="bodySmall" color={colors.error}>Sair da conta</Text>
+            }
+          </Pressable>
+        </View>
+      </View>
     </View>
   );
 }
+
+const pinStyles = StyleSheet.create({
+  content:    { flex: 1, alignItems: 'center', paddingTop: 40, paddingHorizontal: 16, gap: 16 },
+  lockCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  row:        { flexDirection: 'row', gap: 16 },
+  dot:        { width: 16, height: 16, borderRadius: 8 },
+  dotFilled:  { backgroundColor: colors.primary },
+  dotEmpty:   { backgroundColor: 'transparent', borderWidth: 2, borderColor: '#CBD5E1' },
+  keypad:     { flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 8, width: '100%' },
+  key:        { width: '30%', height: 68, backgroundColor: '#fff', borderRadius: 16, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  keyMuted:   { backgroundColor: '#EDEEF5' },
+  keyPressed: { opacity: 0.7, transform: [{ scale: 0.95 }] },
+  keyText:    { fontFamily: fontFamily.bold, fontSize: 26, color: '#1A1F36' } as import('react-native').TextStyle,
+  footer:     { flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 8, marginTop: 8 },
+});
 
 // ─── Per-child settings card ──────────────────────────────────────────────────
 
@@ -499,22 +558,7 @@ const styles = StyleSheet.create({
   } as import('react-native').TextStyle,
 
   // ── PIN gate ────────────────────────────────────────────────────────────────
-  pinGateScroll: { padding: space.md, paddingBottom: space['2xl'], gap: space.md },
   parentCard: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  pinCard: { alignItems: 'center', gap: space.md, paddingVertical: space.xl },
-  pinLock: { fontSize: 44 },
-  pinInput: {
-    width: 160,
-    height: 52,
-    borderRadius: radius.xl,
-    borderWidth: 1.5,
-    borderColor: colors.border.focus,
-    backgroundColor: colors.background.card,
-    fontSize: 24,
-    letterSpacing: 8,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
 
   // ── Parent card ─────────────────────────────────────────────────────────────
   parentCardMain: { flexDirection: 'row', alignItems: 'center', gap: space.md },

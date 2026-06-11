@@ -16,6 +16,13 @@
     "seeAll": "Ver todo",
     "level": "Nivel {{level}}"
   },
+  "nav": {
+    "home": "Inicio",
+    "calendar": "Calendario",
+    "challenge": "Desafío",
+    "friends": "Amigos",
+    "settings": "Ajustes"
+  },
   "auth": {
     "welcome": {
       "title": "Math Hero Kids",
@@ -164,6 +171,20 @@
       "title": "¡Desafío completado!",
       "subtitle": "¡Increíble! Terminaste el desafío de hoy.",
       "continue": "Continuar"
+    },
+    "miloDizLabel": "MILO DICE",
+    "retroactive": {
+      "title": "Desafíos",
+      "miloMessage": "¡El desafío de hoy está hecho! ¿Quieres ganar XP extra con los días pasados?",
+      "todayCompleted": "¡Desafío de hoy completado! 🎉",
+      "infoText": "Puedes hacer desafíos de los últimos 7 días. Solo cuentan como XP — no para rachas ni semanas perfectas.",
+      "pastDays": "Últimos 7 días",
+      "today": "Hoy",
+      "xpOnly": "Solo XP",
+      "alreadyDone": "Ya completado",
+      "startToday": "Ir",
+      "startPast": "Hacer",
+      "disclaimer": "Los desafíos tardíos acumulan XP pero no cuentan para rachas ni semanas perfectas."
     }
   },
   "settings": {
@@ -251,7 +272,8 @@
       "perfect": "Perfecto",
       "completed": "Completado",
       "failed": "Perdido",
-      "locked": "Bloqueado"
+      "locked": "Bloqueado",
+      "late": "Tardío"
     },
     "progress": {
       "title": "Tu progreso",
@@ -267,6 +289,12 @@
       "msg50": "¡Buena mitad del mes! Mantén el ritmo.",
       "msg25": "¡Buen comienzo! Intenta completar más días.",
       "msg0": "¡Comencemos a marcar este mes!"
+    }
+  },
+  "parentArea": {
+    "pin": {
+      "forgotPin": "Olvidé el PIN",
+      "noPin": "Sin PIN — acceso directo."
     }
   }
 }

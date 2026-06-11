@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -82,6 +83,8 @@ function ChallengeFAB({ focused }: { focused: boolean }): React.JSX.Element {
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
 export default function TabsLayout() {
+  const { t } = useTranslation();
+
   return (
     <Tabs
       screenOptions={{
@@ -96,7 +99,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          tabBarLabel: 'Início',
+          tabBarLabel: t('nav.home'),
           tabBarIcon: ({ focused }: { focused: boolean }) => (
             <TabIcon name="home" focused={focused} />
           ),
@@ -105,7 +108,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="calendar"
         options={{
-          tabBarLabel: 'Calendário',
+          tabBarLabel: t('nav.calendar'),
           tabBarIcon: ({ focused }: { focused: boolean }) => (
             <TabIcon name="calendar" focused={focused} />
           ),
@@ -114,7 +117,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="challenge"
         options={{
-          tabBarLabel: 'Desafio',
+          tabBarLabel: t('nav.challenge'),
           tabBarIcon: ({ focused }: { focused: boolean }) => (
             <ChallengeFAB focused={focused} />
           ),
@@ -126,7 +129,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="friends"
         options={{
-          tabBarLabel: 'Amigos',
+          tabBarLabel: t('nav.friends'),
           tabBarIcon: ({ focused }: { focused: boolean }) => (
             <TabIcon name="users" focused={focused} />
           ),
@@ -135,7 +138,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          tabBarLabel: 'Ajustes',
+          tabBarLabel: t('nav.settings'),
           tabBarIcon: ({ focused }: { focused: boolean }) => (
             <TabIcon name="settings" focused={focused} />
           ),
@@ -173,6 +176,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     color: colors.accent,
+    // The FAB item has top:-18 which shifts the whole item up.
+    // Compensate with marginTop so the label aligns with other tabs.
+    marginTop: 18,
   },
 
   // ── FAB ─────────────────────────────────────────────────────────────────────
