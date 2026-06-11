@@ -4,72 +4,83 @@
 
 ---
 
-## Estado actual — 2026-06-10 23:55
+## Estado actual — 2026-06-11 08:00
 
 ### 🟢 Em curso
 ```
 ESTADO: LIVRE
-ÚLTIMO COMMIT: e4c6da4
+ÚLTIMO COMMIT: 1fd2dd0
 ```
 
-### ✅ Concluído nesta sessão (2026-06-10 — continuação)
+### ✅ Concluído nesta sessão (2026-06-11)
 
-**Confetti — animação corrigida:**
-- `CorrectOverlay.tsx` (`ConfettoPiece`): adicionado `opacity` sharedValue com `withDelay` fade-out nos últimos 35% da queda — peças somem antes de empilhar no fundo
-- `[date].tsx` (MilestoneScreen): confetti estático substituído por `MilestoneConfettoPiece` animado — mesma física fall + fade do CorrectOverlay
-- Quirk documentado: `withDelay` precisa de `@ts-expect-error` neste tsconfig (mesmo padrão do `Easing`)
+**Skill `context-checkpoint` criada:**
+- Monitoriza contexto heuristicamente, salva handoff, faz commit ao git
+- Packaged como `context-checkpoint.skill` — instalar via Cowork
 
-**StatusScreens redesign:**
-- `MILO_PLACEHOLDER` (ícone verde do app) → `milo-celebrate.png` (mascote real)
-- `EntranceView` wrapper: slide-up + fade-in nas 3 telas (TimeExpired, WrongAnswer, BlockEnd)
-- Reanimated imports adicionados ao StatusScreens.tsx
+**R1 — Tab label + challenge header X:**
+- `tabLabelAccent`: `marginTop: 18` para alinhar label "Desafio"
+- Challenge header X: `borderRadius: 12` (rounded square) + icon size 22
 
-**Calendar screen — implementação completa (`app/(app)/(tabs)/calendar.tsx`): ✅ FUNCIONANDO**
-- Header fixo (fora do ScrollView) com `useSafeAreaInsets` — sem barra cinza no status bar
-- MiloMessage contextual ao streak
-- Stats cards horizontal pixel-faithful: `StreakCard` (gradient laranja, flame em círculo semi-transparente) + `RecordCard` (branco, trophy em círculo âmbar)
-- Calendário mensal: mês actual + 3 meses anteriores em lista vertical
-- Estados por dia: ⭐ perfeito (star amarelo), 🏆 completo (trophy verde), 🏆 incompleto (trophy vermelho/rosa), 🔵 hoje, 🔒 bloqueado/futuro
-- Legenda em rodapé
-- `useFocusEffect` invalida query ao entrar no ecrã
-- Query range: 4 meses numa só chamada Supabase
+**R2 — Friends screen:**
+- `Global` ranking filtra apenas amigos (igual a Semanal/Mensal)
+- Header: dois botões — bell (notificações) + person-add (gerir amigos)
 
-**Calendar — fallback AsyncStorage (EF não deployada):**
-- `challenge.service.ts`: `storeLocalCompletion()` + `getLocalCompletions()` — persistência local por `(childId, challengeDate, isPerfect)`
-- `[date].tsx handleComplete`: chama `storeLocalCompletion()` ANTES da EF → dado garantido mesmo se EF falha
-- `calendar.tsx buildDayGrid`: prioridade `calendar_days` > `challenge_sessions` > **AsyncStorage local** > today > future > missed
-- RLS de `calendar_days` e `challenge_sessions` só tem SELECT — escrita directa do client bloqueada; AsyncStorage é a solução correcta
+**R3 — Avatar picker:**
+- Double ring azul + `Ionicons checkmark` badge no canto inferior direito
+
+**R4 — PIN parental:**
+- `pin.service.ts`: getPin, setPin, clearPin, verify, sendForgotPinEmail
+- `settings.tsx` PinGate: keypad numérico completo com dots (usa pinService)
+- `parent-area/edit-profile.tsx`: secção PIN + botão Change Password
+
+**R5 — Redefinir senha inline:**
+- `parent-area/change-password.tsx`: nova tela, `supabase.auth.updateUser({ password })`
+
+**R6 — i18n global:**
+- `nav.*` keys em todos os 4 locales; tab labels via `t()`
+- Challenge milestones, MiloBox, friends screen, calendar legend via i18n
+
+**R7 — Desafio retroativo:**
+- `challenge.tsx` tab: mostra 7 dias passados se hoje já feito
+- `challengeService.isDateCompleted()` + `LocalCompletion.isRetroactive`
+- `[date].tsx`: param `?retroactive=1`, banner âmbar, flag a storeLocalCompletion
+- Calendar: estado `'late'` (âmbar + clock icon), `LegendRow` i18n-aware
+
+**R8 — Amigos + notificações in-app:**
+- `socialService.getNotifications()`, blockUser/unblockUser/getBlockedProfiles()
+- `friends/notifications.tsx`: accept/reject inline
+- `friends/blocked.tsx`: lista de bloqueados com unblock
+- `friends/list.tsx`: botão ⋮ → bloquear; footer → Notificações + Bloqueados
 
 ### ⚠️ Issues conhecidos
 
-**expo-av incompatível com SDK actual:**
-- Sons comentados em `CorrectOverlay.tsx` com TODO
-- Fix: `rm -rf node_modules/expo-av ~/Library/Developer/Xcode/DerivedData && cd ios && pod deintegrate && pod install`
-
-**Edge Functions não deployadas:**
-- `start_challenge` e `complete_challenge` só em código local
-- Calendar usa AsyncStorage como fallback (funciona correctamente)
-- XP/level/streak NÃO são actualizados enquanto EF não estiver deployada
-
-**Git locks virtiofs:**
-- Fix: `find .git -name "*.lock" | while read f; do mv "$f" "${f}.gone"; done`
-
-**Avatares — tamanho dos PNGs:**
-- ~1.2MB cada (6 ficheiros = ~7.2MB no bundle)
-- Não bloqueia MVP; optimizar com `sharp` antes de produção
+- `expo-av` incompatível com SDK — sons comentados com TODO
+- Edge Functions não deployadas — XP/streak não actualizam
+- Retroativo: flag `isRetroactive` guardado, EF precisa de suportar quando deployada
+- **Push notifications (WhatsApp-style):** requer EAS build + FCM/APNs — NÃO funciona em Expo Go
+- **Chat/mensagens:** Phase 5+ (Supabase Realtime)
+- **Block list:** AsyncStorage MVP — Phase 5+: migrar para tabela `blocked_users` Supabase
+- Git locks virtiofs: fix com `mv` (ver CLAUDE.md)
+- Avatares PNG ~1.2MB cada — optimizar antes de produção
 
 ### ⏭️ Próximos passos
 
-**A (prioridade alta — PRÓXIMA TAREFA) — Friends screen:**
-- Design disponível em `design/exports/06-friends.zip`
-- Única tab ainda placeholder
-- Implementar lista de amigos, pedidos pendentes, pesquisa por username
+**A (alta prioridade) — Edge Functions + Gamification:**
+- Deploy `start_challenge` + `complete_challenge`
+- `complete_challenge`: suportar `is_retroactive` (sem streak/perfect week)
+- XP/level/streak/trophies reais + Level Up modal
 
-**B — Phase 2/3 — Edge Functions + Gamification:**
-- Deploy `start_challenge` + `complete_challenge` no Supabase
-- Ligar XP/level/streak/trophies a dados reais (Phase 3)
-- Level Up modal (post-challenge se level mudou)
+**B — Push notifications (EAS build):**
+- `expo-notifications` + FCM + APNs
+- Edge Function para push quando `friend_request` criado
 
-**C — Optimização de assets:**
-- Redimensionar avatares PNG para ≤200KB cada
-- Considerar `expo-image` para cache automático
+**C — Chat entre amigos:**
+- Supabase Realtime + tabela `messages`
+
+**D — 2 simuladores iOS + Android:**
+- `npx expo run:ios` + `npx expo run:android`
+- Testar invite cross-device após EAS build
+
+**E — Optimização de assets:**
+- Redimensionar avatares para ≤200KB
