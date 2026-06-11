@@ -141,3 +141,26 @@ O mount virtiofs (macOS→Linux sandbox) não suporta `unlink` — `rm -f` falha
 **app.json plugin `expo-notifications` só deve ser adicionado APÓS `npm install expo-notifications`.**
 - Plugin no app.json é avaliado pelo Metro na inicialização — se o pacote não existir → crash imediato
 - Nunca adicionar plugins ao app.json sem o pacote correspondente instalado
+
+---
+
+**complete_challenge EF: idempotency por (child_id, challenge_date, module_id), não só por session_id.**
+- A tabela `challenge_sessions` tem unique constraint em (child_id, challenge_date, module_id)
+- Se start_challenge criou uma session com UUID diferente, upsert por `id` viola a constraint → 500
+- Fix: verificar por (child_id, date, module_id) primeiro; usar `effectiveSessionId` (o ID que existe no DB) em todos os inserts subsequentes
+- Pattern: byDay query → byId fallback → effectiveSessionId = existingSession?.id ?? session_id
+
+---
+
+**send_friend_request EF: separar expo_push_token da query principal.**
+- Selecionar `expo_push_token` na mesma query que verifica se a criança existe → falha se migration 003 não aplicada
+- Pattern correto: query principal seleciona só `id, display_name`; após inserir o pedido, fetch separado + try/catch para o token
+- Nunca colocar campos opcionais/migrados em queries de validação crítica
+
+---
+
+**Header pattern universal: LinearGradient + "Math Hero Kids" subtitle + chevron-back circle.**
+- Todas as telas com header usam: `LinearGradient([primary, primaryDark])` + SafeAreaView edges top + headerRow com back button (circle 40x40 rgba 18%) + headerCenter (subtitle + title) + spacer (width:40)
+- Alternativa: usar `AuthScreen` component (já tem o padrão correto) para telas com scroll/form
+- Nunca usar `SafeAreaView` com fundo sólido ou `‹` texto como back button
+- Referência: `friends/list.tsx` (manual) e `trophy-room.tsx` (AuthScreen) como exemplos correctos
