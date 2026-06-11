@@ -217,47 +217,56 @@ export const socialService = {
 
   /**
    * Envia pedido de amizade via Edge Function send_friend_request.
-   * Se EF não disponível, tenta insert directo (falhará por RLS — erro retornado).
+   *
+   * A EF usa SERVICE_ROLE_KEY — único caminho válido para INSERT em friend_requests
+   * (sem política INSERT no RLS). Sem fallback de insert directo.
+   *
+   * Parseia FunctionsHttpError.context para expor o código de erro real da EF.
    */
   async sendFriendRequest(fromChildId: string, toChildId: string): Promise<void> {
-    // Tentar EF primeiro
+    const { error } = await supabase.functions.invoke('send_friend_request', {
+      body: { from_child_id: fromChildId, to_child_id: toChildId },
+    });
+
+    if (!error) return; // 200 / 201 — sucesso
+
+    let message = 'Não foi possível enviar o pedido. Tente novamente.';
     try {
-      const { error } = await supabase.functions.invoke('send_friend_request', {
-        body: { from_child_id: fromChildId, to_child_id: toChildId },
-      });
-      if (error) throw error;
-      return;
-    } catch {
-      // EF falhou — tentar direct insert (funciona se RLS tiver política INSERT)
-    }
+      const ctx = (error as { context?: Response }).context;
+      if (ctx) {
+        const body = await ctx.clone().json() as { error?: string; message?: string };
+        if      (body.error === 'ALREADY_FRIENDS')  message = 'Vocês já são amigos!';
+        else if (body.error === 'SELF_REQUEST')      message = 'Não podes adicionar-te a ti mesmo.';
+        else if (body.error === 'CHILD_NOT_FOUND')   message = 'Perfil não encontrado ou inactivo.';
+        else if (body.message)                       message = body.message;
+      }
+    } catch { /* usar mensagem default */ }
 
-    const { error } = await supabase
-      .from('friend_requests')
-      .insert({ from_child_id: fromChildId, to_child_id: toChildId });
-
-    if (error) throw new Error('Não foi possível enviar o pedido. Tente novamente.');
+    throw new Error(message);
   },
 
   /**
    * Aceita ou rejeita pedido via Edge Function respond_friend_request.
+   *
+   * A EF usa SERVICE_ROLE_KEY — único caminho válido para UPDATE em friend_requests.
    */
   async respondToRequest(requestId: string, accept: boolean): Promise<void> {
+    const { error } = await supabase.functions.invoke('respond_friend_request', {
+      body: { request_id: requestId, accept },
+    });
+
+    if (!error) return;
+
+    let message = 'Não foi possível responder ao pedido. Tente novamente.';
     try {
-      const { error } = await supabase.functions.invoke('respond_friend_request', {
-        body: { request_id: requestId, accept },
-      });
-      if (error) throw error;
-      return;
-    } catch {
-      // Fallback directo
-    }
+      const ctx = (error as { context?: Response }).context;
+      if (ctx) {
+        const body = await ctx.clone().json() as { error?: string; message?: string };
+        if (body.message) message = body.message;
+      }
+    } catch { /* usar mensagem default */ }
 
-    const { error } = await supabase
-      .from('friend_requests')
-      .update({ status: accept ? 'accepted' : 'rejected', responded_at: new Date().toISOString() })
-      .eq('id', requestId);
-
-    if (error) throw new Error('Não foi possível responder ao pedido. Tente novamente.');
+    throw new Error(message);
   },
 
   /**
