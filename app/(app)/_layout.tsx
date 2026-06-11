@@ -19,7 +19,7 @@ const lastSeenUpdated: Record<string, number> = {};
  */
 // Routes inside (app) that are accessible without an active child.
 // These are parent-level screens that don't require a selected child profile.
-const PARENT_ONLY_ROUTES = ['settings'];
+const PARENT_ONLY_ROUTES = ['settings', 'parent-area'];
 
 export default function AppLayout() {
   const status = useAuthStore(selectAuthStatus);

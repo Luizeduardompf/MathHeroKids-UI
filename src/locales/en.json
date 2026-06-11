@@ -27,7 +27,8 @@
     },
     "self": "You",
     "comingSoon": "Coming soon",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "delete": "Delete"
   },
   "nav": {
     "home": "Home",
@@ -43,9 +44,9 @@
       "getStarted": "Get started",
       "signIn": "I already have an account",
       "features": {
-        "trophies":   "Earn trophies and level up",
+        "trophies": "Earn trophies and level up",
         "challenges": "Daily challenges with Milo",
-        "profiles":   "Multiple profiles for the whole family"
+        "profiles": "Multiple profiles for the whole family"
       }
     },
     "login": {
@@ -469,7 +470,17 @@
     "xpToLevel": "{{xp}} XP to level {{level}}",
     "miloNearLevel": "You're so close to the next level! Let's go!",
     "miloContinue": "Keep completing challenges to level up!",
-    "milestoneLabel": "Level {{level}} · {{title}}"
+    "milestoneLabel": "Level {{level}} · {{title}}",
+    "milestones": {
+      "initialAvatar": "Initial avatar unlocked",
+      "adventurerFrame": "Adventurer Frame",
+      "starsFrame": "Stars Frame",
+      "magicCape": "Magic Cape",
+      "silverMedal": "Silver Medal",
+      "brilliantTrophy": "Brilliant Trophy",
+      "galacticHat": "Galactic Hat",
+      "goldenFireworks": "Golden Fireworks"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -547,7 +558,10 @@
       "confirmPlaceholder": "Repeat password",
       "updated": "✓ Password changed successfully!",
       "saveBtn": "Save new password"
-    }
+    },
+    "accountSection": "Manage account",
+    "childrenSection": "Your children",
+    "addChild": "Add child"
   },
   "levelUp": {
     "title": "YOU LEVELED UP!",

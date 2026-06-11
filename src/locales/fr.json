@@ -27,7 +27,8 @@
     },
     "self": "Vous",
     "comingSoon": "Bientôt disponible",
-    "saving": "Enregistrement…"
+    "saving": "Enregistrement…",
+    "delete": "Effacer"
   },
   "nav": {
     "home": "Accueil",
@@ -43,9 +44,9 @@
       "getStarted": "Commencer",
       "signIn": "J'ai déjà un compte",
       "features": {
-        "trophies":   "Gagne des trophées et monte de niveau",
+        "trophies": "Gagne des trophées et monte de niveau",
         "challenges": "Défis quotidiens avec Milo",
-        "profiles":   "Plusieurs profils pour toute la famille"
+        "profiles": "Plusieurs profils pour toute la famille"
       }
     },
     "login": {
@@ -365,14 +366,27 @@
       "confirmPlaceholder": "Répétez le mot de passe",
       "updated": "✓ Mot de passe modifié avec succès !",
       "saveBtn": "Enregistrer le nouveau mot de passe"
-    }
+    },
+    "accountSection": "Gérer le compte",
+    "childrenSection": "Vos enfants",
+    "addChild": "Ajouter un enfant"
   },
   "progression": {
     "xpToLevel": "Il manque {{xp}} XP pour le niveau {{level}}",
     "miloNearLevel": "Tu es si proche du prochain niveau ! Allez !",
     "miloContinue": "Continue les défis pour monter de niveau !",
     "milestonesTitle": "Jalons et récompenses",
-    "milestoneLabel": "Niveau {{level}} · {{title}}"
+    "milestoneLabel": "Niveau {{level}} · {{title}}",
+    "milestones": {
+      "initialAvatar": "Avatar initial débloqué",
+      "adventurerFrame": "Cadre Aventurier",
+      "starsFrame": "Cadre Étoiles",
+      "magicCape": "Cape Magique",
+      "silverMedal": "Médaille d'Argent",
+      "brilliantTrophy": "Trophée Brillant",
+      "galacticHat": "Chapeau Galactique",
+      "goldenFireworks": "Feux Dorés"
+    }
   },
   "milo": {
     "great_job": "Super travail aujourd'hui !",

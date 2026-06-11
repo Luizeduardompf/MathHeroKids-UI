@@ -33,35 +33,33 @@ function getXpRange(level: number) {
 
 // ─── Milestone data (from gamification-data.ts in zip) ───────────────────────
 
-// TODO Phase 3: extract reward catalog to i18n when finalized
-type RewardType = 'Moldura' | 'Roupa do Milo' | 'Medalha' | 'Variante de Troféu' | 'Comemoração'; // i18n-ignore
+type RewardType = 'frame' | 'outfit' | 'medal' | 'trophy_variant' | 'celebration';
 type MilestoneStatus = 'unlocked' | 'current' | 'locked';
 
 interface Milestone {
-  level: number;
-  title: string;
-  reward: { type: RewardType; name: string };
+  level:        number;
+  titleKey:     string;  // → levels.*
+  rewardNameKey: string; // → progression.milestones.*
+  rewardType:   RewardType;
 }
 
-// Icon names per reward type — ported from design // i18n-ignore
 const REWARD_ICONS: Record<RewardType, IoniconsName> = {
-  'Moldura':             'image-outline',   // i18n-ignore
-  'Roupa do Milo':       'shirt-outline',   // i18n-ignore
-  'Medalha':             'ribbon-outline',  // i18n-ignore
-  'Variante de Troféu':  'trophy-outline',  // i18n-ignore
-  'Comemoração':         'sparkles-outline', // i18n-ignore
+  frame:          'image-outline',
+  outfit:         'shirt-outline',
+  medal:          'ribbon-outline',
+  trophy_variant: 'trophy-outline',
+  celebration:    'sparkles-outline',
 };
 
-// i18n-ignore — milestone catalog data (TODO Phase 3: move to DB seeds + i18n keys)
 const MILESTONES: Milestone[] = [
-  { level: 1,  title: 'Explorador',          reward: { type: 'Moldura',            name: 'Avatar inicial desbloqueado' } }, // i18n-ignore
-  { level: 5,  title: 'Aventureiro',          reward: { type: 'Moldura',            name: 'Moldura de Aventureiro'      } }, // i18n-ignore
-  { level: 10, title: 'Explorador Avançado',  reward: { type: 'Moldura',            name: 'Moldura Estrelas'            } }, // i18n-ignore
-  { level: 11, title: 'Aventureiro',          reward: { type: 'Roupa do Milo',      name: 'Capa Mágica'                 } }, // i18n-ignore
-  { level: 12, title: 'Herói da Matemática',  reward: { type: 'Medalha',            name: 'Medalha de Prata'            } }, // i18n-ignore
-  { level: 13, title: 'Mago Aprendiz',        reward: { type: 'Variante de Troféu', name: 'Troféu Brilhante'            } }, // i18n-ignore
-  { level: 15, title: 'Mestre dos Números',   reward: { type: 'Roupa do Milo',      name: 'Chapéu Galáctico'            } }, // i18n-ignore
-  { level: 20, title: 'Lenda Matemática',     reward: { type: 'Comemoração',        name: 'Fogos Dourados'              } }, // i18n-ignore
+  { level: 1,  titleKey: 'levels.explorador',        rewardNameKey: 'progression.milestones.initialAvatar',   rewardType: 'frame'          },
+  { level: 5,  titleKey: 'levels.aventureiro',        rewardNameKey: 'progression.milestones.adventurerFrame', rewardType: 'frame'          },
+  { level: 10, titleKey: 'levels.explorador_mestre',  rewardNameKey: 'progression.milestones.starsFrame',      rewardType: 'frame'          },
+  { level: 11, titleKey: 'levels.aventureiro',        rewardNameKey: 'progression.milestones.magicCape',       rewardType: 'outfit'         },
+  { level: 12, titleKey: 'levels.heroi',              rewardNameKey: 'progression.milestones.silverMedal',     rewardType: 'medal'          },
+  { level: 13, titleKey: 'levels.mago_aprendiz',      rewardNameKey: 'progression.milestones.brilliantTrophy', rewardType: 'trophy_variant' },
+  { level: 15, titleKey: 'levels.mestre_numeros',     rewardNameKey: 'progression.milestones.galacticHat',     rewardType: 'outfit'         },
+  { level: 20, titleKey: 'levels.lenda_matematica',   rewardNameKey: 'progression.milestones.goldenFireworks', rewardType: 'celebration'    },
 ];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -140,8 +138,8 @@ export default function ProgressionScreen() {
         <View style={styles.timelineLine} />
 
         {MILESTONES.map((m) => {
-          const status  = getMilestoneStatus(m);
-          const icon    = REWARD_ICONS[m.reward.type];
+          const status = getMilestoneStatus(m);
+          const icon   = REWARD_ICONS[m.rewardType];
           return (
             <View key={m.level} style={styles.milestoneRow}>
               {/* Indicator circle */}
@@ -168,9 +166,9 @@ export default function ProgressionScreen() {
                 <View style={styles.milestoneCardInner}>
                   <View style={styles.milestoneCardTexts}>
                     <Text variant="caption" color={colors.text.secondary}>
-                      {t('common.level', { level: m.level })} · {m.title}
+                      {t('common.level', { level: m.level })} · {t(m.titleKey)}
                     </Text>
-                    <Text variant="label">{m.reward.name}</Text>
+                    <Text variant="label">{t(m.rewardNameKey)}</Text>
                   </View>
                   <View style={[
                     styles.rewardIcon,

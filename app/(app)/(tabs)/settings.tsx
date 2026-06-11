@@ -440,6 +440,7 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
 // ─── Parent card ──────────────────────────────────────────────────────────────
 
 function ParentCard() {
+  const { t }         = useTranslation();
   const router        = useRouter();
   const user          = useAuthStore((s) => s.user);
   const parentProfile = useAuthStore((s) => s.parentProfile);

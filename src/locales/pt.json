@@ -27,7 +27,8 @@
     },
     "self": "Você",
     "comingSoon": "Em breve",
-    "saving": "A guardar…"
+    "saving": "A guardar…",
+    "delete": "Apagar"
   },
   "nav": {
     "home": "Início",
@@ -43,9 +44,9 @@
       "getStarted": "Começar agora",
       "signIn": "Já tenho uma conta",
       "features": {
-        "trophies":   "Ganhe troféus e suba de nível",
+        "trophies": "Ganhe troféus e suba de nível",
         "challenges": "Desafios diários com o Milo",
-        "profiles":   "Vários perfis para a família toda"
+        "profiles": "Vários perfis para a família toda"
       }
     },
     "login": {
@@ -480,7 +481,17 @@
     "xpToLevel": "Faltam {{xp}} XP para o nível {{level}}",
     "miloNearLevel": "Você está super perto do próximo nível! Bora lá?",
     "miloContinue": "Continue fazendo desafios para subir de nível!",
-    "milestoneLabel": "Nível {{level}} · {{title}}"
+    "milestoneLabel": "Nível {{level}} · {{title}}",
+    "milestones": {
+      "initialAvatar": "Avatar inicial desbloqueado",
+      "adventurerFrame": "Moldura de Aventureiro",
+      "starsFrame": "Moldura Estrelas",
+      "magicCape": "Capa Mágica",
+      "silverMedal": "Medalha de Prata",
+      "brilliantTrophy": "Troféu Brilhante",
+      "galacticHat": "Chapéu Galáctico",
+      "goldenFireworks": "Fogos Dourados"
+    }
   },
   "settings": {
     "title": "Ajustes",
@@ -558,7 +569,10 @@
       "confirmPlaceholder": "Repita a senha",
       "updated": "✓ Senha alterada com sucesso!",
       "saveBtn": "Guardar nova senha"
-    }
+    },
+    "accountSection": "Gerenciar conta",
+    "childrenSection": "Seus filhos",
+    "addChild": "Adicionar filho"
   },
   "levelUp": {
     "title": "VOCÊ SUBIU DE NÍVEL!",

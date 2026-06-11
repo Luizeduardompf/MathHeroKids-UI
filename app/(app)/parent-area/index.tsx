@@ -1,5 +1,5 @@
 /**
- * Parent Area — children management.
+ * Parent Area — dashboard with account management + children list.
  * PIN verification happens in settings.tsx before navigating here.
  */
 
@@ -15,10 +15,42 @@ import { Card, Text } from '@/components/ui';
 import { Avatar } from '@/components/ui';
 import { childService } from '@/services/child.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
-import { colors, fontFamily, space } from '@/theme';
+import { colors, fontFamily, radius, space } from '@/theme';
+import type { IoniconsName } from '@/components/ui';
+
+// ─── Account action row ───────────────────────────────────────────────────────
+
+function ActionRow({
+  icon,
+  label,
+  sublabel,
+  onPress,
+  destructive = false,
+}: {
+  icon: IoniconsName;
+  label: string;
+  sublabel?: string;
+  onPress: () => void;
+  destructive?: boolean;
+}) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [s.actionRow, pressed && s.actionRowPressed]}>
+      <View style={[s.actionIcon, destructive && s.actionIconDestructive]}>
+        <Ionicons name={icon} size={20} color={destructive ? colors.error : colors.primary} />
+      </View>
+      <View style={s.actionTexts}>
+        <Text variant="label" color={destructive ? colors.error : colors.text.primary}>{label}</Text>
+        {sublabel ? <Text variant="caption" color={colors.text.secondary}>{sublabel}</Text> : null}
+      </View>
+      <Ionicons name="chevron-forward" size={16} color={colors.text.tertiary} />
+    </Pressable>
+  );
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ParentAreaScreen() {
-  const { t } = useTranslation();
+  const { t }    = useTranslation();
   const router   = useRouter();
   const insets   = useSafeAreaInsets();
   const parentId = useAuthStore(selectParentId);
@@ -30,38 +62,66 @@ export default function ParentAreaScreen() {
   });
 
   return (
-    <View style={styles.root}>
-      {/* ── Header (gradient, same pattern as all screens) ─────────── */}
+    <View style={s.root}>
+      {/* ── Header ──────────────────────────────────────────────────── */}
       <LinearGradient
         colors={[colors.primary, colors.primaryDark]}
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
+        style={[s.header, { paddingTop: insets.top + 12 }]}
       >
-        <View style={styles.headerRow}>
-          <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={8}>
+        <View style={s.headerRow}>
+          <Pressable style={s.iconBtn} onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </Pressable>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerSub}>Math Hero Kids</Text>
-            <Text style={styles.headerTitle}>{t('parentArea.title')}</Text>
+          <View style={s.headerCenter}>
+            <Text style={s.headerSub}>Math Hero Kids</Text>
+            <Text style={s.headerTitle}>{t('parentArea.title')}</Text>
           </View>
           <View style={{ width: 42 }} />
         </View>
+        <Text style={s.headerSubtitle}>{t('parentArea.subtitle')}</Text>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text variant="h3">{t('profileSelect.title')}</Text>
+      <ScrollView contentContainerStyle={s.content}>
 
-        {isLoading && <ActivityIndicator color={colors.primary} style={{ marginTop: space.lg }} />}
+        {/* ── Account section ─────────────────────────────────────── */}
+        <Text variant="h3" style={s.sectionTitle}>{t('parentArea.accountSection')}</Text>
+        <Card style={s.card}>
+          <ActionRow
+            icon="person-outline"
+            label={t('parentArea.editProfile')}
+            sublabel={t('parentArea.editProfileSub')}
+            onPress={() => router.push('/(app)/parent-area/edit-profile')}
+          />
+          <View style={s.divider} />
+          <ActionRow
+            icon="lock-closed-outline"
+            label={t('parentArea.passwordSection')}
+            sublabel={t('parentArea.passwordHint')}
+            onPress={() => router.push('/(app)/parent-area/change-password')}
+          />
+          <View style={s.divider} />
+          <ActionRow
+            icon="keypad-outline"
+            label={t('parentArea.pinSection')}
+            sublabel={t('parentArea.pinActive')}
+            onPress={() => router.push('/(app)/parent-area/pin')}
+          />
+        </Card>
+
+        {/* ── Children section ────────────────────────────────────── */}
+        <Text variant="h3" style={s.sectionTitle}>{t('parentArea.childrenSection')}</Text>
+
+        {isLoading && <ActivityIndicator color={colors.primary} style={{ marginTop: space.sm }} />}
 
         {children.map((child) => (
           <Pressable
             key={child.id}
             onPress={() => router.push(`/(app)/parent-area/child/${child.id}`)}
           >
-            <Card style={styles.childRow}>
+            <Card style={s.childRow}>
               <Avatar avatarId={child.avatar_id} displayName={child.display_name} size="md" />
-              <View style={styles.childInfo}>
+              <View style={s.childInfo}>
                 <Text variant="label">{child.display_name}</Text>
                 <Text variant="caption" color={colors.text.secondary}>
                   @{child.username} · {t('common.level', { level: child.level })}
@@ -71,20 +131,53 @@ export default function ParentAreaScreen() {
             </Card>
           </Pressable>
         ))}
+
+        {/* Add child */}
+        <Pressable
+          onPress={() => router.push('/(app)/parent-area/child/new')}
+          style={({ pressed }) => [s.addChildBtn, pressed && s.addChildBtnPressed]}
+        >
+          <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+          <Text variant="label" color={colors.primary}>{t('parentArea.addChild')}</Text>
+        </Pressable>
+
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root:        { flex: 1, backgroundColor: colors.background.primary },
-  header:      { paddingHorizontal: 20, paddingBottom: 20 },
-  headerRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerCenter:{ flex: 1, alignItems: 'center' },
-  headerSub:   { fontFamily: fontFamily.semiBold, fontSize: 12, color: 'rgba(255,255,255,0.75)', marginBottom: 1 },
-  headerTitle: { fontFamily: fontFamily.extraBold, fontSize: 24, color: '#fff' },
-  iconBtn:     { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  content:     { padding: space.md, gap: space.md, paddingBottom: space['2xl'] },
-  childRow:    { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  childInfo:   { flex: 1, gap: 2 },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
+  root:         { flex: 1, backgroundColor: colors.background.primary },
+
+  // Header
+  header:       { paddingHorizontal: 20, paddingBottom: 20 },
+  headerRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerCenter: { flex: 1, alignItems: 'center' },
+  headerSub:    { fontFamily: fontFamily.semiBold, fontSize: 12, color: 'rgba(255,255,255,0.75)', marginBottom: 1 } as import('react-native').TextStyle,
+  headerTitle:  { fontFamily: fontFamily.extraBold, fontSize: 24, color: '#fff' } as import('react-native').TextStyle,
+  headerSubtitle: { fontFamily: fontFamily.regular, fontSize: 13, color: 'rgba(255,255,255,0.70)', textAlign: 'center', marginTop: 4 } as import('react-native').TextStyle,
+  iconBtn:      { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+
+  // Content
+  content:      { padding: space.md, gap: space.sm, paddingBottom: space['2xl'] },
+  sectionTitle: { marginTop: space.sm, marginBottom: 4 },
+
+  // Account card
+  card:         { padding: 0, overflow: 'hidden' },
+  divider:      { height: 1, backgroundColor: colors.border.default, marginLeft: 56 },
+  actionRow:    { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md },
+  actionRowPressed: { backgroundColor: colors.background.cardAlt },
+  actionIcon:   { width: 36, height: 36, borderRadius: radius.lg, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  actionIconDestructive: { backgroundColor: `${colors.error}18` },
+  actionTexts:  { flex: 1, gap: 2 },
+
+  // Children
+  childRow:     { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  childInfo:    { flex: 1, gap: 2 },
+
+  // Add child
+  addChildBtn:        { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.md, borderRadius: radius['2xl'], borderWidth: 1.5, borderColor: colors.primary, borderStyle: 'dashed', justifyContent: 'center', marginTop: 4 },
+  addChildBtnPressed: { opacity: 0.6 },
 });

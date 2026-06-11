@@ -542,6 +542,7 @@ function NumericKeypad({
   hasInput?: boolean;
   disabled?: boolean;
 }) {
+  const { t }   = useTranslation();
   const topKeys = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
   return (
     <View style={kpStyles.keypad}>
@@ -563,7 +564,7 @@ function NumericKeypad({
           [kpStyles.key, kpStyles.keyMuted, pressed && !disabled ? kpStyles.keyPressed : null, disabled ? kpStyles.keyDisabled : null] as StyleProp<ViewStyle>
         }
         onPress={() => { if (!disabled) onDelete(); }}
-        accessibilityLabel="Apagar"
+        accessibilityLabel={t('common.delete')}
       >
         <Ionicons name="backspace-outline" size={26} color="#6B7280" />
       </Pressable>
