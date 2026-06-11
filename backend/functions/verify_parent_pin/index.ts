@@ -26,8 +26,9 @@
  * { ok: boolean, error?: string }
  */
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts';
+import { createClient } from 'npm:@supabase/supabase-js@2';
+// @ts-ignore — bcryptjs types not bundled, works at runtime
+import * as bcrypt from 'npm:bcryptjs';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -115,7 +116,7 @@ Deno.serve(async (req: Request) => {
     if (action === 'set') {
       if (!pin || !PIN_REGEX.test(pin)) return json({ ok: false, error: 'INVALID_PIN' }, 400);
       if (currentHash) return json({ ok: false, error: 'PIN_ALREADY_SET' }, 409);
-      const hash = await bcrypt.hash(pin);
+      const hash = await bcrypt.hash(pin, 10);
       const { error: updateError } = await supabaseAdmin.from('parent_profiles').update({ pin_hash: hash }).eq('id', parentId);
       if (updateError) throw updateError;
       return json({ ok: true });
@@ -128,7 +129,7 @@ Deno.serve(async (req: Request) => {
       if (!currentHash) return json({ ok: false, error: 'PIN_NOT_SET' }, 400);
       const match = await bcrypt.compare(current_pin, currentHash);
       if (!match) { recordFailure(parentId); return json({ ok: false, error: 'WRONG_PIN' }, 401); }
-      const newHash = await bcrypt.hash(new_pin);
+      const newHash = await bcrypt.hash(new_pin, 10);
       const { error: updateError } = await supabaseAdmin.from('parent_profiles').update({ pin_hash: newHash }).eq('id', parentId);
       if (updateError) throw updateError;
       clearAttempts(parentId);
