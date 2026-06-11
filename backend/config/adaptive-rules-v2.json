@@ -59,7 +59,7 @@
     "mode": "byCalendarDay"
   },
   "session": {
-    "questionsPerChallenge": 20,
+    "questionsPerChallenge": 5,
     "blockSize": 5,
     "maxWeakPerSession": 8
   }
