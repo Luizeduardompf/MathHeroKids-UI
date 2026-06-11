@@ -1,15 +1,14 @@
-import { ActivityIndicator, View } from 'react-native';
 import { Redirect } from 'expo-router';
 
 import { useAuthStore, selectAuthStatus } from '@/stores/auth.store';
 import { useProfileStore, selectHasActiveChild } from '@/stores/profile.store';
-import { colors } from '@/theme';
+import SplashScreen from '@/components/SplashScreen';
 
 /**
  * Root index — determines where the user should land on app start.
  *
  * Decision tree:
- *   loading            → spinner (Supabase session is being hydrated from storage)
+ *   loading            → animated splash screen (Supabase session hydrating)
  *   unauthenticated    → /(auth)/welcome
  *   authenticated
  *     + no active child → /(profile-select)/
@@ -20,11 +19,7 @@ export default function Index() {
   const hasActiveChild = useProfileStore(selectHasActiveChild);
 
   if (status === 'loading') {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary }}>
-        <ActivityIndicator color={colors.text.inverse} size="large" />
-      </View>
-    );
+    return <SplashScreen />;
   }
 
   if (status === 'unauthenticated') {

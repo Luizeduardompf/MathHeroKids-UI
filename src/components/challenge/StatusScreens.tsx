@@ -221,10 +221,8 @@ export function TimeExpiredScreen({ onRetry, onGoHome }: { onRetry: () => void; 
           <Text style={sc.title}>{t('challenge.timeout.title')}</Text>
           <Text style={sc.subtitle}>{t('challenge.timeout.message')}</Text>
         </View>
-      </EntranceView>
-      <View style={sc.miloWrap}>
         <MiloBubble message={t('challenge.timeout.miloMessage')} tone="destructive" />
-      </View>
+      </EntranceView>
       <View style={sc.actions}>
         <ActionButton tone="primary" icon="refresh" label={t('challenge.timeout.retry')} onPress={onRetry} />
         <ActionButton tone="neutral" icon="home-outline" label={t('challenge.timeout.goHome')} onPress={onGoHome} />
@@ -271,11 +269,9 @@ export function WrongAnswerScreen({ operandA, operandB, correctAnswer, userAnswe
             </View>
           )}
         </View>
+        <MiloBubble message={t('challenge.wrong.miloMessage')} tone="primary" />
       </EntranceView>
 
-      <View style={sc.miloWrap}>
-        <MiloBubble message={t('challenge.wrong.miloMessage')} tone="primary" />
-      </View>
       <View style={sc.actions}>
         <ActionButton tone="success" label={t('challenge.wrong.continueAnyway')} onPress={onContinue} />
         <ActionButton tone="neutral" icon="refresh" label={t('challenge.wrong.retry')} onPress={onRetry} />
@@ -348,11 +344,9 @@ export function BlockEndScreen({ correct, total, onRetry, onGoHome }: {
             <Text style={[be.footerTxt, { color: '#F59E0B' }]}>{t('challenge.target100')}</Text>
           </View>
         </View>
+        <MiloBubble message={t('challenge.blockIncomplete.miloMessage')} tone="warning" />
       </EntranceView>
 
-      <View style={sc.miloWrap}>
-        <MiloBubble message={t('challenge.blockIncomplete.miloMessage')} tone="warning" />
-      </View>
       <View style={sc.actions}>
         <ActionButton tone="primary" icon="refresh" label={t('challenge.blockIncomplete.retry')} onPress={onRetry} />
         <ActionButton tone="neutral" icon="home-outline" label={t('challenge.blockIncomplete.goHome')} onPress={onGoHome} />
@@ -406,8 +400,9 @@ const sc = StyleSheet.create({
   textGroup: { alignItems: 'center', gap: 8 },
   // font-heading text-3xl font-extrabold text-foreground
   title: {
-    fontFamily: fontFamily.bold,
+    fontFamily: fontFamily.extraBold,
     fontSize: 28,
+    lineHeight: 36,
     color: '#1A1F36',
     textAlign: 'center',
   },
@@ -420,6 +415,5 @@ const sc = StyleSheet.create({
     lineHeight: 22,
     maxWidth: 280,
   },
-  miloWrap: { marginBottom: 20 },
-  actions:  { gap: 12 },
+  actions:  { gap: 12, paddingBottom: 8 },
 });

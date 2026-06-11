@@ -23,7 +23,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +31,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Text } from '@/components/ui';
+import { FriendAvatar } from '../../(tabs)/friends';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { chatService, type ChatMessage } from '@/services/chat.service';
 import { socialService, type FriendProfile } from '@/services/social.service';
@@ -85,24 +86,6 @@ const sep = StyleSheet.create({
   label:   { fontFamily: fontFamily.regular, fontSize: 11, color: colors.text.tertiary, marginHorizontal: 10 },
 });
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
-
-function Avatar({ name, size = 36 }: { name: string; size?: number }) {
-  const initials = name.split(' ').map((w) => w[0] ?? '').slice(0, 2).join('').toUpperCase();
-  const hue = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
-  return (
-    <View style={{
-      width: size, height: size, borderRadius: size / 2,
-      backgroundColor: `hsl(${hue},60%,60%)`,
-      alignItems: 'center', justifyContent: 'center',
-    }}>
-      <Text style={{ fontFamily: fontFamily.extraBold, fontSize: size * 0.38, color: '#fff' }}>
-        {initials}
-      </Text>
-    </View>
-  );
-}
-
 // ─── List item types ──────────────────────────────────────────────────────────
 
 type ListItem =
@@ -116,8 +99,8 @@ const LANG_TO_LOCALE: Record<string, string> = { pt: 'pt-BR', en: 'en-US', es: '
 export default function ChatScreen() {
   const { friendId } = useLocalSearchParams<{ friendId: string }>();
   const { t, i18n } = useTranslation();
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const router  = useRouter();
+  const insets  = useSafeAreaInsets();
   const qc = useQueryClient();
   const activeChild = useProfileStore(selectActiveChild);
   const myId = activeChild?.id ?? '';
@@ -213,19 +196,21 @@ export default function ChatScreen() {
       keyboardVerticalOffset={0}
     >
       {/* Header */}
-      <LinearGradient
-        colors={['#2B52E5', '#1A3DB8']}
-        style={[s.header, { paddingTop: insets.top + 8 }]}
-      >
-        <Pressable onPress={() => router.back()} hitSlop={10} style={s.backBtn}>
-          <Ionicons name="chevron-back" size={28} color="#fff" />
-        </Pressable>
-        <Avatar name={friendName} size={38} />
-        <View style={s.headerText}>
-          <Text style={s.headerName}>{friendName}</Text>
-          <Text style={s.headerSub}>{t('friends.chat.friendLabel')}</Text>
-        </View>
-      </LinearGradient>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: '#2B52E5' }}>
+        <LinearGradient
+          colors={['#2B52E5', '#1A3DB8']}
+          style={s.header}
+        >
+          <Pressable onPress={() => router.back()} hitSlop={10} style={s.backBtn}>
+            <Ionicons name="chevron-back" size={28} color="#fff" />
+          </Pressable>
+          <FriendAvatar name={friendName} avatarId={friend?.avatar_id as never} size={38} />
+          <View style={s.headerText}>
+            <Text style={s.headerName}>{friendName}</Text>
+            <Text style={s.headerSub}>{t('friends.chat.friendLabel')}</Text>
+          </View>
+        </LinearGradient>
+      </SafeAreaView>
 
       {/* Messages */}
       {loading ? (

@@ -30,7 +30,7 @@ import {
   type StyleProp,
   type TextStyle,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -38,10 +38,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Avatar, Text } from '@/components/ui';
+import { MiloMessage } from '@/components/milo/MiloMessage';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { socialService, type RankedFriend, type FriendProfile, type PendingRequest } from '@/services/social.service';
 import { chatService } from '@/services/chat.service';
-import { colors, fontFamily, radius, shadows } from '@/theme';
+import { colors, fontFamily, radius, shadows, space } from '@/theme';
 import type { AvatarId } from '@/constants/config';
 
 // ─── Top-level section type ───────────────────────────────────────────────────
@@ -420,7 +421,6 @@ const em = StyleSheet.create({
 export default function AmigosScreen() {
   const { t }       = useTranslation();
   const router      = useRouter();
-  const insets      = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const child       = useProfileStore(selectActiveChild);
 
@@ -496,6 +496,36 @@ export default function AmigosScreen() {
 
   if (!child) return null;
 
+  // ── Social bloqueado ────────────────────────────────────────────────────────
+  if (child.social_enabled === false) {
+    return (
+      <View style={s.root}>
+        <SafeAreaView edges={['top']} style={{ backgroundColor: colors.primary }}>
+          <LinearGradient colors={[colors.primary, colors.primaryDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            <View style={s.header}>
+              <View style={{ flex: 1, gap: space.xs }}>
+                <Text variant="caption" style={s.appName}>{t('friends.mathHeroKids')}</Text>
+                <Text variant="h1" color={colors.text.inverse}>{t('friends.title')}</Text>
+              </View>
+            </View>
+          </LinearGradient>
+        </SafeAreaView>
+        <View style={sl.wrap}>
+          <MiloMessage message={t('friends.socialDisabledMilo')} variant="orange" />
+          <View style={sl.card}>
+            <View style={sl.iconWrap}>
+              <Ionicons name="lock-closed" size={40} color={colors.primary} />
+            </View>
+            <Text variant="h3" align="center" style={sl.title}>{t('friends.socialDisabledTitle')}</Text>
+            <Text variant="body" align="center" color={colors.text.secondary} style={sl.body}>
+              {t('friends.socialDisabledBody')}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   // ── Derivados ───────────────────────────────────────────────────────────────
 
   const filtered = search.trim()
@@ -517,45 +547,40 @@ export default function AmigosScreen() {
     <View style={s.root}>
 
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <LinearGradient
-        colors={['#2B52E5', '#1A3DB8']}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-        style={[s.header, { paddingTop: insets.top + 16 }]}
-      >
-        <View style={s.headerRow}>
-          {/* Left spacer — balances the right action buttons */}
-          <View style={{ width: 98 }} />
-
-          {/* Center: Math Hero Kids + Friends */}
-          <View style={s.headerCenter}>
-            <Text style={s.headerSub}>{t('friends.mathHeroKids')}</Text>
-            <Text style={s.headerTitle}>{t('friends.title')}</Text>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: colors.primary }}>
+        <LinearGradient
+          colors={[colors.primary, colors.primaryDark]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        >
+          <View style={s.header}>
+            <View style={{ flex: 1, gap: space.xs }}>
+              <Text variant="caption" style={s.appName}>{t('friends.mathHeroKids')}</Text>
+              <Text variant="h1" color={colors.text.inverse}>{t('friends.title')}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10, alignSelf: 'flex-end' }}>
+              <Pressable
+                style={s.iconBtn}
+                onPress={() => router.push('/(app)/friends/notifications')}
+                hitSlop={8}
+              >
+                <Ionicons name="notifications-outline" size={22} color="#fff" />
+                {requests.length > 0 && (
+                  <View style={s.notifBadge}>
+                    <RNText style={s.notifBadgeText}>{requests.length}</RNText>
+                  </View>
+                )}
+              </Pressable>
+              <Pressable
+                style={s.iconBtn}
+                onPress={() => router.push('/(app)/friends/add')}
+                hitSlop={8}
+              >
+                <Ionicons name="person-add-outline" size={22} color="#fff" />
+              </Pressable>
+            </View>
           </View>
-
-          {/* Right: notifications + add friend */}
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <Pressable
-              style={s.iconBtn}
-              onPress={() => router.push('/(app)/friends/notifications')}
-              hitSlop={8}
-            >
-              <Ionicons name="notifications-outline" size={22} color="#fff" />
-              {requests.length > 0 && (
-                <View style={s.notifBadge}>
-                  <RNText style={s.notifBadgeText}>{requests.length}</RNText>
-                </View>
-              )}
-            </Pressable>
-            <Pressable
-              style={s.iconBtn}
-              onPress={() => router.push('/(app)/friends/add')}
-              hitSlop={8}
-            >
-              <Ionicons name="person-add-outline" size={22} color="#fff" />
-            </Pressable>
-          </View>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
+      </SafeAreaView>
 
       {/* ── Content ────────────────────────────────────────────────── */}
       <ScrollView
@@ -637,7 +662,16 @@ export default function AmigosScreen() {
                           friend={f}
                           rank={i + 1}
                           unreadCount={(unreadMap as Map<string, number>).get(f.id) ?? 0}
-                          onChat={() => router.push(`/(app)/friends/chat/${f.id}` as never)}
+                          onChat={() => {
+                            if (f.social_enabled === false) {
+                              Alert.alert(
+                                t('friends.chatBlockedTitle'),
+                                t('friends.chatBlockedBody', { name: f.display_name }),
+                              );
+                              return;
+                            }
+                            router.push(`/(app)/friends/chat/${f.id}` as never);
+                          }}
                           onBlock={() => {
                             Alert.alert(
                               t('friends.blockTitle'),
@@ -712,15 +746,50 @@ export default function AmigosScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
+// ─── Social disabled styles ───────────────────────────────────────────────────
+
+const sl = StyleSheet.create({
+  wrap: {
+    flex: 1,
+    padding: space.lg,
+    gap: space.lg,
+    justifyContent: 'center',
+  },
+  card: {
+    backgroundColor: colors.background.card,
+    borderRadius: 24,
+    padding: space.xl,
+    alignItems: 'center',
+    gap: space.md,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    ...({
+      shadowColor: colors.primary,
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 3,
+    } as object),
+  },
+  iconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: space.xs,
+  },
+  title: { marginBottom: 4 },
+  body:  { lineHeight: 22, maxWidth: 280 },
+});
+
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background.primary },
 
-  // Header
-  header:         { paddingHorizontal: 20, paddingBottom: 20 },
-  headerRow:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerCenter:   { flex: 1, alignItems: 'center' },
-  headerSub:      { fontFamily: fontFamily.semiBold, fontSize: 12, color: 'rgba(255,255,255,0.75)', marginBottom: 1 },
-  headerTitle:    { fontFamily: fontFamily.extraBold, fontSize: 24, color: '#fff' },
+  // Header — idêntico ao settings
+  header:   { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: space.md, paddingTop: space.sm, paddingBottom: space.lg },
+  appName:  { color: 'rgba(255,255,255,0.75)', letterSpacing: 0.5 } as import('react-native').TextStyle,
   iconBtn: {
     width: 42, height: 42, borderRadius: 21,
     backgroundColor: 'rgba(255,255,255,0.18)',

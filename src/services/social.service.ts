@@ -29,6 +29,7 @@ export interface FriendProfile {
   level:          number;
   xp_total:       number;
   current_streak: number;
+  social_enabled: boolean;
 }
 
 export interface PendingRequest {
@@ -67,7 +68,7 @@ export const socialService = {
         .select(`
           friend:friend_id (
             id, display_name, username, avatar_id,
-            level, xp_total, current_streak
+            level, xp_total, current_streak, social_enabled
           )
         `)
         .eq('child_id', childId)
@@ -98,7 +99,7 @@ export const socialService = {
           id, from_child_id, created_at,
           from_child:from_child_id (
             id, display_name, username, avatar_id,
-            level, xp_total, current_streak
+            level, xp_total, current_streak, social_enabled
           )
         `)
         .eq('to_child_id', childId)
@@ -153,7 +154,7 @@ export const socialService = {
           id, to_child_id,
           to_child:to_child_id (
             id, display_name, username, avatar_id,
-            level, xp_total, current_streak
+            level, xp_total, current_streak, social_enabled
           )
         `)
         .eq('from_child_id', childId)
@@ -205,7 +206,7 @@ export const socialService = {
     try {
       const { data, error } = await supabase
         .from('child_profiles')
-        .select('id, display_name, username, avatar_id, level, xp_total, current_streak')
+        .select('id, display_name, username, avatar_id, level, xp_total, current_streak, social_enabled')
         .ilike('username', username.trim())
         .eq('is_active', true)
         .maybeSingle();
@@ -264,7 +265,7 @@ export const socialService = {
 
         const { data: levelPeers } = await supabase
           .from('child_profiles')
-          .select('id, display_name, username, avatar_id, level, xp_total, current_streak')
+          .select('id, display_name, username, avatar_id, level, xp_total, current_streak, social_enabled')
           .gte('level', level - 2)
           .lte('level', level + 2)
           .eq('is_active', true)
@@ -277,7 +278,7 @@ export const socialService = {
       // 3. Amigos-dos-amigos, excluindo todos os IDs a ignorar
       const { data: foaRows } = await supabase
         .from('friendships')
-        .select('friend_id, friend:friend_id(id, display_name, username, avatar_id, level, xp_total, current_streak)')
+        .select('friend_id, friend:friend_id(id, display_name, username, avatar_id, level, xp_total, current_streak, social_enabled)')
         .in('child_id', excludeArr)
         .not('friend_id', 'in', `(${excludeArr.join(',')})`)
         .limit(20);
@@ -312,19 +313,17 @@ export const socialService = {
 
     if (!error) return; // 200 / 201 — sucesso
 
-    let message = 'Não foi possível enviar o pedido. Tente novamente.'; // i18n-ignore — TODO: throw error codes, translate in UI layer
+    // Propagate error code so the UI layer can translate it
+    let code = 'UNKNOWN';
     try {
       const ctx = (error as { context?: Response }).context;
       if (ctx) {
-        const body = await ctx.clone().json() as { error?: string; message?: string };
-        if      (body.error === 'ALREADY_FRIENDS')  message = 'Vocês já são amigos!';         // i18n-ignore
-        else if (body.error === 'SELF_REQUEST')      message = 'Não podes adicionar-te a ti mesmo.'; // i18n-ignore
-        else if (body.error === 'CHILD_NOT_FOUND')   message = 'Perfil não encontrado ou inactivo.'; // i18n-ignore
-        else if (body.message)                       message = body.message;
+        const body = await ctx.clone().json() as { error?: string };
+        if (body.error) code = body.error;
       }
-    } catch { /* usar mensagem default */ }
+    } catch { /* usar código default */ }
 
-    throw new Error(message);
+    throw new Error(code);
   },
 
   /**
@@ -457,7 +456,7 @@ export const socialService = {
     try {
       const { data } = await supabase
         .from('child_profiles')
-        .select('id, display_name, username, avatar_id, level, xp_total, current_streak')
+        .select('id, display_name, username, avatar_id, level, xp_total, current_streak, social_enabled')
         .in('id', ids)
         .eq('is_active', true);
       return (data ?? []) as FriendProfile[];

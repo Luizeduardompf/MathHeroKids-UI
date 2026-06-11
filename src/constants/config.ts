@@ -4,9 +4,9 @@
  */
 
 export const CHALLENGE = {
-  TOTAL_QUESTIONS: 20,
+  TOTAL_QUESTIONS: 5, // DEV: reduzido para testes rápidos (produção: 20)
   QUESTIONS_PER_BLOCK: 5,
-  BLOCKS_PER_SESSION: 4,
+  BLOCKS_PER_SESSION: 1, // DEV: 1 bloco de 5 (produção: 4)
   XP_PER_CORRECT_ANSWER: 10,
   XP_COMPLETION_BONUS: 200,
   MILESTONE_XP: {
@@ -26,7 +26,7 @@ export const DEFAULT_TIMER = 15 satisfies TimerOption;
 // Número de questões por sessão. 0 = AUTO (ajustado ao nível, default = 20)
 export const QUESTION_COUNT_OPTIONS = [5, 10, 15, 20, 25, 0] as const;
 export type QuestionCountOption = (typeof QUESTION_COUNT_OPTIONS)[number];
-export const DEFAULT_QUESTION_COUNT = 20 satisfies QuestionCountOption;
+export const DEFAULT_QUESTION_COUNT = 5 satisfies QuestionCountOption; // DEV (produção: 20)
 
 /** Resolve o número real de questões (0 = AUTO → default 20 para MVP) */
 export function resolveQuestionCount(opt: QuestionCountOption, _level = 1): number {

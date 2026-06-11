@@ -1,8 +1,7 @@
 import 'react-native-gesture-handler';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
 import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
+import * as ExpoSplashScreen from 'expo-splash-screen';
 import { Ionicons } from '@expo/vector-icons';
 import {
   Nunito_400Regular,
@@ -20,11 +19,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { queryClient } from '@/lib/query-client';
 import { initI18n, LOCALE_STORAGE_KEY } from '@/lib/i18n';
 import { useAuthListener } from '@/hooks/use-auth';
-import { colors } from '@/theme';
 import type { SupportedLocale } from '@/constants/config';
+import SplashScreen from '@/components/SplashScreen';
 
 // Keep the splash screen visible while we load resources
-SplashScreen.preventAutoHideAsync().catch(() => {
+ExpoSplashScreen.preventAutoHideAsync().catch(() => {
   // Ignore error — Expo Go sometimes throws if splash already hidden
 });
 
@@ -33,9 +32,15 @@ function AuthListener() {
   return null;
 }
 
+// Tempo mínimo (ms) que o splash custom fica visível após o bundle JS carregar.
+// Garante que o utilizador vê a animação mesmo quando tudo carrega muito rápido.
+const MIN_SPLASH_MS = 5000;
+
 export default function RootLayout() {
   const [i18nReady, setI18nReady] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
+  // Tempo mínimo de exibição do splash (independente de fontes/auth)
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     Nunito_400Regular,
@@ -53,30 +58,36 @@ export default function RootLayout() {
       .finally(() => setI18nReady(true));
   }, []);
 
-  // Safety timeout — never block the app for more than 3 seconds
+  // Tempo mínimo do splash
   useEffect(() => {
-    const timer = setTimeout(() => setTimedOut(true), 3000);
+    const timer = setTimeout(() => setMinTimeElapsed(true), MIN_SPLASH_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Safety timeout — never block the app for more than 5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => setTimedOut(true), 5000);
     return () => clearTimeout(timer);
   }, []);
 
   const fontsReady = fontsLoaded || !!fontError || timedOut;
   const appReady = fontsReady && (i18nReady || timedOut);
 
-  // Hide splash screen once everything is ready (or timed out)
+  // Só sai do splash quando TUDO estiver pronto: fontes + i18n + tempo mínimo
+  const splashDone = appReady && minTimeElapsed;
+
+  // Hide native splash apenas quando splashDone
   useEffect(() => {
-    if (appReady) {
-      SplashScreen.hideAsync().catch(() => {
+    if (splashDone) {
+      ExpoSplashScreen.hideAsync().catch(() => {
         // Ignore error — safe in Expo Go
       });
     }
-  }, [appReady]);
+  }, [splashDone]);
 
-  if (!appReady) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary }}>
-        <ActivityIndicator color={colors.text.inverse} size="large" />
-      </View>
-    );
+  // Mostra splash custom enquanto carrega OU enquanto tempo mínimo não passou
+  if (!splashDone) {
+    return <SplashScreen />;
   }
 
   return (

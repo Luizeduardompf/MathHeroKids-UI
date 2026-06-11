@@ -252,7 +252,16 @@ export default function AddFriendScreen() {
   const sendMutation = useMutation({
     mutationFn: (toId: string) => socialService.sendFriendRequest(child!.id, toId),
     onSuccess: invalidate,
-    onError: (e) => Alert.alert(t('common.error'), (e as Error).message),
+    onError: (e) => {
+      const code = (e as Error).message;
+      const msg =
+        code === 'SOCIAL_DISABLED'  ? t('friends.errorSocialDisabled') :
+        code === 'ALREADY_FRIENDS'  ? t('friends.errorAlreadyFriends') :
+        code === 'SELF_REQUEST'     ? t('friends.errorSelfRequest')    :
+        code === 'CHILD_NOT_FOUND'  ? t('friends.errorNotFound')       :
+        t('friends.errorSendFailed');
+      Alert.alert(t('common.error'), msg);
+    },
   });
 
   const cancelMutation = useMutation({

@@ -440,8 +440,6 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
 // ─── Parent card ──────────────────────────────────────────────────────────────
 
 function ParentCard() {
-  const { t }         = useTranslation();
-  const router        = useRouter();
   const user          = useAuthStore((s) => s.user);
   const parentProfile = useAuthStore((s) => s.parentProfile);
 
@@ -460,13 +458,62 @@ function ParentCard() {
         <Text variant="h3">{rawName}</Text>
         <Text variant="caption" color={colors.text.secondary}>{email}</Text>
       </View>
-      <TouchableOpacity
-        onPress={() => router.push('/(app)/parent-area/edit-profile')}
-        style={styles.editParentBtn}
-        accessibilityLabel={t('settings.editParentLabel')}
-      >
-        <Ionicons name="create-outline" size={18} color={colors.primary} />
-      </TouchableOpacity>
+    </Card>
+  );
+}
+
+// ─── Children info card ───────────────────────────────────────────────────────
+
+function ChildrenInfoCard() {
+  const parentId = useAuthStore(selectParentId);
+  const [children, setChildren] = useState<ChildProfile[]>([]);
+
+  useEffect(() => {
+    if (!parentId) return;
+    void childService.listChildren(parentId).then(setChildren).catch(() => {});
+  }, [parentId]);
+
+  if (children.length === 0) return null;
+
+  function formatDate(iso: string | null) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  function calcAge(birthDate: string | null) {
+    if (!birthDate) return null;
+    const diff = Date.now() - new Date(birthDate).getTime();
+    const age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+    return age > 0 ? age : null;
+  }
+
+  return (
+    <Card border shadow="sm" style={{ gap: space.sm }}>
+      {children.map((child, idx) => (
+        <View key={child.id}>
+          {idx > 0 && <View style={styles.childDivider} />}
+          <View style={styles.childRow}>
+            <Avatar avatarId={child.avatar_id} displayName={child.display_name} size="md" />
+            <View style={{ flex: 1, gap: 2 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text variant="label">{child.display_name}</Text>
+                {calcAge(child.birth_date) !== null && (
+                  <Text variant="caption" color={colors.text.secondary}>
+                    {calcAge(child.birth_date)} anos
+                  </Text>
+                )}
+              </View>
+              <Text variant="caption" color={colors.text.secondary}>
+                {child.xp_total.toLocaleString('pt-BR')} XP · Nível {child.level}
+              </Text>
+              <Text variant="caption" color={colors.text.tertiary} style={{ marginTop: 1 }}>
+                Desde {formatDate(child.created_at)} · Acesso {formatDate(child.last_seen_at)}
+              </Text>
+            </View>
+          </View>
+        </View>
+      ))}
     </Card>
   );
 }
@@ -532,6 +579,9 @@ export default function SettingsScreen() {
         {/* ── Parent card ──────────────────────────────────────────── */}
         <ParentCard />
 
+        {/* ── Children info ────────────────────────────────────────── */}
+        <ChildrenInfoCard />
+
         {/* ── Language ─────────────────────────────────────────────── */}
         <Card border shadow="sm" style={styles.section}>
           <View style={styles.sectionTitle}>
@@ -587,10 +637,7 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
         </Pressable>
 
-      </ScrollView>
-
-      {/* ── Sign out — fixed above tab bar ───────────────────────── */}
-      <View style={styles.signOutBar}>
+        {/* ── Sign out ─────────────────────────────────────────────── */}
         <Pressable
           style={({ pressed }) => [styles.signOutBtn, pressed ? styles.signOutBtnPressed : null]}
           onPress={() => setShowLogoutModal(true)}
@@ -605,7 +652,8 @@ export default function SettingsScreen() {
             </>
           )}
         </Pressable>
-      </View>
+
+      </ScrollView>
     </View>
   );
 }
@@ -639,6 +687,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   } as import('react-native').TextStyle,
 
+  // ── Children info ────────────────────────────────────────────────────────────
+  childRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  childDivider: { height: 1, backgroundColor: colors.border.default, marginVertical: space.sm },
+
   // ── Parent area button ───────────────────────────────────────────────────────
   parentAreaBtn: {
     flexDirection: 'row',
@@ -661,13 +713,6 @@ const styles = StyleSheet.create({
   },
 
   // ── Sign out bar (fixed at bottom, above tab bar) ───────────────────────────
-  signOutBar: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border.default,
-    backgroundColor: colors.background.primary,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-  },
   signOutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -675,7 +720,9 @@ const styles = StyleSheet.create({
     gap: space.sm,
     paddingVertical: 14,
     borderRadius: radius.xl,
-    backgroundColor: '#FEF2F2', // red-50 — subtle destructive tint
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
   },
   signOutBtnPressed: {
     opacity: 0.75,

@@ -48,13 +48,13 @@ export function AuthScreen({
   return (
     <View style={styles.root}>
       {/* ── Header ── */}
-      <LinearGradient
-        colors={[colors.primary, colors.primaryDark]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      >
-        <SafeAreaView edges={['top']} style={styles.headerSafe}>
+      <SafeAreaView edges={['top']} style={styles.headerSafe}>
+        <LinearGradient
+          colors={[colors.primary, colors.primaryDark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerGradient}
+        >
           <View style={styles.headerContent}>
             {onBack ? (
               <Pressable
@@ -80,8 +80,8 @@ export function AuthScreen({
               </Text>
             </View>
           </View>
-        </SafeAreaView>
-      </LinearGradient>
+        </LinearGradient>
+      </SafeAreaView>
 
       {/* ── Body ── */}
       <KeyboardAvoidingView
@@ -109,6 +109,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
 
   // ── Header ──────────────────────────────────────────────────────────────────
+  headerSafe: { backgroundColor: colors.primary },
   headerGradient: {
     // Shadow casted downward onto the body
     ...Platform.select({
@@ -121,7 +122,6 @@ const styles = StyleSheet.create({
       android: { elevation: 8 },
     }),
   },
-  headerSafe: {},
   headerContent: {
     flexDirection: 'row',
     alignItems: 'flex-end',

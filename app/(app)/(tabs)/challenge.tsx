@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -161,11 +162,16 @@ export default function ChallengeTab() {
 
   return (
     <View style={s.root}>
-      <SafeAreaView edges={['top']} style={s.headerSafe}>
-        <View style={s.header}>
-          <Text style={s.headerSub}>Math Hero Kids</Text>
-          <Text style={s.headerTitle}>{t('challenge.retroactive.title')}</Text>
-        </View>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: colors.primary }}>
+        <LinearGradient
+          colors={[colors.primary, colors.primaryDark]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        >
+          <View style={s.header}>
+            <Text variant="caption" style={s.appName}>Math Hero Kids</Text>
+            <Text variant="h1" color={colors.text.inverse}>{t('challenge.retroactive.title')}</Text>
+          </View>
+        </LinearGradient>
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
@@ -208,10 +214,8 @@ const s = StyleSheet.create({
   root:       { flex: 1, backgroundColor: colors.background.primary },
   loading:    { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background.primary },
 
-  headerSafe:  { backgroundColor: colors.primary },
-  header:      { paddingHorizontal: space.lg, paddingBottom: space.lg, paddingTop: space.sm, backgroundColor: colors.primary, gap: 2 },
-  headerSub:   { fontFamily: fontFamily.semiBold, fontSize: 13, color: 'rgba(255,255,255,0.75)' },
-  headerTitle: { fontFamily: fontFamily.extraBold, fontSize: 32, color: '#fff' },
+  header:   { paddingHorizontal: space.md, paddingTop: space.sm, paddingBottom: space.lg, gap: space.xs },
+  appName:  { color: 'rgba(255,255,255,0.75)', letterSpacing: 0.5 } as import('react-native').TextStyle,
 
   content: { paddingHorizontal: space.md, paddingTop: space.lg, paddingBottom: space['2xl'], gap: space.md },
 

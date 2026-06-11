@@ -4,13 +4,124 @@
 
 ---
 
-## Estado actual — 2026-06-11 20:44 UTC
+## Estado actual — 2026-06-12 (sessão 8)
 
 ### 🟢 Em curso
 ```
 ESTADO: LIVRE
-ÚLTIMO COMMIT: ab22820
+ÚLTIMO COMMIT: d3e2d66 (via GitHub API)
 ```
+
+---
+
+### ✅ Concluído (sessão 8 — 2026-06-12, cont.) — UI fixes
+
+**`src/components/challenge/StatusScreens.tsx`:**
+- Layout corrigido: `MiloBubble` movida para dentro do `EntranceView` (body `flex:1 justify:center`) nas 3 telas — eliminado gap vazio enorme entre subtitle e bubble
+- `sc.title`: `fontFamily.bold` → `fontFamily.extraBold` + `lineHeight: 36` — corrige clipping do "T" renderizando como "I ime's up!"
+
+**`app/(app)/challenge/[date].tsx` — fix React warning:**
+- `useTimer`: `onExpireRef.current()` estava dentro do updater `setRemaining((prev) => ...)` → violação de pureza → "Cannot update a component while rendering"
+- Fix: updater puro (só decrementa); `onExpire` disparado em `useEffect` separado com `firedRef` para evitar disparos duplos
+
+**`src/locales/en.json` — chaves em falta:**
+- Adicionado `challenge.timeout.miloMessage`, `challenge.wrong.miloMessage`, `challenge.wrong.continueAnyway`, `challenge.blockIncomplete.miloMessage` — sem estas o i18next fazia fallback para pt.json (texto em português na UI inglesa)
+
+**`app/(app)/parent-area/child/[id].tsx`:**
+- Removido `MiloMessage` da tela de edição do perfil da criança
+- Card de stats movido para o fundo da tela como texto discreto (`statsFooter`) — ícone 13px + texto `colors.text.tertiary`, sem card/shadow
+
+---
+
+### ✅ Concluído (sessão 8 — 2026-06-12) — Bugs + UI polish
+
+**Fix crítico — start_challenge EF (unique constraint ao retry):**
+- EF falhava com 500 quando já existia row em `challenge_sessions` com `questions_payload = null` (sessão órfã de tentativa anterior)
+- Idempotência corrigida: busca por `(child_id, challenge_date, module_id)` antes do upsert; reutiliza `id` da sessão órfã se encontrada; retorna direto se payload já existe
+- `effectiveSessionId` usado em todo o upsert e response; EF re-deployada e testada
+
+**Fix — botão "Try again" ia para tela de complete vazia:**
+- `onPress` chamava `setPhase('completed')` em vez de re-iniciar (bug copy-paste)
+- Fix: `storeActions.reset()` → volta a `phase: 'idle'`; `phase` adicionado às deps do `useEffect` de `init`
+
+**UI — headers Desafios e Amigos idênticos ao Settings:**
+- `challenge.tsx`: adicionado `LinearGradient`, padding/gap/fontes alinhados
+- `friends.tsx`: `gap: space.xs` no View interno, padding alinhado
+- Ambos: `paddingHorizontal: space.md`, `paddingTop: space.sm`, `paddingBottom: space.lg`, `gap: space.xs`
+
+**UI — Settings: botão editar pai removido + ChildrenInfoCard:**
+- `TouchableOpacity create-outline` removido do `ParentCard` — edição só na Área dos Pais
+- Novo `ChildrenInfoCard`: avatar + nome + idade + XP + Nível + "Desde / Acesso" (apenas informativo)
+
+**UI — Settings: logout movido para dentro do ScrollView:**
+- Saiu da barra fixa acima da tab bar; agora é último item da lista
+- Borda sutil `#FECACA` adicionada para mais definição visual
+
+**Nota git:** virtiofs locks → usada GitHub Contents API para commits de `challenge.tsx`, `friends.tsx`, `settings.tsx`.
+
+---
+
+### ✅ Concluído (sessão 8 — 2026-06-12) — Animação de conclusão de desafio
+
+**Novos componentes:**
+- `src/components/challenge/CompletedScreen.tsx`: substitui o `MilestoneScreen variant="completed"`. Fundo LinearGradient dourado, 8 elementos com stagger spring/fade (XP badge, Milo, título, subtítulo, progress, barra animada 0%→pct%, botão), float loop do Milo (±12px). 72 peças de confetti.
+- `src/components/challenge/CelebrationTransition.tsx`: tela full-screen de 3s que corre entre "Continuar" e o submit. Background flash que escala, 12 raios de sol em rotação, burst ring, trophy card (scale 0→1.3→1 + rotate -180°→0° + wobble), 4 sparkles pulsantes, título/subtítulo spring in, 120 peças de confetti. Auto-avança após 3s.
+
+**Alterações em `app/(app)/challenge/[date].tsx`:**
+- Imports dos dois novos componentes
+- Estado `showCelebration: boolean`
+- Bloco `completed/submitting` agora usa `CompletedScreen` (Continuar → `setShowCelebration(true)`)
+- Novo bloco `showCelebration` renderiza `CelebrationTransition` (onComplete → `handleComplete()`)
+- Fluxo: `CompletedScreen` → (Continuar) → `CelebrationTransition` 3s → `handleComplete` → LevelUp/TrophyModals → navigate
+
+**Config de teste (`src/constants/config.ts`):**
+- `TOTAL_QUESTIONS: 5` (era 20) — marcado com `// DEV`
+- `BLOCKS_PER_SESSION: 1` (era 4) — marcado com `// DEV`
+- `DEFAULT_QUESTION_COUNT: 5` (era 20) — marcado com `// DEV`
+- ⚠️ REVERTER para 20/4/20 antes de produção
+
+**Padrão de imports Reanimated confirmado:**
+- `withRepeat` e `withSequence` precisam do mesmo `@ts-expect-error` + import separado que `withDelay` e `Easing`
+- `StyleSheet.absoluteFill`/`absoluteFillObject` não existem nesta versão do RN — usar spread manual `{ position:'absolute', top:0, left:0, right:0, bottom:0 }`
+- `useAnimatedStyle` retorna tipo incompatível com `StyleProp<ViewStyle>` — cast `as any` no valor, não inline em JSX
+
+---
+
+### ✅ Concluído (sessão 7 — 2026-06-11) — Phase 3 completa
+
+**Migrations aplicadas (Supabase Management API):**
+- Migration 004: INSERT RLS em friend_requests
+- Migration 005: last_seen_at em child_profiles
+- Migration 006: multiplication_facts (100 questões, tiers T1–T5)
+- Migration 007: child_fact_mastery + colunas Phase 2.5 em challenge_sessions/answers
+  (bug fix: RLS usava user_id que não existia — corrigido para parent_id = auth.uid())
+
+**Seed no DB:**
+- 15 trophies (daily/weekly/monthly/streak/special, tiers bronze→diamond)
+- 13 achievements (primeiros_passos/sequencias/habilidades/especiais)
+- 7 level_rewards (frames, outfits, medals nos níveis 2,5,8,10,12,15,20)
+- RPC: get_challenge_counts_for_gamification (week/month counts para EF)
+
+**complete_challenge EF (Phase 3 — deployed):**
+- computeLevel: agora usa level_thresholds do DB (não fallback hardcoded)
+- Avaliação completa de trophies por requirement_type (challenges_completed, challenges_in_week, challenges_in_month, current_streak, perfect_challenges)
+- Avaliação completa de achievements por condition_type (challenges_total, perfect_challenges, streak_days, facts_mastered, level_reached)
+- Ambos one-time safe (upsert com onConflict)
+
+**Frontend Phase 3:**
+- LevelUpModal: animações spring/bounce (react-native-reanimated), reward desbloqueada
+- TrophyEarnedModal: fila N itens, avança um a um com animação
+- challenge/[date].tsx: Level Up → Trophies/Achievements → navigate home (sequencial)
+- trophy-room.tsx: dados reais TanStack Query (era mock estático)
+- trophy/[id].tsx: screen completa com progresso (era placeholder 7 linhas)
+- achievements.tsx: dados reais TanStack Query (era mock estático)
+- rewards.tsx: level rewards com estado unlocked (era placeholder 8 linhas)
+- gamification.service.ts: fetchTrophiesWithState, fetchAchievementsWithState, fetchLevelRewards, fetchLevelThresholds
+
+**i18n:**
+- 15 trophy keys (trophies.daily1.*...trophies.perfect30.*) × 4 locales
+- 13 achievement keys (achievements.firstChallenge.*...achievements.level10.*) × 4 locales
+- 7 reward keys (rewards.frame_star.name...rewards.frame_rainbow.name) × 4 locales
 
 ---
 
@@ -180,27 +291,23 @@ ESTADO: LIVRE
 
 ### ⏭️ Próximos passos (por prioridade)
 
-**A — Aplicar migrations no Supabase Studio (BLOCKER para Phase 2.5 funcionar):**
-- `006_multiplication_facts.sql` — catálogo 100 questões
-- `007_child_fact_mastery.sql` — mastery table, timezone, colunas legacy
+**A — Testar Phase 2.5 + Phase 3 end-to-end no Simulator:**
+- Completar um challenge → verificar que `complete_challenge` atualiza mastery
+- Verificar Level Up modal se XP suficiente
+- Verificar TrophyEarnedModal (firstChallenge achievement deve disparar)
+- Testar trophy-room, achievements, rewards screens com dados reais
+- Testar tela offline (desligar WiFi)
 
-**B — Testar Phase 2.5 end-to-end:**
-- Verificar `start_challenge` retorna 20 questões adaptativas
-- Verificar `complete_challenge` atualiza `child_fact_mastery`
-- Testar tela offline (desligar WiFi antes de abrir o challenge)
+**B — Phase 4 — Calendar:**
+- Calendar screen com estados reais (completed, failed, in_progress, perfect)
+- Retroactive challenge flow
+- Ver `docs/implementation-phases.md`
 
-**C — Phase 3 — Gamification Core:**
-- Level Up Celebration modal (disparar quando `level_up: true` na resposta de `complete_challenge`)
-- Trophy/Achievement unlocks ligados ao retorno da EF
-- Ver `docs/implementation-phases.md` para detalhes completos
-
-**D — Migrations pendentes (de sessão anterior):**
-- Migration 004: INSERT RLS em friend_requests
-- Migration 005: last_seen_at em child_profiles
-
-**E — Push notifications em device:**
+**C — Push notifications em device:**
 - Mac Terminal: `bash .scripts/setup-push-notifications.sh`
 - EAS build Android (gratuito)
 
-**F — Assets:**
-- Avatares PNG ainda ~75 KB — ok para MVP
+**D — Issues conhecidos:**
+- `expo-av` incompatível com SDK — sons comentados com TODO
+- `friends/list.tsx`: "Nível X" nos sub-labels ainda hardcoded
+- Git locks virtiofs: usar `/tmp` clone para commits (ver workaround em CLAUDE.md)

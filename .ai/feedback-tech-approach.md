@@ -84,6 +84,26 @@ O mount virtiofs (macOS→Linux sandbox) não suporta `unlink` — `rm -f` falha
 
 ---
 
+**`withRepeat` e `withSequence` precisam do mesmo padrão `@ts-expect-error` que `withDelay` e `Easing`.**
+- Estes exports do react-native-reanimated não resolvem correctamente no tsconfig deste projecto
+- Fix: import separado com `// @ts-expect-error reanimated withRepeat named-export quirk`
+- Funciona correctamente em runtime — é apenas um quirk de tipos
+
+---
+
+**`StyleSheet.absoluteFill` / `absoluteFillObject` não existem nesta versão do RN.**
+- Erro: `Property 'absoluteFill' does not exist on type...`
+- Fix: usar spread manual `{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }`
+
+---
+
+**`useAnimatedStyle` retorna tipo incompatível com `StyleProp<ViewStyle>` — cast `as any` no valor.**
+- Erro: `TS2769 No overload matches this call` ao passar animated style num array de styles
+- Fix correcto: `const anim = useAnimatedStyle(() => ({ ... })) as any;` — cast no valor, não inline em JSX
+- Cast inline em JSX (`[s.foo, anim as any]`) não funciona dentro de ternários JSX — causa syntax error
+
+---
+
 **Rules of Hooks: nunca usar hooks dentro de .map() ou callbacks.**
 - `useAnimatedStyle`, `useSharedValue`, etc. dentro de `.map()` → rules of hooks violation
 - Fix: criar componente filho separado para cada item (ex: `ConfettoPiece`) que usa o hook correctamente

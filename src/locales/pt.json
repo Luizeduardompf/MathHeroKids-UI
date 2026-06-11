@@ -227,7 +227,11 @@
     "errorSubmitMsg": "Não foi possível enviar o desafio. Tente novamente.",
     "errorRetry": "Tentar novamente",
     "offlineTitle": "Sem internet",
-    "offlineMsg": "O Milo precisa de internet para preparar o teu desafio. Liga a conexão e tenta de novo."
+    "offlineMsg": "O Milo precisa de internet para preparar o teu desafio. Liga a conexão e tenta de novo.",
+    "celebration": {
+      "title": "Troféu Conquistado!",
+      "subtitle": "Você completou o desafio de hoje!"
+    }
   },
   "calendar": {
     "title": "Calendário",
@@ -349,7 +353,17 @@
     "results": "Resultados ({{count}})",
     "noBlockedUsers": "Nenhum utilizador bloqueado",
     "noBlockedDesc": "Utilizadores que bloqueares aparecem aqui.",
-    "unblock": "Desbloquear"
+    "unblock": "Desbloquear",
+    "socialDisabledTitle": "Área bloqueada",
+    "socialDisabledBody": "O teu responsável desativou as funcionalidades sociais. Fala com ele para liberar!",
+    "socialDisabledMilo": "Parece que o modo social está desativado. Mas os desafios continuam!",
+    "errorSocialDisabled": "Esta criança não tem as funcionalidades sociais ativas. Pede ao responsável para as ativar.",
+    "errorAlreadyFriends": "Vocês já são amigos!",
+    "errorSelfRequest": "Não podes adicionar-te a ti mesmo.",
+    "errorNotFound": "Perfil não encontrado ou inativo.",
+    "errorSendFailed": "Não foi possível enviar o pedido. Tenta novamente.",
+    "chatBlockedTitle": "Chat indisponível",
+    "chatBlockedBody": "{{name}} não tem as funcionalidades sociais ativas de momento."
   },
   "trophies": {
     "title": "Sala de Troféus",
@@ -373,21 +387,66 @@
     "howToEarn": "Como conquistar",
     "miloMessage": "Olha quantos troféus você já tem! Vamos conquistar mais?",
     "detailTitle": "Detalhes do troféu",
-    "daily1":   { "name": "Primeiro Desafio",     "desc": "Completou o primeiro desafio do dia." },
-    "daily7":   { "name": "Maratonista",           "desc": "Completou 7 desafios no total." },
-    "daily30":  { "name": "Dedicado",              "desc": "30 desafios completados. Que foco!" },
-    "daily100": { "name": "Lendário",              "desc": "100 desafios! Você é incrível." },
-    "weekly1":  { "name": "Semana Cheia",          "desc": "5 desafios em uma semana." },
-    "weekly2":  { "name": "Semana Perfeita",       "desc": "7 desafios em uma semana. Mandou bem!" },
-    "monthly1": { "name": "Mês Dedicado",          "desc": "20 desafios em um mês. Impressionante!" },
-    "monthly2": { "name": "Mês Completo",          "desc": "30 desafios em um mês. Perfeito!" },
-    "streak3":  { "name": "Trio Incrível",         "desc": "3 dias seguidos de desafios!" },
-    "streak7":  { "name": "Sequência de Fogo",     "desc": "7 dias seguidos. Que sequência!" },
-    "streak30": { "name": "Mês de Fogo",           "desc": "30 dias seguidos. Herói matemático!" },
-    "streak100":{ "name": "Cem Dias",              "desc": "100 dias de sequência. Lendário!" },
-    "perfect1": { "name": "Nota 10",               "desc": "Primeiro desafio perfeito. Arrasou!" },
-    "perfect10":{ "name": "Dez Perfects",          "desc": "10 desafios perfeitos. Que talento!" },
-    "perfect30":{ "name": "Mestre da Perfeição",   "desc": "30 desafios perfeitos. Sem palavras!" },
+    "daily1": {
+      "name": "Primeiro Desafio",
+      "desc": "Completou o primeiro desafio do dia."
+    },
+    "daily7": {
+      "name": "Maratonista",
+      "desc": "Completou 7 desafios no total."
+    },
+    "daily30": {
+      "name": "Dedicado",
+      "desc": "30 desafios completados. Que foco!"
+    },
+    "daily100": {
+      "name": "Lendário",
+      "desc": "100 desafios! Você é incrível."
+    },
+    "weekly1": {
+      "name": "Semana Cheia",
+      "desc": "5 desafios em uma semana."
+    },
+    "weekly2": {
+      "name": "Semana Perfeita",
+      "desc": "7 desafios em uma semana. Mandou bem!"
+    },
+    "monthly1": {
+      "name": "Mês Dedicado",
+      "desc": "20 desafios em um mês. Impressionante!"
+    },
+    "monthly2": {
+      "name": "Mês Completo",
+      "desc": "30 desafios em um mês. Perfeito!"
+    },
+    "streak3": {
+      "name": "Trio Incrível",
+      "desc": "3 dias seguidos de desafios!"
+    },
+    "streak7": {
+      "name": "Sequência de Fogo",
+      "desc": "7 dias seguidos. Que sequência!"
+    },
+    "streak30": {
+      "name": "Mês de Fogo",
+      "desc": "30 dias seguidos. Herói matemático!"
+    },
+    "streak100": {
+      "name": "Cem Dias",
+      "desc": "100 dias de sequência. Lendário!"
+    },
+    "perfect1": {
+      "name": "Nota 10",
+      "desc": "Primeiro desafio perfeito. Arrasou!"
+    },
+    "perfect10": {
+      "name": "Dez Perfects",
+      "desc": "10 desafios perfeitos. Que talento!"
+    },
+    "perfect30": {
+      "name": "Mestre da Perfeição",
+      "desc": "30 desafios perfeitos. Sem palavras!"
+    },
     "items": {
       "diario1": {
         "name": "Troféu Diário",
@@ -440,19 +499,58 @@
       "desempenho": "Desempenho",
       "colecao": "Coleção"
     },
-    "firstChallenge": { "name": "Primeiros Passos",    "desc": "Completou o primeiro desafio!" },
-    "firstPerfect":   { "name": "Perfeição Inicial",   "desc": "Primeiro desafio sem erros. Incrível!" },
-    "challenges10":   { "name": "10 Desafios",         "desc": "10 desafios completados. Continue!" },
-    "challenges50":   { "name": "50 Desafios",         "desc": "50 desafios! Você é um herói." },
-    "streak3":        { "name": "3 Dias Seguidos",     "desc": "3 dias de sequência. Ótimo começo!" },
-    "streak7":        { "name": "7 Dias Seguidos",     "desc": "Uma semana inteira! Você arrasou." },
-    "streak30":       { "name": "30 Dias Seguidos",    "desc": "Um mês de sequência. Incrível!" },
-    "streak100":      { "name": "100 Dias Seguidos",   "desc": "100 dias seguidos. Lendário!" },
-    "perfect10":      { "name": "Dez Perfects",        "desc": "10 desafios perfeitos. Gênio!" },
-    "mastery25":      { "name": "Conhecedor",          "desc": "Dominou 25 tabuadas. Ótimo!" },
-    "mastery100":     { "name": "Mestre das Tabuadas", "desc": "Dominou 100 tabuadas. Mestre!" },
-    "level5":         { "name": "Aventureiro",         "desc": "Chegou ao nível 5. Que evolução!" },
-    "level10":        { "name": "Explorador Mestre",   "desc": "Chegou ao nível 10. Sensacional!" },
+    "firstChallenge": {
+      "name": "Primeiros Passos",
+      "desc": "Completou o primeiro desafio!"
+    },
+    "firstPerfect": {
+      "name": "Perfeição Inicial",
+      "desc": "Primeiro desafio sem erros. Incrível!"
+    },
+    "challenges10": {
+      "name": "10 Desafios",
+      "desc": "10 desafios completados. Continue!"
+    },
+    "challenges50": {
+      "name": "50 Desafios",
+      "desc": "50 desafios! Você é um herói."
+    },
+    "streak3": {
+      "name": "3 Dias Seguidos",
+      "desc": "3 dias de sequência. Ótimo começo!"
+    },
+    "streak7": {
+      "name": "7 Dias Seguidos",
+      "desc": "Uma semana inteira! Você arrasou."
+    },
+    "streak30": {
+      "name": "30 Dias Seguidos",
+      "desc": "Um mês de sequência. Incrível!"
+    },
+    "streak100": {
+      "name": "100 Dias Seguidos",
+      "desc": "100 dias seguidos. Lendário!"
+    },
+    "perfect10": {
+      "name": "Dez Perfects",
+      "desc": "10 desafios perfeitos. Gênio!"
+    },
+    "mastery25": {
+      "name": "Conhecedor",
+      "desc": "Dominou 25 tabuadas. Ótimo!"
+    },
+    "mastery100": {
+      "name": "Mestre das Tabuadas",
+      "desc": "Dominou 100 tabuadas. Mestre!"
+    },
+    "level5": {
+      "name": "Aventureiro",
+      "desc": "Chegou ao nível 5. Que evolução!"
+    },
+    "level10": {
+      "name": "Explorador Mestre",
+      "desc": "Chegou ao nível 10. Sensacional!"
+    },
     "items": {
       "a1": {
         "name": "Primeiro Dia Perfeito",
@@ -561,7 +659,14 @@
       "save": "Salvar perfil",
       "create": "Criar perfil",
       "registeredSince": "Membro desde",
-      "lastAccess": "Último acesso"
+      "lastAccess": "Último acesso",
+      "gameSettings": "Configurações do jogo",
+      "timerLabel": "Tempo de resposta",
+      "timerHint": "Segundos para responder cada questão",
+      "tablesLabel": "Tabuadas até",
+      "tablesHint": "Limite máximo das multiplicações",
+      "socialLabel": "Funcionalidades sociais",
+      "socialHint": "Amigos, ranking e chat"
     },
     "editProfile": "Editar perfil",
     "editProfileSub": "Dados do responsável",
@@ -643,13 +748,27 @@
     "lenda_matematica": "Lenda Matemática"
   },
   "rewards": {
-    "frame_star": { "name": "Moldura Estrela" },
-    "outfit_hero": { "name": "Roupa de Herói" },
-    "medal_bronze": { "name": "Medalha de Bronze" },
-    "frame_fire": { "name": "Moldura Chama" },
-    "outfit_mage": { "name": "Roupa de Mago" },
-    "medal_silver": { "name": "Medalha de Prata" },
-    "frame_rainbow": { "name": "Moldura Arco-Íris" }
+    "frame_star": {
+      "name": "Moldura Estrela"
+    },
+    "outfit_hero": {
+      "name": "Roupa de Herói"
+    },
+    "medal_bronze": {
+      "name": "Medalha de Bronze"
+    },
+    "frame_fire": {
+      "name": "Moldura Chama"
+    },
+    "outfit_mage": {
+      "name": "Roupa de Mago"
+    },
+    "medal_silver": {
+      "name": "Medalha de Prata"
+    },
+    "frame_rainbow": {
+      "name": "Moldura Arco-Íris"
+    }
   },
   "errors": {
     "generic": "Algo deu errado. Por favor, tente novamente.",

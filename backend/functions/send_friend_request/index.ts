@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
     // request works even if migration 003 hasn't been applied yet.
     const { data: children, error: childError } = await supabase
       .from('child_profiles')
-      .select('id, display_name')
+      .select('id, display_name, social_enabled')
       .in('id', [from_child_id, to_child_id])
       .eq('is_active', true);
 
@@ -86,9 +86,17 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    type ChildRow = { id: string; display_name: string };
+    type ChildRow = { id: string; display_name: string; social_enabled: boolean };
     const fromChild = (children as ChildRow[]).find((c) => c.id === from_child_id)!;
     const toChild   = (children as ChildRow[]).find((c) => c.id === to_child_id)!;
+
+    // ── Check target has social enabled ───────────────────────────────────
+    if (toChild.social_enabled === false) {
+      return new Response(
+        JSON.stringify({ error: 'SOCIAL_DISABLED', message: 'This child does not have social features enabled.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     // ── Check not already friends ─────────────────────────────────────────
     const { data: friendship } = await supabase

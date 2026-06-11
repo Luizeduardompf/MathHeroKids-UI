@@ -157,13 +157,16 @@
       "subtitle": "See the correct answer below.",
       "yourAnswer": "Your answer:",
       "continue": "Continue →",
-      "retry": "Retry this block"
+      "retry": "Retry this block",
+      "continueAnyway": "Continue anyway",
+      "miloMessage": "Making mistakes is part of learning! Now you know this one. Keep going!"
     },
     "timeout": {
       "title": "Time's up!",
       "message": "No problem. You've got this! Let's try again calmly.",
       "retry": "Retry this block",
-      "goHome": "Go home"
+      "goHome": "Go home",
+      "miloMessage": "No rush! Take a deep breath and try again. I believe in you!"
     },
     "blockIncomplete": {
       "title": "So close!",
@@ -173,7 +176,8 @@
       "target": "Target: 100%",
       "retry": "Retry this block",
       "continueAnyway": "Continue anyway",
-      "goHome": "Go home"
+      "goHome": "Go home",
+      "miloMessage": "Almost there! One more try and that perfect star is yours!"
     },
     "milestone": {
       "q5": {
@@ -216,7 +220,11 @@
     "errorSubmitMsg": "Could not submit the challenge. Please try again.",
     "errorRetry": "Try again",
     "offlineTitle": "No internet",
-    "offlineMsg": "Milo needs internet to prepare your challenge. Connect and try again."
+    "offlineMsg": "Milo needs internet to prepare your challenge. Connect and try again.",
+    "celebration": {
+      "title": "Trophy Earned!",
+      "subtitle": "You completed today's challenge!"
+    }
   },
   "calendar": {
     "title": "Calendar",
@@ -338,7 +346,17 @@
     "results": "Results ({{count}})",
     "noBlockedUsers": "No blocked users",
     "noBlockedDesc": "Blocked users will appear here.",
-    "unblock": "Unblock"
+    "unblock": "Unblock",
+    "socialDisabledTitle": "Area locked",
+    "socialDisabledBody": "Your parent has turned off social features. Ask them to enable it!",
+    "socialDisabledMilo": "Looks like social mode is off. But challenges are still on!",
+    "errorSocialDisabled": "This child doesn't have social features enabled. Ask their parent to turn it on.",
+    "errorAlreadyFriends": "You're already friends!",
+    "errorSelfRequest": "You can't add yourself.",
+    "errorNotFound": "Profile not found or inactive.",
+    "errorSendFailed": "Could not send the request. Please try again.",
+    "chatBlockedTitle": "Chat unavailable",
+    "chatBlockedBody": "{{name}} doesn't have social features enabled right now."
   },
   "trophies": {
     "title": "Trophy Room",
@@ -362,21 +380,66 @@
     "howToEarn": "How to earn",
     "miloMessage": "Look at all the trophies you already have! Let's earn more?",
     "detailTitle": "Trophy details",
-    "daily1":   { "name": "First Challenge",    "desc": "Completed your first daily challenge." },
-    "daily7":   { "name": "On a Roll",          "desc": "7 challenges completed. Keep it up!" },
-    "daily30":  { "name": "Dedicated",          "desc": "30 challenges done. What focus!" },
-    "daily100": { "name": "Legendary",          "desc": "100 challenges! You're amazing." },
-    "weekly1":  { "name": "Full Week",          "desc": "5 challenges in one week." },
-    "weekly2":  { "name": "Perfect Week",       "desc": "7 challenges in one week. Awesome!" },
-    "monthly1": { "name": "Dedicated Month",    "desc": "20 challenges in a month. Impressive!" },
-    "monthly2": { "name": "Full Month",         "desc": "30 challenges in a month. Perfect!" },
-    "streak3":  { "name": "Trio",               "desc": "3 days in a row. Great start!" },
-    "streak7":  { "name": "On Fire",            "desc": "7 days in a row. What a streak!" },
-    "streak30": { "name": "Month on Fire",      "desc": "30 days straight. Math hero!" },
-    "streak100":{ "name": "One Hundred Days",   "desc": "100-day streak. Legendary!" },
-    "perfect1": { "name": "A+",                 "desc": "First perfect challenge. Amazing!" },
-    "perfect10":{ "name": "Ten Perfects",       "desc": "10 perfect challenges. Talented!" },
-    "perfect30":{ "name": "Perfection Master",  "desc": "30 perfect challenges. Speechless!" },
+    "daily1": {
+      "name": "First Challenge",
+      "desc": "Completed your first daily challenge."
+    },
+    "daily7": {
+      "name": "On a Roll",
+      "desc": "7 challenges completed. Keep it up!"
+    },
+    "daily30": {
+      "name": "Dedicated",
+      "desc": "30 challenges done. What focus!"
+    },
+    "daily100": {
+      "name": "Legendary",
+      "desc": "100 challenges! You're amazing."
+    },
+    "weekly1": {
+      "name": "Full Week",
+      "desc": "5 challenges in one week."
+    },
+    "weekly2": {
+      "name": "Perfect Week",
+      "desc": "7 challenges in one week. Awesome!"
+    },
+    "monthly1": {
+      "name": "Dedicated Month",
+      "desc": "20 challenges in a month. Impressive!"
+    },
+    "monthly2": {
+      "name": "Full Month",
+      "desc": "30 challenges in a month. Perfect!"
+    },
+    "streak3": {
+      "name": "Trio",
+      "desc": "3 days in a row. Great start!"
+    },
+    "streak7": {
+      "name": "On Fire",
+      "desc": "7 days in a row. What a streak!"
+    },
+    "streak30": {
+      "name": "Month on Fire",
+      "desc": "30 days straight. Math hero!"
+    },
+    "streak100": {
+      "name": "One Hundred Days",
+      "desc": "100-day streak. Legendary!"
+    },
+    "perfect1": {
+      "name": "A+",
+      "desc": "First perfect challenge. Amazing!"
+    },
+    "perfect10": {
+      "name": "Ten Perfects",
+      "desc": "10 perfect challenges. Talented!"
+    },
+    "perfect30": {
+      "name": "Perfection Master",
+      "desc": "30 perfect challenges. Speechless!"
+    },
     "items": {
       "diario1": {
         "name": "Daily Trophy",
@@ -429,19 +492,58 @@
       "desempenho": "Performance",
       "colecao": "Collection"
     },
-    "firstChallenge": { "name": "First Steps",        "desc": "Completed your first challenge!" },
-    "firstPerfect":   { "name": "Perfect Start",      "desc": "First challenge with no mistakes!" },
-    "challenges10":   { "name": "10 Challenges",      "desc": "10 challenges done. Keep going!" },
-    "challenges50":   { "name": "50 Challenges",      "desc": "50 challenges! You're a hero." },
-    "streak3":        { "name": "3-Day Streak",       "desc": "3 days in a row. Great start!" },
-    "streak7":        { "name": "7-Day Streak",       "desc": "A full week! You crushed it." },
-    "streak30":       { "name": "30-Day Streak",      "desc": "A month of streaks. Incredible!" },
-    "streak100":      { "name": "100-Day Streak",     "desc": "100 days straight. Legendary!" },
-    "perfect10":      { "name": "Ten Perfects",       "desc": "10 perfect challenges. Genius!" },
-    "mastery25":      { "name": "Knowledgeable",      "desc": "Mastered 25 multiplication facts!" },
-    "mastery100":     { "name": "Math Master",        "desc": "Mastered all 100 facts. Legend!" },
-    "level5":         { "name": "Adventurer",         "desc": "Reached level 5. Growing fast!" },
-    "level10":        { "name": "Master Explorer",    "desc": "Reached level 10. Sensational!" },
+    "firstChallenge": {
+      "name": "First Steps",
+      "desc": "Completed your first challenge!"
+    },
+    "firstPerfect": {
+      "name": "Perfect Start",
+      "desc": "First challenge with no mistakes!"
+    },
+    "challenges10": {
+      "name": "10 Challenges",
+      "desc": "10 challenges done. Keep going!"
+    },
+    "challenges50": {
+      "name": "50 Challenges",
+      "desc": "50 challenges! You're a hero."
+    },
+    "streak3": {
+      "name": "3-Day Streak",
+      "desc": "3 days in a row. Great start!"
+    },
+    "streak7": {
+      "name": "7-Day Streak",
+      "desc": "A full week! You crushed it."
+    },
+    "streak30": {
+      "name": "30-Day Streak",
+      "desc": "A month of streaks. Incredible!"
+    },
+    "streak100": {
+      "name": "100-Day Streak",
+      "desc": "100 days straight. Legendary!"
+    },
+    "perfect10": {
+      "name": "Ten Perfects",
+      "desc": "10 perfect challenges. Genius!"
+    },
+    "mastery25": {
+      "name": "Knowledgeable",
+      "desc": "Mastered 25 multiplication facts!"
+    },
+    "mastery100": {
+      "name": "Math Master",
+      "desc": "Mastered all 100 facts. Legend!"
+    },
+    "level5": {
+      "name": "Adventurer",
+      "desc": "Reached level 5. Growing fast!"
+    },
+    "level10": {
+      "name": "Master Explorer",
+      "desc": "Reached level 10. Sensational!"
+    },
     "items": {
       "a1": {
         "name": "First Perfect Day",
@@ -550,7 +652,14 @@
       "save": "Save profile",
       "create": "Create profile",
       "registeredSince": "Member since",
-      "lastAccess": "Last access"
+      "lastAccess": "Last access",
+      "gameSettings": "Game settings",
+      "timerLabel": "Response time",
+      "timerHint": "Seconds to answer each question",
+      "tablesLabel": "Times tables up to",
+      "tablesHint": "Maximum multiplication limit",
+      "socialLabel": "Social features",
+      "socialHint": "Friends, ranking and chat"
     },
     "editProfile": "Edit profile",
     "editProfileSub": "Parent's data",
@@ -632,13 +741,27 @@
     "lenda_matematica": "Math Legend"
   },
   "rewards": {
-    "frame_star":    { "name": "Star Frame" },
-    "outfit_hero":   { "name": "Hero Outfit" },
-    "medal_bronze":  { "name": "Bronze Medal" },
-    "frame_fire":    { "name": "Fire Frame" },
-    "outfit_mage":   { "name": "Mage Outfit" },
-    "medal_silver":  { "name": "Silver Medal" },
-    "frame_rainbow": { "name": "Rainbow Frame" }
+    "frame_star": {
+      "name": "Star Frame"
+    },
+    "outfit_hero": {
+      "name": "Hero Outfit"
+    },
+    "medal_bronze": {
+      "name": "Bronze Medal"
+    },
+    "frame_fire": {
+      "name": "Fire Frame"
+    },
+    "outfit_mage": {
+      "name": "Mage Outfit"
+    },
+    "medal_silver": {
+      "name": "Silver Medal"
+    },
+    "frame_rainbow": {
+      "name": "Rainbow Frame"
+    }
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",

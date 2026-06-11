@@ -33,6 +33,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { ConfirmDialog, Text } from '@/components/ui';
 import { colors, fontFamily, radius, space, shadows } from '@/theme';
 import { CorrectOverlay } from '@/components/challenge/CorrectOverlay';
+import { CompletedScreen } from '@/components/challenge/CompletedScreen';
+import { CelebrationTransition } from '@/components/challenge/CelebrationTransition';
 import { LevelUpModal } from '@/components/challenge/LevelUpModal';
 import { TrophyEarnedModal } from '@/components/challenge/TrophyEarnedModal';
 import type { Achievement, LevelReward, Trophy } from '@/types/database.types';
@@ -693,6 +695,7 @@ export default function ChallengeScreen() {
   const [inputDigits, setInputDigits] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   // Phase 3 — celebrações pós-challenge
   const [levelUpData, setLevelUpData] = useState<{
@@ -952,16 +955,28 @@ export default function ChallengeScreen() {
     );
   }
 
-  // ─── Completed ───────────────────────────────────────────────────────────
+  // ─── Celebration transition (após Continuar na tela de sucesso) ──────────
+
+  if (showCelebration) {
+    return (
+      <CelebrationTransition
+        onComplete={() => {
+          setShowCelebration(false);
+          void handleComplete();
+        }}
+      />
+    );
+  }
+
+  // ─── Completed ────────────────────────────────────────────────────────────
 
   if (phase === 'completed' || phase === 'submitting') {
     const totalXp = sessionXp + 200 + (uniqueCorrect === 20 ? 100 : 0);
     return (
-      <MilestoneScreen
-        variant="completed"
+      <CompletedScreen
         xpOverride={totalXp}
         questionsCorrect={uniqueCorrect}
-        onContinue={() => { void handleComplete(); }}
+        onContinue={() => setShowCelebration(true)}
         isLoading={isSubmitting}
       />
     );

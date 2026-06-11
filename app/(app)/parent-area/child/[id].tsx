@@ -2,16 +2,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text as RNText, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 
 import { AvatarPicker, Button, Input, Text } from '@/components/ui';
-import { MiloMessage } from '@/components/milo/MiloMessage';
 import { childService } from '@/services/child.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { colors, fontFamily, radius, shadows, space } from '@/theme';
+import { TIMER_OPTIONS, MULTIPLICATION_RANGES, type TimerOption, type MultiplicationRange } from '@/constants/config';
 import type { AvatarId } from '@/constants/config';
 import type { ChildProfile } from '@/types';
 
@@ -62,7 +62,6 @@ function formatDateForDisplay(isoDate: string | null): string {
 export default function EditarCriancaScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const parentId = useAuthStore(selectParentId);
   const activeChild = useProfileStore(selectActiveChild);
@@ -76,6 +75,9 @@ export default function EditarCriancaScreen() {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [birthDate, setBirthDate] = useState('');
+  const [timerSeconds, setTimerSeconds] = useState<TimerOption>(15);
+  const [multiMax, setMultiMax] = useState<MultiplicationRange>(10);
+  const [socialEnabled, setSocialEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,6 +92,9 @@ export default function EditarCriancaScreen() {
       setName(found.display_name);
       setUsername(found.username);
       setBirthDate(formatDateForDisplay(found.birth_date));
+      if (found.timer_seconds !== undefined) setTimerSeconds(found.timer_seconds as TimerOption);
+      if (found.multiplication_max !== undefined) setMultiMax(found.multiplication_max as MultiplicationRange);
+      setSocialEnabled(found.social_enabled ?? true);
     }).catch(() => setLoadError('Erro ao carregar perfil.')); // i18n-ignore — internal error state
   }, [id, parentId]);
 
@@ -115,6 +120,9 @@ export default function EditarCriancaScreen() {
         username: username.trim(),
         avatar_id: avatar,
         birth_date: birthDate ? parseBirthDate(birthDate) : child.birth_date,
+        timer_seconds: timerSeconds,
+        multiplication_max: multiMax,
+        social_enabled: socialEnabled,
       });
       // Keep store in sync if editing the active child
       if (activeChild?.id === child.id) setActiveChild(updated);
@@ -147,30 +155,26 @@ export default function EditarCriancaScreen() {
   return (
     <View style={styles.root}>
       {/* Header — gradient pattern */}
-      <LinearGradient
-        colors={[colors.primary, colors.primaryDark]}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
-      >
-        <View style={styles.headerRow}>
-          <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={22} color="#fff" />
-          </Pressable>
-          <View style={styles.headerCenter}>
-            <RNText style={styles.headerSub}>Math Hero Kids</RNText>
-            <RNText style={styles.headerTitle}>{child.display_name}</RNText>
+      <SafeAreaView edges={['top']} style={{ backgroundColor: colors.primary }}>
+        <LinearGradient
+          colors={[colors.primary, colors.primaryDark]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
+          <View style={styles.headerRow}>
+            <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={8}>
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </Pressable>
+            <View style={styles.headerCenter}>
+              <RNText style={styles.headerSub}>Math Hero Kids</RNText>
+              <RNText style={styles.headerTitle}>{child.display_name}</RNText>
+            </View>
+            <View style={{ width: 42 }} />
           </View>
-          <View style={{ width: 42 }} />
-        </View>
-      </LinearGradient>
+        </LinearGradient>
+      </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <MiloMessage
-          message={t('milo.keep_going')}
-          variant="orange"
-          style={styles.milo}
-        />
-
         {/* Avatar selector */}
         <Text variant="label" style={styles.sectionLabel}>
           {t('auth.register.child.avatarLabel')}
@@ -178,28 +182,6 @@ export default function EditarCriancaScreen() {
         <AvatarPicker selected={avatar} onSelect={setAvatar} style={styles.avatarGrid} />
 
         {/* ── Account info (read-only) ─────────────────────────────── */}
-        <View style={styles.statsCard}>
-          <View style={styles.statRow}>
-            <View style={styles.statIcon}>
-              <Ionicons name="calendar-outline" size={16} color={colors.primary} />
-            </View>
-            <View style={styles.statText}>
-              <RNText style={styles.statLabel}>{t('parentArea.child.registeredSince')}</RNText>
-              <RNText style={styles.statValue}>{formatDate(child.created_at, i18n.language)}</RNText>
-            </View>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statRow}>
-            <View style={styles.statIcon}>
-              <Ionicons name="time-outline" size={16} color={colors.primary} />
-            </View>
-            <View style={styles.statText}>
-              <RNText style={styles.statLabel}>{t('parentArea.child.lastAccess')}</RNText>
-              <RNText style={styles.statValue}>{formatDateTime(child.last_seen_at, i18n.language)}</RNText>
-            </View>
-          </View>
-        </View>
-
         {/* Form fields */}
         <View style={styles.form}>
           <Input
@@ -233,12 +215,99 @@ export default function EditarCriancaScreen() {
           ) : null}
         </View>
 
+        {/* ── Game settings ──────────────────────────────────────── */}
+        <Text variant="h3" style={styles.sectionLabel}>{t('parentArea.child.gameSettings')}</Text>
+
+        {/* Timer */}
+        <View style={styles.settingCard}>
+          <View style={styles.settingHeader}>
+            <View style={styles.settingIcon}>
+              <Ionicons name="timer-outline" size={18} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.child.timerLabel')}</Text>
+              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.timerHint')}</Text>
+            </View>
+          </View>
+          <View style={styles.optionRow}>
+            {TIMER_OPTIONS.map((opt) => (
+              <Pressable
+                key={opt}
+                style={[styles.optionBtn, timerSeconds === opt && styles.optionBtnActive]}
+                onPress={() => setTimerSeconds(opt)}
+              >
+                <RNText style={[styles.optionText, timerSeconds === opt && styles.optionTextActive]}>
+                  {opt === 0 ? '∞' : `${opt}s`}
+                </RNText>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {/* Multiplication max */}
+        <View style={styles.settingCard}>
+          <View style={styles.settingHeader}>
+            <View style={styles.settingIcon}>
+              <Ionicons name="calculator-outline" size={18} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.child.tablesLabel')}</Text>
+              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.tablesHint')}</Text>
+            </View>
+          </View>
+          <View style={styles.optionRow}>
+            {MULTIPLICATION_RANGES.map((opt) => (
+              <Pressable
+                key={opt}
+                style={[styles.optionBtn, multiMax === opt && styles.optionBtnActive]}
+                onPress={() => setMultiMax(opt)}
+              >
+                <RNText style={[styles.optionText, multiMax === opt && styles.optionTextActive]}>
+                  {`×${opt}`}
+                </RNText>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {/* Social enabled */}
+        <Pressable style={styles.settingCard} onPress={() => setSocialEnabled((v) => !v)}>
+          <View style={styles.settingHeader}>
+            <View style={styles.settingIcon}>
+              <Ionicons name="people-outline" size={18} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.child.socialLabel')}</Text>
+              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.socialHint')}</Text>
+            </View>
+            <View style={[styles.toggle, socialEnabled && styles.toggleOn]}>
+              <View style={[styles.toggleThumb, socialEnabled && styles.toggleThumbOn]} />
+            </View>
+          </View>
+        </Pressable>
+
         <Button
           label={t('parentArea.child.save')}
           loading={saving}
           onPress={handleSave}
           style={styles.saveBtn}
         />
+
+        {/* Account info — discreto, no fundo */}
+        <View style={styles.statsFooter}>
+          <View style={styles.statsFooterRow}>
+            <Ionicons name="calendar-outline" size={13} color={colors.text.tertiary} />
+            <RNText style={styles.statsFooterText}>
+              {t('parentArea.child.registeredSince')}: {formatDate(child.created_at, i18n.language)}
+            </RNText>
+          </View>
+          <View style={styles.statsFooterRow}>
+            <Ionicons name="time-outline" size={13} color={colors.text.tertiary} />
+            <RNText style={styles.statsFooterText}>
+              {t('parentArea.child.lastAccess')}: {formatDateTime(child.last_seen_at, i18n.language)}
+            </RNText>
+          </View>
+        </View>
       </ScrollView>
     </View>
   );
@@ -257,44 +326,68 @@ const styles = StyleSheet.create({
   milo: { marginBottom: space.sm },
   sectionLabel: { marginBottom: space.sm },
 
-  // ── Account stats card ───────────────────────────────────────────────────────
-  statsCard: {
-    backgroundColor: '#fff',
-    borderRadius: radius.xl,
-    paddingHorizontal: space.md,
-    ...shadows.sm,
+  // ── Account stats — discreto no fundo ───────────────────────────────────────
+  statsFooter: {
+    gap: 6,
+    paddingTop: space.sm,
+    paddingBottom: space.sm,
+    alignItems: 'flex-start',
   },
-  statRow: {
+  statsFooterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 14,
+    gap: 5,
   },
-  statIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statText: { flex: 1, gap: 2 },
-  statLabel: {
+  statsFooterText: {
     fontFamily: fontFamily.regular,
     fontSize: 12,
-    color: colors.text.secondary,
-  },
-  statValue: {
-    fontFamily: fontFamily.semiBold,
-    fontSize: 14,
-    color: colors.text.primary,
-  },
-  statDivider: {
-    height: 1,
-    backgroundColor: colors.border.default,
-    marginLeft: 44,
+    color: colors.text.tertiary,
   },
   avatarGrid: { marginBottom: space.md },
   form: { gap: space.md },
   saveBtn: { marginTop: space.sm },
+
+  // ── Game settings ────────────────────────────────────────────────────────────
+  settingCard: {
+    backgroundColor: '#fff',
+    borderRadius: radius.xl,
+    padding: space.md,
+    gap: space.sm,
+    ...shadows.sm,
+  },
+  settingHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  settingIcon: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  optionRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  optionBtn: {
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.cardAlt,
+  },
+  optionBtnActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  optionText: {
+    fontFamily: fontFamily.semiBold, fontSize: 14,
+    color: colors.text.secondary,
+  },
+  optionTextActive: { color: colors.primary },
+  toggle: {
+    width: 48, height: 28, borderRadius: 14,
+    backgroundColor: colors.border.default,
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  toggleOn: { backgroundColor: colors.primary },
+  toggleThumb: {
+    width: 22, height: 22, borderRadius: 11,
+    backgroundColor: '#fff',
+  },
+  toggleThumbOn: { alignSelf: 'flex-end' },
 });

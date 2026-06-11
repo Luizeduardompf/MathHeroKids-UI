@@ -6,7 +6,7 @@
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -52,7 +52,6 @@ function ActionRow({
 export default function ParentAreaScreen() {
   const { t }    = useTranslation();
   const router   = useRouter();
-  const insets   = useSafeAreaInsets();
   const parentId = useAuthStore(selectParentId);
 
   const { data: children = [], isLoading } = useQuery({
@@ -64,11 +63,12 @@ export default function ParentAreaScreen() {
   return (
     <View style={s.root}>
       {/* ── Header ──────────────────────────────────────────────────── */}
+      <SafeAreaView edges={['top']} style={{ backgroundColor: colors.primary }}>
       <LinearGradient
         colors={[colors.primary, colors.primaryDark]}
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-        style={[s.header, { paddingTop: insets.top + 12 }]}
       >
+        <View style={s.header}>
         <View style={s.headerRow}>
           <Pressable style={s.iconBtn} onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={22} color="#fff" />
@@ -80,7 +80,9 @@ export default function ParentAreaScreen() {
           <View style={{ width: 42 }} />
         </View>
         <Text style={s.headerSubtitle}>{t('parentArea.subtitle')}</Text>
+        </View>
       </LinearGradient>
+      </SafeAreaView>
 
       <ScrollView contentContainerStyle={s.content}>
 
