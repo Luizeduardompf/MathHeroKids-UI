@@ -345,6 +345,15 @@
     "passwordSection": "Contraseña",
     "title": "Área de padres",
     "subtitle": "Gestiona hijos, PIN y ajustes",
-    "accessBtn": "Área restringida de padres"
+    "accessBtn": "Área restringida de padres",
+    "child": {
+      "newTitle": "Nuevo perfil",
+      "editTitle": "Editar perfil",
+      "miloNewMessage": "¡Otro héroe llega! Rellena los datos para crear el nuevo perfil.",
+      "save": "Guardar perfil",
+      "create": "Crear perfil",
+      "registeredSince": "Miembro desde",
+      "lastAccess": "Último acceso"
+    }
   }
 }

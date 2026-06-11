@@ -1,7 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text as RNText, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 
 import { AvatarPicker, Button, Input, Text } from '@/components/ui';
@@ -9,9 +11,28 @@ import { MiloMessage } from '@/components/milo/MiloMessage';
 import { childService } from '@/services/child.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
-import { colors, space } from '@/theme';
+import { colors, fontFamily, radius, shadows, space } from '@/theme';
 import type { AvatarId } from '@/constants/config';
 import type { ChildProfile } from '@/types';
+
+const LANG_TO_LOCALE: Record<string, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
+
+function formatDateTime(iso: string | null | undefined, language: string): string {
+  if (!iso) return '—';
+  const locale = LANG_TO_LOCALE[language] ?? 'en-US';
+  return new Date(iso).toLocaleString(locale, {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
+function formatDate(iso: string | null | undefined, language: string): string {
+  if (!iso) return '—';
+  const locale = LANG_TO_LOCALE[language] ?? 'en-US';
+  return new Date(iso).toLocaleDateString(locale, {
+    day: '2-digit', month: 'long', year: 'numeric',
+  });
+}
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
 
@@ -39,8 +60,9 @@ function formatDateForDisplay(isoDate: string | null): string {
 }
 
 export default function EditarCriancaScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const parentId = useAuthStore(selectParentId);
   const activeChild = useProfileStore(selectActiveChild);
@@ -124,20 +146,23 @@ export default function EditarCriancaScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.safeHeader}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
-            <RNText style={styles.backArrow}>‹</RNText>
+      {/* Header — gradient pattern */}
+      <LinearGradient
+        colors={[colors.primary, colors.primaryDark]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={[styles.header, { paddingTop: insets.top + 12 }]}
+      >
+        <View style={styles.headerRow}>
+          <Pressable style={styles.iconBtn} onPress={() => router.back()} hitSlop={8}>
+            <Ionicons name="chevron-back" size={22} color="#fff" />
           </Pressable>
-          <View>
-            <Text variant="caption" color="rgba(255,255,255,0.8)">
-              {t('parentArea.child.editTitle')}
-            </Text>
-            <Text variant="h2" color={colors.text.inverse}>{child.display_name}</Text>
+          <View style={styles.headerCenter}>
+            <RNText style={styles.headerSub}>Math Hero Kids</RNText>
+            <RNText style={styles.headerTitle}>{child.display_name}</RNText>
           </View>
+          <View style={{ width: 42 }} />
         </View>
-      </SafeAreaView>
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <MiloMessage
@@ -151,6 +176,29 @@ export default function EditarCriancaScreen() {
           {t('auth.register.child.avatarLabel')}
         </Text>
         <AvatarPicker selected={avatar} onSelect={setAvatar} style={styles.avatarGrid} />
+
+        {/* ── Account info (read-only) ─────────────────────────────── */}
+        <View style={styles.statsCard}>
+          <View style={styles.statRow}>
+            <View style={styles.statIcon}>
+              <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+            </View>
+            <View style={styles.statText}>
+              <RNText style={styles.statLabel}>{t('parentArea.child.registeredSince')}</RNText>
+              <RNText style={styles.statValue}>{formatDate(child.created_at, i18n.language)}</RNText>
+            </View>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statRow}>
+            <View style={styles.statIcon}>
+              <Ionicons name="time-outline" size={16} color={colors.primary} />
+            </View>
+            <View style={styles.statText}>
+              <RNText style={styles.statLabel}>{t('parentArea.child.lastAccess')}</RNText>
+              <RNText style={styles.statValue}>{formatDateTime(child.last_seen_at, i18n.language)}</RNText>
+            </View>
+          </View>
+        </View>
 
         {/* Form fields */}
         <View style={styles.form}>
@@ -199,21 +247,53 @@ export default function EditarCriancaScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background.primary },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md },
-  safeHeader: { backgroundColor: colors.primary },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    backgroundColor: colors.primary,
-    paddingHorizontal: space.md,
-    paddingTop: space.sm,
-    paddingBottom: space.lg,
-  },
-  backBtn: { padding: 4 },
-  backArrow: { fontSize: 28, color: colors.text.inverse, lineHeight: 32 },
+  header:       { paddingHorizontal: 20, paddingBottom: 20 },
+  headerRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerCenter: { flex: 1, alignItems: 'center' },
+  headerSub:    { fontFamily: fontFamily.semiBold, fontSize: 12, color: 'rgba(255,255,255,0.75)', marginBottom: 1 },
+  headerTitle:  { fontFamily: fontFamily.extraBold, fontSize: 22, color: '#fff' },
+  iconBtn:      { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   content: { padding: space.md, gap: space.md, paddingBottom: space['2xl'] },
   milo: { marginBottom: space.sm },
   sectionLabel: { marginBottom: space.sm },
+
+  // ── Account stats card ───────────────────────────────────────────────────────
+  statsCard: {
+    backgroundColor: '#fff',
+    borderRadius: radius.xl,
+    paddingHorizontal: space.md,
+    ...shadows.sm,
+  },
+  statRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+  },
+  statIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statText: { flex: 1, gap: 2 },
+  statLabel: {
+    fontFamily: fontFamily.regular,
+    fontSize: 12,
+    color: colors.text.secondary,
+  },
+  statValue: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 14,
+    color: colors.text.primary,
+  },
+  statDivider: {
+    height: 1,
+    backgroundColor: colors.border.default,
+    marginLeft: 44,
+  },
   avatarGrid: { marginBottom: space.md },
   form: { gap: space.md },
   saveBtn: { marginTop: space.sm },

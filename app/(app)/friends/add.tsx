@@ -181,7 +181,10 @@ export default function AddFriendScreen() {
           <Pressable style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </Pressable>
-          <Text style={s.headerTitle}>{t('friends.add.title')}</Text>
+          <View style={s.headerCenter}>
+            <Text style={s.headerSub}>Math Hero Kids</Text>
+            <Text style={s.headerTitle}>{t('friends.add.title')}</Text>
+          </View>
           <View style={{ width: 40 }} />
         </View>
 
@@ -190,7 +193,7 @@ export default function AddFriendScreen() {
           <Ionicons name="search" size={18} color="#9CA3AF" style={{ marginRight: 8 }} />
           <TextInput
             style={s.searchInput}
-            placeholder="Digite o nome de usuário"
+            placeholder={t('friends.add.searchPlaceholder')}
             placeholderTextColor="#9CA3AF"
             value={query}
             onChangeText={(t) => { setQuery(t); if (!t.trim()) setSearchResult(null); }}
@@ -269,9 +272,11 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background.primary },
 
   header:     { paddingHorizontal: 20, paddingBottom: 20 },
-  headerRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  backBtn:    { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  headerTitle:{ fontFamily: fontFamily.extraBold, fontSize: 22, color: '#fff', flex: 1, textAlign: 'center' },
+  headerRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  headerCenter:{ flex: 1, alignItems: 'center' },
+  headerSub:   { fontFamily: fontFamily.semiBold, fontSize: 12, color: 'rgba(255,255,255,0.75)', marginBottom: 1 },
+  backBtn:     { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontFamily: fontFamily.extraBold, fontSize: 22, color: '#fff' },
 
   searchWrap:  { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 16, paddingVertical: 14 },
   searchInput: { flex: 1, fontFamily: fontFamily.regular, fontSize: 15, color: colors.text.primary, padding: 0 },

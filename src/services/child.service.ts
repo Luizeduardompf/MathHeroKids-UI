@@ -164,4 +164,19 @@ export const childService = {
     if (error) throw new Error(mapChildError(error));
     return (count ?? 0) === 0;
   },
+
+  /**
+   * Updates last_seen_at for a child. Called on each app open / child selection.
+   * Non-throwing — failure is silently ignored (non-critical field).
+   */
+  async updateLastSeen(childId: string): Promise<void> {
+    try {
+      await supabase
+        .from('child_profiles')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('id', childId);
+    } catch {
+      // Non-critical — never fail the app over this
+    }
+  },
 };

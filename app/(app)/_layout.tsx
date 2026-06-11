@@ -5,7 +5,12 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useAuthStore, selectAuthStatus } from '@/stores/auth.store';
 import { useProfileStore, selectHasActiveChild, selectActiveChild } from '@/stores/profile.store';
 import { configureNotificationHandler, registerPushToken } from '@/services/notification.service';
+import { childService } from '@/services/child.service';
 import { colors } from '@/theme';
+
+// Throttle: update last_seen_at at most once per 30 minutes per child
+const LAST_SEEN_THROTTLE_MS = 30 * 60 * 1000;
+const lastSeenUpdated: Record<string, number> = {};
 
 /**
  * Guard: only authenticated users with an active child can access (app) routes.
@@ -31,10 +36,16 @@ export default function AppLayout() {
     configureNotificationHandler();
   }, []);
 
-  // Register push token when active child is set
+  // Register push token + update last_seen_at when active child is set
   useEffect(() => {
-    if (activeChild?.id) {
-      void registerPushToken(activeChild.id);
+    if (!activeChild?.id) return;
+    void registerPushToken(activeChild.id);
+    // Throttled last_seen_at update (max once per 30 min per child)
+    const now = Date.now();
+    const last = lastSeenUpdated[activeChild.id] ?? 0;
+    if (now - last > LAST_SEEN_THROTTLE_MS) {
+      lastSeenUpdated[activeChild.id] = now;
+      void childService.updateLastSeen(activeChild.id);
     }
   }, [activeChild?.id]);
 

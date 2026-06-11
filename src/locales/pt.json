@@ -400,7 +400,9 @@
       "editTitle": "Editar perfil",
       "miloNewMessage": "Mais um herói chegando! Preencha os dados para criar o novo perfil.",
       "save": "Salvar perfil",
-      "create": "Criar perfil"
+      "create": "Criar perfil",
+      "registeredSince": "Membro desde",
+      "lastAccess": "Último acesso"
     },
     "editProfile": "Editar perfil",
     "editProfileSub": "Dados do responsável",

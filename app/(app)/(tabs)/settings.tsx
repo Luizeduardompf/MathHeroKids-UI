@@ -582,9 +582,12 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
         </Pressable>
 
-        {/* ── Sign out ─────────────────────────────────────────────── */}
+      </ScrollView>
+
+      {/* ── Sign out — fixed above tab bar ───────────────────────── */}
+      <View style={styles.signOutBar}>
         <Pressable
-          style={styles.signOutBtn}
+          style={({ pressed }) => [styles.signOutBtn, pressed ? styles.signOutBtnPressed : null]}
           onPress={() => setShowLogoutModal(true)}
           disabled={loggingOut}
         >
@@ -592,13 +595,12 @@ export default function SettingsScreen() {
             <ActivityIndicator color={colors.error} size="small" />
           ) : (
             <>
-              <Ionicons name="log-out-outline" size={18} color={colors.error} />
+              <Ionicons name="log-out-outline" size={20} color={colors.error} />
               <Text variant="label" color={colors.error}>{t('settings.logout')}</Text>
             </>
           )}
         </Pressable>
-
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -653,14 +655,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ── Sign out button ──────────────────────────────────────────────────────────
+  // ── Sign out bar (fixed at bottom, above tab bar) ───────────────────────────
+  signOutBar: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border.default,
+    backgroundColor: colors.background.primary,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+  },
   signOutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.sm,
-    paddingVertical: space.md,
-    marginTop: space.xs,
+    paddingVertical: 14,
+    borderRadius: radius.xl,
+    backgroundColor: '#FEF2F2', // red-50 — subtle destructive tint
+  },
+  signOutBtnPressed: {
+    opacity: 0.75,
   },
 
   // ── Parent card ─────────────────────────────────────────────────────────────

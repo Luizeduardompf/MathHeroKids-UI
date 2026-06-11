@@ -389,7 +389,9 @@
       "editTitle": "Edit profile",
       "miloNewMessage": "Another hero arriving! Fill in the details to create the new profile.",
       "save": "Save profile",
-      "create": "Create profile"
+      "create": "Create profile",
+      "registeredSince": "Member since",
+      "lastAccess": "Last access"
     },
     "editProfile": "Edit profile",
     "editProfileSub": "Parent's data",

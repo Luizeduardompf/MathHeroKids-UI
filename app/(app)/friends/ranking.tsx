@@ -237,7 +237,10 @@ export default function RankingScreen() {
           <Pressable style={s.backBtn} onPress={() => router.back()} hitSlop={8}>
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </Pressable>
-          <Text style={s.headerTitle}>{t('friends.ranking.title')}</Text>
+          <View style={s.headerCenter}>
+            <Text style={s.headerSub}>Math Hero Kids</Text>
+            <Text style={s.headerTitle}>{t('friends.ranking.title')}</Text>
+          </View>
           <View style={{ width: 40 }} />
         </View>
       </LinearGradient>
@@ -280,9 +283,11 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background.primary },
 
   header:     { paddingHorizontal: 20, paddingBottom: 20 },
-  headerRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  backBtn:    { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  headerTitle:{ fontFamily: fontFamily.extraBold, fontSize: 22, color: '#fff', flex: 1, textAlign: 'center' },
+  headerRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerCenter:{ flex: 1, alignItems: 'center' },
+  headerSub:   { fontFamily: fontFamily.semiBold, fontSize: 12, color: 'rgba(255,255,255,0.75)', marginBottom: 1 },
+  backBtn:     { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontFamily: fontFamily.extraBold, fontSize: 22, color: '#fff' },
 
   scroll:  { flex: 1 },
   content: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, gap: 16 },

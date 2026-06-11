@@ -28,6 +28,7 @@ export default function ProfileSelectScreen() {
 
   function handleSelectChild(child: ChildProfile) {
     setActiveChild(child);
+    void childService.updateLastSeen(child.id); // fire-and-forget
     router.replace('/(app)/(tabs)/');
   }
 

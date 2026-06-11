@@ -292,6 +292,15 @@
     "passwordSection": "Mot de passe",
     "title": "Espace parents",
     "subtitle": "Gérez les enfants, le PIN et les paramètres",
-    "accessBtn": "Espace restreint parents"
+    "accessBtn": "Espace restreint parents",
+    "child": {
+      "newTitle": "Nouveau profil",
+      "editTitle": "Modifier le profil",
+      "miloNewMessage": "Un autre héros arrive ! Remplissez les données pour créer le nouveau profil.",
+      "save": "Enregistrer",
+      "create": "Créer le profil",
+      "registeredSince": "Membre depuis",
+      "lastAccess": "Dernier accès"
+    }
   }
 }

@@ -48,6 +48,7 @@ export interface ChildProfile {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  last_seen_at: string | null; // set by client on each app open
 }
 
 export interface ChallengeSession {
