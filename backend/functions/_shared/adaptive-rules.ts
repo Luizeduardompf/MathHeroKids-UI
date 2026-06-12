@@ -55,6 +55,17 @@ export interface AdaptiveRules {
 const rulesV1 = rulesJson as AdaptiveRules;
 const rulesV2 = rulesV2Json as AdaptiveRules;
 
+// Permite override via env var sem redeploy.
+// No dashboard Supabase: Settings → Edge Functions → Secrets → QUESTIONS_PER_CHALLENGE=5
+const _envQ = Deno.env.get('QUESTIONS_PER_CHALLENGE');
+if (_envQ) {
+  const n = parseInt(_envQ, 10);
+  if (!isNaN(n) && n > 0) {
+    rulesV1.session.questionsPerChallenge = n;
+    rulesV2.session.questionsPerChallenge = n;
+  }
+}
+
 // Validacao basica no boot — JSON Schema cobre o resto via CI.
 function validateRules(r: AdaptiveRules, label: string): void {
   const weightSum = Object.values(r.selectionMix.weights).reduce((a, b) => a + b, 0);

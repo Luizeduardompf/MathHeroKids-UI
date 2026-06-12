@@ -22,7 +22,7 @@ import { authService } from '@/services/auth.service';
 import { pinService } from '@/services/pin.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { useProfileStore } from '@/stores/profile.store';
-import { SUPPORTED_LOCALES, TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT_OPTIONS } from '@/constants/config';
+import { SUPPORTED_LOCALES, TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT_OPTIONS, DEFAULT_QUESTION_COUNT } from '@/constants/config';
 import type { SupportedLocale, TimerOption, MultiplicationRange, QuestionCountOption } from '@/constants/config';
 import type { ChildProfile } from '@/types';
 import { changeLocale, LOCALE_STORAGE_KEY } from '@/lib/i18n';
@@ -286,7 +286,7 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
   const [savingMult,      setSavingMult]      = useState(false);
   const [savingQuestions, setSavingQuestions] = useState(false);
   const [localChild,      setLocalChild]      = useState(child);
-  const [questionsCount,  setQuestionsCount]  = useState<QuestionCountOption>(20);
+  const [questionsCount,  setQuestionsCount]  = useState<QuestionCountOption>(DEFAULT_QUESTION_COUNT);
 
   // Carregar setting local de questões ao montar
   useEffect(() => {

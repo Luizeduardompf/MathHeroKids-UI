@@ -1,0 +1,22 @@
+Veja o screenshot em anexo: é a referência do ESTILO de animação que quero aplicar
+nesta nova tela. Recrie a MESMA linguagem visual de celebração explosiva:
+
+1. Entrada com "pop": elementos entram com spring (escala 0 → 1.3 → 1), em
+   sequência escalonada (stagger), nunca todos de uma vez.
+2. Explosão central: ao acionar, um flash radial cresce do centro, raios de sol
+   girando ao fundo, e um anel branco que se expande e some.
+3. Confete colorido caindo pela tela durante o momento de destaque.
+4. Elemento-herói (ícone/troféu/badge) gigante que aparece com pop, gira e faz um
+   leve "wobble", com brilho/glow e estrelinhas (sparkles) pulsando ao redor.
+5. Transformação de status com impacto: o item que muda "treme", encolhe e
+   re-explode na cor nova com anel de brilho — o usuário PRECISA sentir a conquista.
+
+Mantenha:
+- Visual arredondado, divertido e infantil (kids).
+- Cores vivas: azul, dourado/amarelo, laranja, verde (sucesso), vermelho, + neutros.
+- Fontes: Baloo 2 para títulos, Nunito para texto.
+- Use a lib "motion" (Framer Motion) com spring/keyframes; confete = divs animadas
+  com x, rotação, delay e duração aleatórios.
+
+Adapte o conteúdo desta nova tela, mas o RITMO, o impacto e o "fator uau" devem ser
+idênticos ao do screenshot.

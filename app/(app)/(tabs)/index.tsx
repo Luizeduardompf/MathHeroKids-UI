@@ -15,7 +15,7 @@ import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { childService } from '@/services/child.service';
 import { challengeService } from '@/services/challenge.service';
 import { supabase } from '@/lib/supabase';
-import { LEVEL_THRESHOLDS } from '@/constants/config';
+import { LEVEL_THRESHOLDS, CHALLENGE } from '@/constants/config';
 import { colors, fontFamily, radius, space } from '@/theme';
 import type { ChildProfile } from '@/types';
 
@@ -379,7 +379,7 @@ export default function HomeScreen() {
             Multiplication Mountain
           </Text>
           <Text variant="bodySmall" color="rgba(255,255,255,0.70)">
-            {t('home.challenge.questions', { current: 0, total: 20 })}
+            {t('home.challenge.questions', { current: 0, total: CHALLENGE.TOTAL_QUESTIONS })}
           </Text>
           <ProgressBar
             value={0}

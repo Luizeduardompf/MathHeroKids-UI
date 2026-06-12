@@ -971,7 +971,7 @@ export default function ChallengeScreen() {
   // ─── Completed ────────────────────────────────────────────────────────────
 
   if (phase === 'completed' || phase === 'submitting') {
-    const totalXp = sessionXp + 200 + (uniqueCorrect === 20 ? 100 : 0);
+    const totalXp = sessionXp + 200 + (uniqueCorrect === totalQuestions ? 100 : 0);
     return (
       <CompletedScreen
         xpOverride={totalXp}
