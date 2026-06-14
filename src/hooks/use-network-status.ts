@@ -1,5 +1,5 @@
+import * as Network from 'expo-network';
 import { useEffect, useState } from 'react';
-import NetInfo from '@react-native-community/netinfo';
 
 export interface NetworkStatus {
   isConnected: boolean;
@@ -7,12 +7,15 @@ export interface NetworkStatus {
   isChecking: boolean;
 }
 
-/**
- * Retorna o estado de conectividade de rede.
- * isConnected: true = interface de rede disponível.
- * isInternetReachable: true = internet confirmada (pode ser null enquanto verifica).
- * isChecking: true durante a primeira verificação.
- */
+async function fetchNetworkStatus(): Promise<NetworkStatus> {
+  const state = await Network.getNetworkStateAsync();
+  return {
+    isConnected: state.isConnected ?? true,
+    isInternetReachable: state.isInternetReachable ?? null,
+    isChecking: false,
+  };
+}
+
 export function useNetworkStatus(): NetworkStatus {
   const [status, setStatus] = useState<NetworkStatus>({
     isConnected: true,
@@ -21,35 +24,20 @@ export function useNetworkStatus(): NetworkStatus {
   });
 
   useEffect(() => {
-    // Verificação imediata
-    void NetInfo.fetch().then((state) => {
-      setStatus({
-        isConnected: state.isConnected ?? true,
-        isInternetReachable: state.isInternetReachable,
-        isChecking: false,
-      });
-    });
+    void fetchNetworkStatus().then(setStatus);
 
-    // Subscriber para mudanças em tempo real
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      setStatus({
-        isConnected: state.isConnected ?? true,
-        isInternetReachable: state.isInternetReachable,
-        isChecking: false,
-      });
-    });
+    // Poll a cada 5s (expo-network não tem addEventListener)
+    const interval = setInterval(() => {
+      void fetchNetworkStatus().then(setStatus);
+    }, 5000);
 
-    return unsubscribe;
+    return () => clearInterval(interval);
   }, []);
 
   return status;
 }
 
-/**
- * Versão one-shot para verificação imperativa antes de chamar uma EF.
- * Retorna true se há conectividade.
- */
 export async function checkNetworkOnce(): Promise<boolean> {
-  const state = await NetInfo.fetch();
+  const state = await Network.getNetworkStateAsync();
   return (state.isConnected ?? false) && state.isInternetReachable !== false;
 }

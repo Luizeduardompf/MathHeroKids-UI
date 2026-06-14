@@ -67,6 +67,15 @@ O mount virtiofs (macOS→Linux sandbox) não suporta `unlink` — `rm -f` falha
 
 ---
 
+**Para Expo Go: usar apenas pacotes primeiro-party Expo SDK. Pacotes community crasham.**
+- `@react-native-community/netinfo` NÃO está incluído no Expo Go runtime → crash ao arrancar
+- Substituído por `expo-network` (`Network.getNetworkStateAsync()`) — primeiro-party, incluído no Expo Go
+- `expo-network` não tem `addEventListener` → usar polling com `setInterval` (5s suficiente para UX de offline)
+- `expo-av` também removido por incompatibilidade nativa (ver abaixo)
+- Regra geral: antes de adicionar qualquer pacote community, verificar se está na lista de pacotes do Expo Go SDK
+
+---
+
 **expo-av NÃO é compatível com o expo-modules-core desta versão do SDK.**
 - Erro ao fazer `npx expo install expo-av` + `pod install`: `EXAV.h: EXEventEmitter.h not found`
 - Causa: `expo-av` espera versão mais antiga de `expo-modules-core` — incompatibilidade de headers nativos

@@ -4,13 +4,43 @@
 
 ---
 
-## Estado actual — 2026-06-12 (sessão 8)
+## Estado actual — 2026-06-14 (sessão 9)
 
 ### 🟢 Em curso
 ```
-ESTADO: LIVRE
+ESTADO: A MEIO — EAS Update setup (falta correr `eas update --branch main`)
 ÚLTIMO COMMIT: d3e2d66 (via GitHub API)
 ```
+
+---
+
+### ✅ Concluído (sessão 9 — 2026-06-14) — EAS Update setup para Expo Go
+
+**Objetivo:** publicar app no Expo Go via EAS Update (sem Apple Developer, sem build nativo)
+
+**`package.json`:**
+- Removido `expo-av` (incompatível com SDK 56 — crashava build nativo com `EXAV.h: EXEventEmitter.h not found`; não era usado no código, sons comentados)
+- Removido `@react-native-community/netinfo` (não incluído no Expo Go runtime)
+- Adicionado `expo-network` (primeiro-party Expo, incluído no Expo Go)
+
+**`src/hooks/use-network-status.ts`:**
+- Reescrito para usar `expo-network` em vez de `@react-native-community/netinfo`
+- `useNetworkStatus`: usa `Network.getNetworkStateAsync()` + polling a cada 5s (expo-network não tem addEventListener)
+- `checkNetworkOnce`: idem, one-shot
+
+**`app.json`:**
+- `extra.eas.projectId`: `"FILL_AFTER_EAS_INIT"` → `"c9e1ab66-bab6-4dbd-bdb7-990087d1f209"`
+- Adicionado `updates.url`: `"https://u.expo.dev/c9e1ab66-bab6-4dbd-bdb7-990087d1f209"`
+- Adicionado `runtimeVersion.policy`: `"appVersion"`
+
+**`eas.json`:**
+- Removido campo `"update"` inválido (causava `eas.json is not valid`)
+
+**`npm install --legacy-peer-deps` + `npx expo install expo-network`** — concluídos sem erros
+
+**`npx eas init`** — projeto já linkado, confirmado: ID `c9e1ab66-bab6-4dbd-bdb7-990087d1f209`
+
+**⏳ Pendente:** correr `eas update --branch main --message "initial release"` para publicar o bundle
 
 ---
 

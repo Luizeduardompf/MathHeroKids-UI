@@ -46,10 +46,17 @@
     "experiments": {
       "typedRoutes": true
     },
+    "updates": {
+      "url": "https://u.expo.dev/c9e1ab66-bab6-4dbd-bdb7-990087d1f209"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "extra": {
       "eas": {
-        "projectId": "FILL_AFTER_EAS_INIT"
+        "projectId": "c9e1ab66-bab6-4dbd-bdb7-990087d1f209"
       }
-    }
+    },
+    "owner": "luizeduardompf.lixo"
   }
 }
