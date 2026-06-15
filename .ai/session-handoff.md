@@ -4,12 +4,47 @@
 
 ---
 
-## Estado actual — 2026-06-14 (sessão 9)
+## Estado actual — 2026-06-14 (sessão 9, final)
 
 ### 🟢 Em curso
 ```
-ESTADO: A MEIO — EAS Update setup (falta correr `eas update --branch main`)
-ÚLTIMO COMMIT: d3e2d66 (via GitHub API)
+ESTADO: LIVRE
+ÚLTIMO COMMIT: (ver abaixo)
+```
+
+**Contexto importante:**
+- Expo Go no iPhone do Luiz é versão 54.0.2 (SDK 54) — SDK 56 incompatível
+- Tunnel ngrok: token guardado e configurado (`npx ngrok authtoken <token>`)
+- Tag `v1.1-sdk56-backup` criada para reverter se o downgrade correr mal
+
+---
+
+### ✅ Concluído (sessão 9 — 2026-06-14) — Downgrade SDK 56→54 + Expo Go funcionando
+
+**Contexto do downgrade:**
+- Expo Go no iPhone do Luiz = SDK 54 (v54.0.2). SDK 56 é incompatível.
+- Tag `v1.1-sdk56-backup` criada antes do downgrade — pode reverter com `git checkout v1.1-sdk56-backup`
+- **NÃO fazer upgrade de SDK sem verificar versão do Expo Go na App Store**
+
+**Versões actuais (SDK 54):**
+- expo@~54.0.0, react@19.1.0, react-native@0.81.5
+- expo-router@~6.0.24, reanimated@~4.1.1, worklets@0.5.1
+- newArchEnabled: false (obrigatório para Expo Go)
+- runtimeVersion: sdkVersion → exposdk:54.0.0
+
+**Ficheiros alterados no downgrade:**
+- `package.json`: expo/react/react-native/todas as deps downgraded; worklets@0.5.1 adicionado; expo-av/@react-native-community/netinfo removidos; expo-network adicionado
+- `app.json`: newArchEnabled: false, platforms: [ios,android], updates.url + runtimeVersion configurados
+- `src/hooks/use-network-status.ts`: reescrito com expo-network (sem netinfo)
+
+**Tunnel para desenvolvimento:**
+```bash
+NGROK_AUTHTOKEN=<ver credenciais> npx expo start --tunnel --clear
+```
+
+**Para publicar update permanente no Expo Go:**
+```bash
+eas update --branch main --message "SDK 54 release" --platform ios
 ```
 
 ---

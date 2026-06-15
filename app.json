@@ -4,10 +4,11 @@
     "slug": "math-hero-kids",
     "version": "1.0.0",
     "scheme": "mathherokids",
+    "platforms": ["ios", "android"],
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -25,12 +26,7 @@
       "package": "com.mathherokids.app",
       "edgeToEdgeEnabled": true
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
-    "plugins": [
+"plugins": [
       "expo-router",
       "expo-secure-store",
       [
@@ -50,7 +46,7 @@
       "url": "https://u.expo.dev/c9e1ab66-bab6-4dbd-bdb7-990087d1f209"
     },
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "sdkVersion"
     },
     "extra": {
       "eas": {

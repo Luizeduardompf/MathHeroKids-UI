@@ -67,11 +67,25 @@ O mount virtiofs (macOS→Linux sandbox) não suporta `unlink` — `rm -f` falha
 
 ---
 
+**CRÍTICO: Expo Go no iPhone do Luiz é SDK 54 (versão 54.0.2) — NÃO fazer upgrade para SDK 56 sem confirmar que o Expo Go da App Store suporta SDK 56.**
+- O projeto foi deliberadamente downgraded de SDK 56 → SDK 54 para ser compatível com o Expo Go disponível
+- Tag `v1.1-sdk56-backup` preserva o estado SDK 56 completo no remote
+- Antes de qualquer upgrade de SDK: verificar versão do Expo Go na App Store do utilizador
+- SDK 54 usa: expo@~54.0.0, react@19.1.0, react-native@0.81.5, expo-router@~6.0.24, reanimated@~4.1.1, worklets@0.5.1
+- `newArchEnabled: false` obrigatório para Expo Go (new arch não é suportada no Expo Go)
+- `runtimeVersion: { policy: "sdkVersion" }` → gera `exposdk:54.0.0` compatível com Expo Go SDK 54
+- EAS Update: `eas update --branch main --platform ios` (sem `--platform all` — evita exportação web)
+- Tunnel: `NGROK_AUTHTOKEN=<token> npx expo start --tunnel --clear` (ngrok via env var, não homebrew CLI directo)
+- Conta ngrok: luizeduardompf.lixo@gmail.com — token guardado em credenciais
+
+---
+
 **Para Expo Go: usar apenas pacotes primeiro-party Expo SDK. Pacotes community crasham.**
 - `@react-native-community/netinfo` NÃO está incluído no Expo Go runtime → crash ao arrancar
 - Substituído por `expo-network` (`Network.getNetworkStateAsync()`) — primeiro-party, incluído no Expo Go
 - `expo-network` não tem `addEventListener` → usar polling com `setInterval` (5s suficiente para UX de offline)
 - `expo-av` também removido por incompatibilidade nativa (ver abaixo)
+- `react-native-worklets` É necessário mesmo no SDK 54 (reanimated 4.1.1 precisa dele como plugin Babel) — não remover
 - Regra geral: antes de adicionar qualquer pacote community, verificar se está na lista de pacotes do Expo Go SDK
 
 ---
