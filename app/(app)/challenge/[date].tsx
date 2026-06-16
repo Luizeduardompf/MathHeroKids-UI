@@ -821,17 +821,14 @@ export default function ChallengeScreen() {
 
   const handleDelete = useCallback(() => setInputDigits((p) => p.slice(0, -1)), []);
 
-  const inputDigitsRef = useRef<number[]>([]);
-  useEffect(() => { inputDigitsRef.current = inputDigits; }, [inputDigits]);
-
   const handleSubmit = useCallback(() => {
     const s = useChallengeStore.getState();
     if (s.phase !== 'playing') return;
-    const digits = inputDigitsRef.current;
-    if (digits.length === 0) return;
-    // Limpar dígitos e submeter fora do updater React — evita "setState during render"
-    setInputDigits([]);
-    s.submitAnswer(parseInt(digits.join(''), 10));
+    setInputDigits((prev) => {
+      if (prev.length === 0) return prev;
+      s.submitAnswer(parseInt(prev.join(''), 10));
+      return [];
+    });
   }, []);
 
   useEffect(() => {

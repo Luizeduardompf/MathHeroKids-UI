@@ -7,11 +7,7 @@ App mobile **iOS + Android** (sem web). Matemática gamificada para crianças (6
 
 ## Stack
 
-React Native + Expo managed (SDK 54) + TypeScript strict + Supabase + Expo Router 6 + TanStack Query + Zustand + i18next (pt/en/es/fr) + Reanimated 4.
-
-**⚠️ SDK: 54.0.0 (NÃO upgradar sem verificar Expo Go App Store)**
-Expo Go no iPhone do Luiz = SDK 54 (v54.0.2). Tag `v1.1-sdk56-backup` preserva estado SDK 56.
-Versões actuais: expo@~54.0.0, react@19.1.0, react-native@0.81.5, expo-router@~6.0.24, reanimated@~4.1.1, worklets@0.5.1
+React Native + Expo managed + TypeScript strict + Supabase + Expo Router + TanStack Query + Zustand + i18next (pt/en/es/fr) + Reanimated 3.
 
 ---
 

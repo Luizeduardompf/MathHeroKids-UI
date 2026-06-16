@@ -220,8 +220,11 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
     const nextIndex = state.currentQuestionIndex + 1;
     const isLastInBlock = nextIndex % CHALLENGE.QUESTIONS_PER_BLOCK === 0;
     const total = state.totalQuestions;
-    // Milestones em posições fixas 5, 10, 15 — só disparam se total > posição
-    const isMilestone = [5, 10, 15].includes(nextIndex) && nextIndex < total;
+    // Milestones at 25%, 50%, 75% of totalQuestions
+    const q25 = Math.floor(total * 0.25);
+    const q50 = Math.floor(total * 0.5);
+    const q75 = Math.floor(total * 0.75);
+    const isMilestone = (nextIndex === q25 || nextIndex === q50 || nextIndex === q75) && nextIndex > 0 && nextIndex < total;
     const isLast = nextIndex >= total;
 
     if (!isCorrect) {
