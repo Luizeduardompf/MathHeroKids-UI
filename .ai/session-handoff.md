@@ -4,13 +4,43 @@
 
 ---
 
-## Estado actual — 2026-06-14 (sessão 9)
+## Estado actual — 2026-06-16 (sessão 10)
 
 ### 🟢 Em curso
 ```
-ESTADO: A MEIO — EAS Update setup (falta correr `eas update --branch main`)
-ÚLTIMO COMMIT: d3e2d66 (via GitHub API)
+ESTADO: LIVRE — migração Reanimated 3→4 concluída, build iOS a passar (confirmado pelo user).
+PENDENTE ANTERIOR: EAS Update (eas update --branch main) ainda não corrido.
+DÍVIDA: expo-router 5→6 desalinhado com SDK 54.
 ```
+
+---
+
+### ✅ Concluído (sessão 10 — 2026-06-16) — Fix build iOS: Reanimated 3→4
+
+**Sintoma:** `xcodebuild` error code 65 ao compilar `RNReanimated`:
+`ReanimatedMountHook.h:24:34: non-virtual member function marked 'override' hides virtual member function` (param `mountTime`).
+
+**Causa raiz:** `react-native-reanimated@~3.17.0` é versão do SDK 53 (RN 0.79).
+Projeto está no SDK 54 (RN 0.81), que mudou a assinatura virtual de `shadowTreeDidMount`.
+O SDK 54 fixa (ver `node_modules/expo/bundledNativeModules.json`):
+`react-native-reanimated ~4.1.1` + nova peer dep `react-native-worklets 0.5.1`.
+Não existe Reanimated 3.x compatível com RN 0.81 → migração para v4 é obrigatória.
+
+**Editado:** `babel.config.js` — plugin `react-native-reanimated/plugin` → `react-native-worklets/plugin` (Reanimated 4 moveu o plugin do Babel; deve ser o último plugin).
+
+**Risco de regressão: ~nulo** — nenhum `.ts/.tsx` em `src/`/`app/` importa reanimated diretamente (só dependência transitiva de expo-router/react-native-screens). Nenhuma API removida em uso (verificado: `useAnimatedGestureHandler`, `makeMutable`, etc.).
+
+**Pendente (correr no Terminal do Mac, raiz do projeto):**
+```
+npx expo install react-native-reanimated react-native-worklets
+npx pod-install
+npx expo run:ios --no-build-cache
+```
+Se persistir cache Xcode: `rm -rf ~/Library/Developer/Xcode/DerivedData`.
+
+**Validação:** ✅ build iOS passou (confirmado pelo user, 2026-06-16).
+
+**Dívida separada detectada:** `expo-router ~5.0.0` no package.json, mas SDK 54 fixa `~6.0.24`. Tratar isolado (breaking changes de routing), não misturar com este fix.
 
 ---
 
@@ -316,6 +346,7 @@ ESTADO: A MEIO — EAS Update setup (falta correr `eas update --branch main`)
 - Git locks virtiofs: `mv` nunca `rm`
 - Avatares PNG ~1.2 MB — optimizar para ≤200 KB antes de produção
 - `friends/list.tsx`: "Nível X" nos sub-labels ainda hardcoded
+- **`expo-router ~5.0.0` desalinhado** — SDK 54 fixa `~6.0.24`. Migração v5→v6 pendente (breaking changes de routing). Correr `npx expo install --check` para listar todos os pacotes fora do pin.
 
 ---
 
