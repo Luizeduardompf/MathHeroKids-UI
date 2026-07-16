@@ -4,14 +4,71 @@
 
 ---
 
-## Estado actual — 2026-06-16 (sessão 10)
+## Estado actual — 2026-07-16 (sessão 11)
 
 ### 🟢 Em curso
 ```
-ESTADO: LIVRE — migração Reanimated 3→4 concluída, build iOS a passar (confirmado pelo user).
-PENDENTE ANTERIOR: EAS Update (eas update --branch main) ainda não corrido.
+ESTADO: LIVRE — app standalone a correr no iPhone 16 Pro físico (confirmado pelo user).
 DÍVIDA: expo-router 5→6 desalinhado com SDK 54.
+DÍVIDA: 3 erros TypeScript pré-existentes (friends.tsx: Image, social_enabled; ranking.tsx: social_enabled).
+NOTA: EAS Update deixou de ser prioridade — instalação directa por cabo funciona.
 ```
+
+---
+
+### ✅ Concluído (sessão 11 — 2026-07-16) — App standalone no iPhone físico + fix crítico de env
+
+**1. Fix CRÍTICO — `src/constants/env.ts`: `process.env` com chave dinâmica**
+
+Sintoma: app instalava no iPhone, abria e fechava imediatamente.
+Crash real (via `devicectl --console`):
+`RCTFatalException: Missing required environment variable: EXPO_PUBLIC_SUPABASE_URL`
+
+Causa raiz: `requireEnv()` fazia `process.env[key]` — **chave computada**. O Babel só inlina
+`EXPO_PUBLIC_*` em acessos estáticos literais. Em dev o Metro popula `process.env` em runtime
+(por isso nunca se notou); num bundle Release não há `process.env` → `undefined` → throw no import
+do módulo → morte no arranque.
+
+⚠️ **Isto afectava qualquer build de produção** — EAS e App Store incluídos. Não era específico do device.
+
+Fix: `requireEnv(key, value)` recebe o valor por argumento; call sites usam acesso literal
+(`process.env.EXPO_PUBLIC_SUPABASE_URL`). `optionalEnv` removido (mesmo problema, só usado 1×).
+Validado: URL + anon key confirmados inlined no `main.jsbundle`; app viva no device.
+Type-check: 3 erros antes, 3 depois — nenhum introduzido.
+
+**2. Bundle identifier mudado — `com.mathherokids.app` → `com.luizeduardompf.mathherokids`**
+
+`com.mathherokids.app` já está registado por outra conta Apple → "Failed Registering Bundle Identifier".
+Alterado em `app.json` **e** `ios/MathHeroKids.xcodeproj/project.pbxproj` (2 ocorrências: Debug + Release).
+⚠️ Consequência: a publicação futura na App Store será com este ID. `eas.json` ainda tem
+`ascAppId` e `appleTeamId` por preencher.
+
+**3. Instalação standalone no iPhone 16 Pro — SEM Apple Developer Program**
+
+O handoff anterior afirmava que era preciso pagar os $99/ano. **Falso** — só é preciso para TestFlight,
+OTA e push. Por cabo com Personal Team gratuita funciona.
+
+Certificado já existente: `Apple Development: luizeduardompf2@gmail.com`, team `F4NB8TACS5` (gratuita).
+
+**Comando de (re)instalação — a app CADUCA A 7 DIAS (≈23 Jul 2026):**
+```bash
+# iPhone desbloqueado + ligado por cabo + Developer Mode on
+npx expo run:ios --device 00008140-001A45E80CEA801C --configuration Release --no-bundler
+```
+- UDID do iPhone 16 Pro: `00008140-001A45E80CEA801C` (o UUID do coredevice `550AC2C8-…` NÃO serve)
+- Na 1ª abertura: Definições → Geral → VPN e Gestão de Dispositivos → confiar no Apple ID
+- Limites da conta gratuita: 7 dias, sem push, máx. 3 apps
+
+**4. Ambiente — nota sobre portas**
+
+A porta 8081 costuma estar ocupada pelo dev server de outro projecto do user. Para o simulador:
+`npx expo start --dev-client --port 8082`. O `--dev-client` é obrigatório (o projecto tem `ios/`
+nativo, não corre em Expo Go a partir do Mac). Build nativo já instalado no simulador iPhone 17.
+
+**5. Skill `mathhero-resume` reescrita**
+
+Removido o passo do `.scripts/session-setup.sh` (não existe) e os paths de sandbox `/sessions/*/mnt/`
+(o ambiente é local no Mac). Acrescentado passo de `git status`/`git log` + reconciliação com o handoff.
 
 ---
 

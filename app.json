@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mathherokids.app"
+      "bundleIdentifier": "com.luizeduardompf.mathherokids"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#2B52E5"
       },
-      "package": "com.mathherokids.app",
+      "package": "com.luizeduardompf.mathherokids",
       "edgeToEdgeEnabled": true
     },
     "web": {

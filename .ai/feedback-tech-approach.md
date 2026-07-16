@@ -33,6 +33,35 @@ Separação de concerns, testabilidade, loading/error handling consistente.
 
 ---
 
+**`process.env[key]` com chave dinâmica NÃO funciona em builds Release/produção.**
+- As `EXPO_PUBLIC_*` só são inlined pelo Babel quando escritas como acesso **estático literal**:
+  `process.env.EXPO_PUBLIC_SUPABASE_URL` ✅ / `process.env[key]` ❌
+- Em dev funciona (Metro popula `process.env` em runtime) → o bug fica invisível até ao primeiro build Release
+- Num bundle Release não existe `process.env` para ler → `undefined` → `requireEnv()` faz throw → **crash imediato no arranque**
+- Sintoma: app instala, abre e fecha logo. Crash log: `RCTFatalException: Missing required environment variable`
+- Isto afectava **qualquer** build de produção (device local, EAS, App Store) — não era específico do iPhone
+- Fix aplicado em `src/constants/env.ts` (sessão 11): `requireEnv(key, process.env.EXPO_PUBLIC_X)` — valor passado por argumento, acesso literal no call site
+- **Regra: nunca aceder a `process.env` por chave computada.** Cada var tem de ser soletrada no código.
+- Verificação rápida de que ficou inlined: `grep -a -o "https://[a-z0-9]*\.supabase\.co" <App>.app/main.jsbundle`
+
+---
+
+**Instalar no iPhone físico com conta Apple gratuita (Personal Team) — funciona, sem os $99.**
+- O handoff antigo dizia que era preciso o Apple Developer Program: **falso**. Isso só é preciso para
+  TestFlight, distribuição sem cabo (ad-hoc/OTA) e push notifications.
+- Por cabo, com Personal Team, funciona. Limites: **app caduca em 7 dias**, sem push, máx. 3 apps por Apple ID.
+- Comando (iPhone desbloqueado + Developer Mode on + cabo):
+  `npx expo run:ios --device <UDID> --configuration Release --no-bundler`
+- **Usar o UDID real** (`xcrun xctrace list devices`), não o UUID do coredevice do `devicectl list devices` — não são o mesmo e o Expo só aceita o UDID
+- `--no-bundler` evita conflito de portas com outros projectos; num Release o JS vai embebido, não precisa de Metro
+- O `-allowProvisioningUpdates` gera o perfil sozinho — **desde que o bundle ID esteja livre**. Se o registo do
+  bundle ID falhar, o erro que aparece é o enganador "No profiles found / automatic signing disabled"
+- Bundle ID `com.mathherokids.app` está registado por outra conta → inutilizável. Mudado para `com.luizeduardompf.mathherokids`
+- Diagnosticar crash no device: `xcrun devicectl device process launch --device <UDID> --console --terminate-existing <bundleid>`
+- Verificar se está viva: `xcrun devicectl device info processes --device <UDID> | grep -i <app>`
+
+---
+
 **Diagnóstico de erros de módulos nativos no Expo Go:**
 - `Cannot find native module 'ExpoAsset'` → Expo Go desactualizado no Simulator (não é problema de packages)
 - `No native ExponentConstants module found` → mesmo problema

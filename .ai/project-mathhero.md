@@ -7,7 +7,33 @@ App mobile **iOS + Android** (sem web). Matemática gamificada para crianças (6
 
 ## Stack
 
-React Native + Expo managed + TypeScript strict + Supabase + Expo Router + TanStack Query + Zustand + i18next (pt/en/es/fr) + Reanimated 3.
+React Native + Expo managed + TypeScript strict + Supabase + Expo Router + TanStack Query + Zustand + i18next (pt/en/es/fr) + **Reanimated 4.1** (+ react-native-worklets, SDK 54 / RN 0.81).
+
+---
+
+## Como testar (confirmado a funcionar — 2026-07-16)
+
+**Simulador (dev, com hot reload):**
+```bash
+npx expo start --dev-client --port 8082   # depois premir "i"
+```
+- `--dev-client` é obrigatório: o projecto tem pasta `ios/` (build nativo), não corre em Expo Go a partir do Mac.
+- `--port 8082` porque a 8081 costuma estar ocupada por outro dev server.
+- Build nativo já instalado no simulador iPhone 17. Só é preciso `npx expo run:ios` se mexer em
+  código nativo, `app.json` ou dependências.
+
+**iPhone 16 Pro físico (standalone, Release):** ✅ confirmado 2026-07-16
+```bash
+npx expo run:ios --device 00008140-001A45E80CEA801C --configuration Release --no-bundler
+```
+- Requer: iPhone desbloqueado + cabo + Developer Mode on. 1ª abertura: confiar no Apple ID em
+  Definições → Geral → VPN e Gestão de Dispositivos.
+- **NÃO exige Apple Developer Program.** Personal Team gratuita chega. Custo: app **caduca a 7 dias**,
+  sem push, máx. 3 apps. Bundle ID: `com.luizeduardompf.mathherokids`.
+- O Apple Developer Program ($99/ano) só é preciso para TestFlight, distribuição OTA/sem cabo e push.
+
+**iPhone via Expo Go:** `npx expo start --tunnel` → ler QR. (`--tunnel` necessário; LAN não funcionou.)
+Expo Go SDK 54 já inclui Reanimated 4.1 + worklets.
 
 ---
 
