@@ -428,7 +428,25 @@ Deno.serve(async (req: Request) => {
     }
     await supabase.from('child_xp_ledger').insert(ledgerRows);
 
-    // ── 14. Trophy + Achievement evaluation (Phase 3 — completo) ─────────
+    // ── 14. Marcar sessao como completa ────────────────────────────────────
+    // Feito ANTES da avaliacao de gamificacao: fetchGamificationStats conta
+    // challenge_sessions com status='completed', logo esta sessao tem de ja
+    // estar completed para contar para os trophies/achievements deste desafio
+    // (senao daily1 / firstChallenge / perfect1 nunca disparam no 1o desafio).
+    const { data: updatedSession } = await supabase
+      .from('challenge_sessions')
+      .update({
+        status: 'completed',
+        correct_count: correctCount,
+        xp_awarded: totalXpEarned,
+        is_perfect: isPerfect,
+        completed_at: new Date().toISOString(),
+      })
+      .eq('id', session_id)
+      .select()
+      .single();
+
+    // ── 15. Trophy + Achievement evaluation (Phase 3 — completo) ─────────
     const trophiesEarned: TrophyRow[] = [];
     const achievementsEarned: AchievementRow[] = [];
 
@@ -494,20 +512,7 @@ Deno.serve(async (req: Request) => {
       } catch { /* non-fatal */ }
     }
 
-    // ── 16. Marcar sessao como completa ────────────────────────────────────
-    const { data: updatedSession } = await supabase
-      .from('challenge_sessions')
-      .update({
-        status: 'completed',
-        correct_count: correctCount,
-        xp_awarded: totalXpEarned,
-        is_perfect: isPerfect,
-        completed_at: new Date().toISOString(),
-      })
-      .eq('id', session_id)
-      .select()
-      .single();
-
+    // ── 16. Resposta (sessao ja marcada completa no passo 14) ──────────────
     return jsonOk({
       session: updatedSession ?? { id: session_id, status: 'completed', correct_count: correctCount, xp_awarded: totalXpEarned, is_perfect: isPerfect },
       xp_earned: totalXpEarned,
