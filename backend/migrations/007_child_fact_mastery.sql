@@ -39,8 +39,7 @@ create policy mastery_read_own on public.child_fact_mastery
   for select to authenticated
   using (
     child_id in (
-      select id from public.child_profiles
-       where parent_id = (select id from public.parent_profiles where user_id = auth.uid())
+      select id from public.child_profiles where parent_id = auth.uid()
     )
   );
 
