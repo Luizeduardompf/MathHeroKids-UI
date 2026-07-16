@@ -315,9 +315,32 @@ EXPO_PUBLIC_APP_ENV=development
 
 ## Backend
 
+### Conta Supabase ⚠️
+
+O Supabase deste projecto está na conta **`luizeduardompf2@gmail.com`** — org `LuizEduardoMPF2`,
+projecto `MathHeroKids`, ref `pelhtuspcofmejzqtibx`, região `eu-west-1`.
+
+**Não é a mesma conta do outro projecto do user (Luka)**, que vive em `luizeduardompf.lixo@gmail.com`.
+O CLI guarda **um só token global** — se `supabase projects list` mostrar os projectos do Luka
+(`luka-psi`, `luka-psi-dev-localfirst`), ou se aparecer 403 "account does not have the necessary
+privileges", é o token errado, não um projecto em falta. Trocar com `supabase login` (interactivo:
+correr no Terminal, é o user que autoriza no browser).
+
+Usar o `supabase` do Homebrew. O `.bin/supabase` do repo é um ELF Linux do sandbox antigo e não
+corre no Mac (`exec format error`).
+
+⚠️ O projecto anterior (ref `lrwlmxyafvmxqyfpawzg`) foi **apagado** em Jul 2026 — ver
+`.ai/session-handoff.md`.
+
+### Workflow
+
 **Migrations**: executar em ordem no Supabase Studio ou via `supabase db push`.
 **Edge Functions**: fazer deploy via `supabase functions deploy <nome>`.
 **Seeds**: executar manualmente após migrations.
+
+⚠️ **Nunca aplicar SQL directamente via Studio/Management API sem versionar o ficheiro em `backend/`.**
+Os catálogos de gamificação foram aplicados assim na sessão 7, nunca chegaram ao repo, e perderam-se
+com o projecto antigo.
 
 Tabelas principais — schema completo em `docs/database-schema.md`:
 - `parent_profiles` — criada por DB trigger no signup (ver migration 001)

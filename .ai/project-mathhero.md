@@ -11,6 +11,29 @@ React Native + Expo managed + TypeScript strict + Supabase + Expo Router + TanSt
 
 ---
 
+## Supabase — conta e projecto ⚠️
+
+| | |
+|---|---|
+| **Conta** | `luizeduardompf2@gmail.com` |
+| **Org** | `LuizEduardoMPF2` (`bqwqzagkqaqxnmnrfbdz`) |
+| **Projecto** | `MathHeroKids` — ref `pelhtuspcofmejzqtibx` |
+| **Região** | `eu-west-1` (Irlanda) |
+| **Dashboard** | https://supabase.com/dashboard/project/pelhtuspcofmejzqtibx |
+
+**Conta diferente da do Luka** (`luizeduardompf.lixo@gmail.com`, org `LuizEduardoMPF`, sa-east-1).
+O CLI guarda um só token global — alternar com `supabase login` (interactivo, corre o user).
+Confirmar sempre com `supabase projects list` antes de concluir que algo desapareceu: ver
+projectos do Luka ou um 403 significa token errado, não projecto em falta.
+
+Usar o `supabase` do Homebrew — o `.bin/supabase` do repo é um binário Linux e não corre no Mac.
+
+⚠️ **O projecto original (`lrwlmxyafvmxqyfpawzg`, org `jcbuwtthpcyexkikrawv`) foi apagado**
+(detectado 2026-07-16: NXDOMAIN no DNS — um projecto pausado mantinha o DNS). Perderam-se as contas
+de pais e o progresso das crianças; o código estava todo versionado. Recriação em curso.
+
+---
+
 ## Como testar (confirmado a funcionar — 2026-07-16)
 
 **Simulador (dev, com hot reload):**
