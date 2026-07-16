@@ -65,10 +65,26 @@ A porta 8081 costuma estar ocupada pelo dev server de outro projecto do user. Pa
 `npx expo start --dev-client --port 8082`. O `--dev-client` é obrigatório (o projecto tem `ios/`
 nativo, não corre em Expo Go a partir do Mac). Build nativo já instalado no simulador iPhone 17.
 
-**5. Skill `mathhero-resume` reescrita**
+**5. Skills reescritas — `mathhero-resume` e `context-checkpoint`**
 
-Removido o passo do `.scripts/session-setup.sh` (não existe) e os paths de sandbox `/sessions/*/mnt/`
-(o ambiente é local no Mac). Acrescentado passo de `git status`/`git log` + reconciliação com o handoff.
+Vivem em `~/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/*/skills/`
+(fora do repo, logo não versionadas — registado aqui para não se perder).
+
+`mathhero-resume`:
+- Removido o passo do `.scripts/session-setup.sh` (a pasta não existe) e os paths de sandbox `/sessions/*/mnt/`
+- Acrescentado `git status`/`git log` + passo de reconciliação com o handoff (foi assim que se
+  detectou o `index.js` não versionado, que o handoff não mencionava)
+- Sinais a vigiar: campo "Em curso", config `// DEV` por reverter, migrations pendentes
+
+`context-checkpoint`:
+- **Estava hardcoded ao MathHero mas com nome e gatilhos genéricos** → disparava em sessões de
+  outros projectos e escrevia neste handoff. Âmbito agora fechado ao MathHeroKids-UI.
+- Removidos paths de sandbox e o workaround de git locks do virtiofs (obsoleto — corre local)
+- `git add -A` cego → substituído por commits separados por unidade lógica
+- Push deixou de ser automático: confirmar com o utilizador (acção com efeito externo)
+
+⚠️ **Regra geral:** as skills dos dois projectos do user (MathHeroKids e o outro) devem ser
+mutuamente independentes — sem referências cruzadas e com âmbito explícito por directório.
 
 ---
 
