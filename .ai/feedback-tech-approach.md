@@ -306,6 +306,27 @@ o "ciclo" de resultados repetidos pode ser o `crossSessionCooldown` a funcionar,
 
 ---
 
+**Ao tornar um valor antes fixo em configurável por criança, procurar TODOS os sítios que
+assumiam o valor antigo — não só onde foi introduzida a config.** (sessão 15, Fase E, 2026-07-18)
+Dois bugs reais encontrados só porque a bateria de teste da Fase E (curl directo à EF +
+simulação de sessões mistas) forçou casos fora do caminho feliz de sempre-multiplicação-sempre-20:
+- `complete_challenge`: `isPerfect = correctCount === rules.session.questionsPerChallenge` — desde
+  a Fase C (`question_count` configurável por criança), qualquer criança sem o valor default (5)
+  nunca conseguia "perfeito" mesmo acertando tudo, porque comparava contra o valor fixo da regra
+  global em vez de `session.total_questions` (que já reflectia a config real desde a Fase C).
+  Bug introduzido na Fase C, só apanhado na Fase E ao testar `question_count=10`.
+- `challenge.store.ts` (`selectSessionXp`/`selectUniqueCorrectCount`/`selectBlockCorrectCount`) e
+  o ecrã de fim de bloco recalculavam "está certo?" como `child_answer === operand_a * operand_b`
+  em 3 sítios — óbvio para multiplicação, silenciosamente errado para +,−,÷. Fix: `AnswerDraft`
+  ganha `correct_answer` (calculado uma vez via `computeAnswer` na criação da questão), os
+  selectors comparam contra esse campo em vez de recalcular.
+**Regra:** ao adicionar uma dimensão nova de configuração (contagem, operação, timer), fazer
+`grep` pelo padrão antigo hardcoded em todo o repo (client E edge functions) antes de considerar
+a feature completa — o compilador TS não apanha isto porque os tipos continuam válidos, só a
+lógica fica semanticamente errada.
+
+---
+
 **Cuidado com `useEffect` de init que tem `phase` (ou qualquer campo que `reset()` também mexe) na
 dependency array E chama `storeActions.reset()` dentro do próprio handler.** (sessão 13, mesmo dia)
 O fix do `ALREADY_COMPLETED` acima introduziu um loop infinito real (app travava): `handleComplete()`

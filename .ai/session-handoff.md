@@ -4,25 +4,55 @@
 
 ---
 
-## Estado actual — 2026-07-17 23:58 (sessão 15)
+## Estado actual — 2026-07-18 00:35 (sessão 15)
 
 ### 🟢 Em curso
 ```
-ESTADO: A MEIO — redesenho do motor de questões (pedido grande do user, 8 pontos).
-Tag de segurança: v1.3-pre-question-engine-v2 (antes de qualquer alteração desta sessão).
+ESTADO: LIVRE — as 5 fases do redesenho do motor de questões estão completas, commitadas e
+pushed para origin/main (código + migrations aplicadas ao DB linked). Falta só uma verificação
+visual no Simulator (ver "Pendente" abaixo) que não foi possível terminar porque o Mac bloqueou
+o ecrã (login window) a meio da sessão e o user estava ausente — sem interação possível até
+alguém desbloquear.
 
-Roadmap de 5 fases (todas as fases commitadas + pushed para origin/main, exceto onde indicado):
-  Fase B — Randomização real + retest imediato de erros: ✅ COMPLETA, testada no Simulator + EF direta.
-  Fase C — question_count por criança ligado end-to-end: ✅ COMPLETA, testada no Simulator.
-  Fase D — Timer automático que reduz com o nível: ⏳ POR FAZER (próximo passo).
-  Fase E — Adição/subtração/divisão + modo misto: ⏳ POR FAZER (maior fase, schema novo).
-  Fase F — Docs, versão, testes de regressão: ⏳ POR FAZER.
+Tag de segurança pré-sessão: v1.3-pre-question-engine-v2 (permite voltar ao estado antes de
+qualquer alteração desta sessão, se algo aparecer partido).
 
-Testadao (@tesgado) é uma criança de teste criada nesta sessão para iterar rápido (question_count=5,
-timer_seconds=0/∞) — tem várias challenge_sessions "in_progress" órfãs de datas de Junho/Julho
-(criadas por automação de teste, algumas por um bug de simulador descrito abaixo) — inofensivo,
-dados de teste, não apagar sem necessidade mas também não é preciso preservar.
+Roadmap das 5 fases — todas commitadas + pushed:
+  Fase B — Randomização real + retest imediato de erros (commit 909ec25)
+  Fase C — question_count por criança ligado end-to-end (commit 909ec25)
+  Fase D — Timer automático que reduz com o nível (commit f2c8302)
+  Fase E — Adição/subtração/divisão + modo misto (commits 0347f9b, 4772b8a)
+  Fase F — Docs actualizadas (este commit)
+
+Testadao (@tesgado) é uma criança de teste criada nesta sessão para iterar rápido — reposta a
+config default (multiplication only, question_count=20, timer_auto=false) no fim da sessão.
+Tem várias challenge_sessions "in_progress" órfãs de datas de Junho/Julho (de testes directos à
+EF via curl + do bug de simulador descrito abaixo) — inofensivo, dados de teste.
 ```
+
+### ⏭️ Pendente — verificação visual no Simulator (única coisa não confirmada)
+
+Toda a lógica desta sessão foi validada de duas formas independentes:
+1. **Chamadas directas à Edge Function via `curl`** (bypassa o Simulator inteiramente) — sessão
+   mista multiplicação+adição, sessão divisão+subtração, validação de erro quando falta
+   `module_id` com >1 operação activada e não mistura, mastery a gravar corretamente para os
+   4 tipos de facto, `is_perfect` correcto após o fix.
+2. **Simulator (iPhone 17 Pro)** para as Fases B/C/D — randomização, retry de bloco reembaralhado,
+   retest de erro no fim da sessão, question_count=5 aplicado, timer automático a 20s no nível 1.
+
+**Não confirmado visualmente no Simulator** (o ecrã bloqueou antes de chegar a esta parte):
+- Checkboxes de operações + toggle "misturar" no parent-area (`app/(app)/parent-area/child/[id].tsx`) —
+  o código foi revisto e o `tsc` passa limpo, mas nunca foi tocado no Simulator.
+- Ecrã seletor de operação (`challenge/[date].tsx`, aparece quando >1 operação activada e não
+  mistura) — lógica testada via curl (a EF rejeita/aceita `module_id` correctamente), mas o
+  ecrã em si (botões, título "O que vamos praticar hoje?") nunca foi visto a renderizar.
+- Operador correto (+,−,×,÷) e nome da operação a aparecer na tela de jogo para uma sessão real
+  de adição/subtração/divisão (validado que os DADOS vêm corretos da EF; o render client-side
+  usa `OPERATION_SYMBOLS`/`OPERATION_CATEGORY_KEYS` — revisto no código, não visto a correr).
+
+**Próximo passo recomendado:** abrir o Simulator, criar/usar uma criança de teste, activar 2+
+operações no parent-area sem misturar, iniciar um desafio e confirmar que o seletor aparece e
+que o operador certo é mostrado. Devia ser ~5 min.
 
 ### ⚠️ Achado nesta sessão — simulador "iPhone 17" ficou preso após reload, possível bug de navegação
 
@@ -35,6 +65,66 @@ testes reais) — pode ser só o app a tentar reconectar a um Metro morto em loo
 de navegação retroativa a criar sessões para múltiplos dias em sequência. Se reaparecer, vale a pena
 investigar `app/(app)/challenge/[date].tsx` `init()` e o fluxo de "recuperar dias em atraso" no
 calendário/home. Não bloqueou o trabalho porque o outro simulador reconectou bem.
+
+---
+
+### ✅ Concluído (sessão 15 cont. — 2026-07-18) — Fases D+E: timer automático + adição/subtração/divisão
+
+**Fase D — timer automático por nível:** `child_profiles.timer_auto` (migration 012) +
+`resolveTimerSeconds(level, manual, auto)` em `config.ts` (patamares 20s→6s dos níveis 1 a 30+).
+Toggle no parent-area dimma os chips fixos quando activo. Testado no Simulator: nível 1 + auto
+→ mostra "17s" a contar a partir de 20s (a config manual era "∞", correctamente sobreposta).
+
+**Fase E — 4 operações + modo misto (a maior fase):**
+- Migrations 013-016: `arithmetic_facts` generaliza `multiplication_facts` (coluna `operation`).
+  100 factos de multiplicação migrados com os MESMOS ids (preserva mastery). 300 factos novos
+  gerados via SQL (`generate_series`, não escritos à mão): 100 adição (tiers por soma/operando-1),
+  100 subtração (derivada da adição: c-a=b para cada facto), 100 divisão (derivada da
+  multiplicação: c÷a=b). `multiplication_facts` mantida (comentada como deprecated) para
+  rollback fácil — não apagar sem confirmar produção estável primeiro.
+- `child_profiles.enabled_operations` (array, mín. 1) + `mix_operations` (migration 016).
+- `start_challenge`: lê a config, corre a selecção adaptativa **uma vez por operação activada**
+  (mastery/tiers não fazem sentido misturados entre operações — uma criança pode estar em T4 de
+  multiplicação e T1 de adição), combina os resultados e reembaralha (seed única por sessão).
+  Exige `module_id` do cliente só quando há >1 operação activada e `mix_operations=false`
+  (senão usa a única activada, ou todas se misturar) — validado com erro `OPERATION_REQUIRED`
+  quando o cliente não manda.
+- Cliente: `computeAnswer`/`OPERATION_SYMBOLS`/`OPERATION_CATEGORY_KEYS` em `config.ts`
+  substituem os cálculos/símbolos hardcoded a multiplicação. Seletor de operação
+  (`challenge/[date].tsx`) antes de iniciar quando aplicável. Checkboxes + toggle "misturar" no
+  parent-area.
+
+**2 bugs reais encontrados e corrigidos durante a bateria de teste** (ver
+`.ai/feedback-tech-approach.md` para o detalhe completo — vale a pena ler antes de tocar em
+`question_count` ou em qualquer cálculo de "está certo?" no futuro):
+1. `complete_challenge`: `is_perfect` comparava contra o valor fixo global (`questionsPerChallenge`
+   de `adaptive-rules.json`) em vez de `session.total_questions` — bug introduzido na Fase C
+   (question_count configurável), nunca apanhado até esta bateria testar `question_count≠5`.
+   Qualquer criança com um `question_count` diferente do default nunca conseguia "perfeito"
+   mesmo acertando tudo.
+2. `challenge.store.ts` (3 selectors) + o ecrã de fim de bloco recalculavam "está certo?" como
+   `child_answer === operand_a * operand_b` — óbvio para multiplicação, errado para +,−,÷.
+   `AnswerDraft` ganhou `correct_answer` (calculado uma vez, não recalculado a cada leitura).
+
+**Validação:** `npx tsc --noEmit` limpo (só os 3 erros pré-existentes de sempre). Testado
+directamente contra a Edge Function via `curl` (bypassa o Simulator): sessão mista
+multiplicação+adição (5+5, embaralhada), sessão divisão+subtração (9/10 correctas testado de
+propósito), validação de `module_id` obrigatório, mastery a gravar correctamente para os 4 tipos
+de facto, `is_perfect=true` confirmado após o fix numa sessão 10/10. **Não testado visualmente
+no Simulator** (ecrã bloqueou a meio — ver "Pendente" no topo do handoff).
+
+**Deploy:** `start_challenge`, `complete_challenge`, `recompute_mastery` redeployados
+(`--use-api`). Migrations 011-016 aplicadas ao DB linked via `supabase db query --linked -f`.
+
+**Docs actualizadas:** `CLAUDE.md` (secção Challenge + fase actual), banner de aviso em
+`docs/adaptive-multiplication-system.md` (desatualizado desde esta fase — o algoritmo descrito
+está certo, o schema literal não). `docs/database-schema.md` já estava desatualizado desde a
+Phase 2.5 (nunca mencionou `multiplication_facts`/`child_fact_mastery`) — dívida pré-existente,
+não coberta nesta sessão; fica registado para uma sessão de docs dedicada.
+
+**2 issues de dead code encontradas e sinalizadas (spawn_task, não corrigidas nesta sessão):**
+- `ChildSettingsCard` em `settings.tsx` (~280-438) — nunca renderizado.
+- `complete_challenge/index_dashboard.ts` — versão obsoleta pré-Phase 2.5, nunca deployada.
 
 ---
 
@@ -729,21 +819,27 @@ Se persistir cache Xcode: `rm -rf ~/Library/Developer/Xcode/DerivedData`.
 - **`expo-router ~5.0.0` desalinhado** — SDK 54 fixa `~6.0.24`. Migração v5→v6 pendente (breaking changes de routing). Correr `npx expo install --check` para listar todos os pacotes fora do pin.
 - **`ChildSettingsCard` morto em `settings.tsx`** (linhas ~280-438) — nunca renderizado, duplica a
   funcionalidade viva de `parent-area/child/[id].tsx`. Sinalizado como spawn_task `task_a3242239`.
+- **`complete_challenge/index_dashboard.ts` obsoleto** — versão pré-Phase 2.5 (seed-based, XP
+  10/200/100), nunca deployada nem referenciada. Sinalizado como spawn_task `task_8d9a3d26`.
 - **Simulador "iPhone 17" com `GO_BACK` não tratado + spinner infinito** após `cmd+r` (sessão 15) —
   gerou 7 `challenge_sessions` órfãs para uma criança de teste em datas diferentes em ~90s. Não
   reproduzido de forma controlada; ver nota completa na sessão 15 acima antes de investigar.
+- **Verificação visual da Fase E no Simulator pendente** — ecrã bloqueou a meio da sessão 15
+  (login window, Mac inacessível). Ver secção "Pendente" no topo do handoff para o que falta.
+- `docs/database-schema.md` desactualizado desde a Phase 2.5 (nunca chegou a mencionar
+  `multiplication_facts`/`child_fact_mastery`, agora também não menciona `arithmetic_facts`/
+  `enabled_operations`) — dívida documental antiga, não coberta nesta sessão.
 
 ---
 
 ### ⏭️ Próximos passos (por prioridade)
 
-**A — Continuar o redesenho do motor de questões (sessão 15, em curso):**
-- Fase D — timer automático que reduz com o nível (coluna `timer_auto`, `resolveTimerSeconds(level)`)
-- Fase E — adição/subtração/divisão + modo misto (maior fase: generalizar `multiplication_facts` →
-  `arithmetic_facts` com coluna `operation`, gerar catálogos novos com tiers de dificuldade próprios,
-  `enabled_operations`/`mix_operations` em `child_profiles`, seletor de operação pré-desafio)
-- Fase F — docs (`adaptive-multiplication-system.md` → generalizar), version bump, testes de
-  regressão completos no Simulator
+**A — Verificação visual no Simulator do redesenho do motor de questões (sessão 15 completa, só falta isto):**
+- Parent-area: checkboxes de operações + toggle "misturar" renderizam e gravam correctamente
+- Seletor de operação antes do desafio (quando >1 activada, não misturado)
+- Operador (+,−,×,÷) e nome da operação correctos na tela de jogo para uma sessão real de
+  adição/subtração/divisão
+- Ver secção "Pendente" no topo do handoff para o contexto completo
 
 **B — Phase 4 — Calendar (pendente de sessões anteriores, ainda válido):**
 - Retroactive challenge flow — já em uso, mas revisitar após a Fase E (múltiplas operações por dia)
@@ -752,7 +848,10 @@ Se persistir cache Xcode: `rm -rf ~/Library/Developer/Xcode/DerivedData`.
 - Mac Terminal: `bash .scripts/setup-push-notifications.sh`
 - EAS build Android (gratuito)
 
-**D — Issues conhecidos (ver lista completa acima):**
+**D — Limpeza de dívida técnica (spawn_tasks já criadas nesta sessão):**
+- Remover `ChildSettingsCard` morto em `settings.tsx` (`task_a3242239`)
+- Remover `complete_challenge/index_dashboard.ts` obsoleto (`task_8d9a3d26`)
 - `expo-av` incompatível com SDK — sons comentados com TODO
 - `friends/list.tsx`: "Nível X" nos sub-labels ainda hardcoded
 - Git locks virtiofs: usar `/tmp` clone para commits (ver workaround em CLAUDE.md)
+- `docs/database-schema.md` desactualizado desde a Phase 2.5 — sessão de docs dedicada

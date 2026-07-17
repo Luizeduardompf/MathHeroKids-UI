@@ -218,21 +218,31 @@ MathHeroKids-UI/
 **Phase 0 (Foundation)** ✅ Completo
 **Phase 1 (Auth & Profiles)** ✅ Completo
 **Phase 2.5 (Adaptive Multiplication System)** ✅ Completo
+**Phase E (Motor de questões multi-operação)** ✅ Completo (sessão 15, 2026-07-17/18)
 
-### O que está feito (Phase 0 + 1 + 2.5)
+### O que está feito (Phase 0 + 1 + 2.5 + E)
 - Expo Router + TypeScript strict + design system + i18n + tema
 - Supabase client, TanStack Query, Zustand stores (auth + profile com persist)
 - Auth completo: login, register, forgot-password, profile-select
-- `multiplication_facts` (100 questões, tiers T1–T5) + `child_fact_mastery` (mastery por criança)
+- `arithmetic_facts` (400 questões: 100×multiplicação/adição/subtração/divisão, tiers T1–T5) +
+  `child_fact_mastery` (mastery por criança, por facto — cruza operações)
 - `adaptive-rules.json` versionado + JSON Schema + validação no boot da EF
-- `start_challenge` EF: geração adaptativa server-side, persiste `questions_payload`
+- `start_challenge` EF: geração adaptativa server-side por operação (mastery/tiers não se
+  misturam entre operações), combina + reembaralha (seed por sessão — aleatoriedade real,
+  cross-session cooldown), persiste `questions_payload`
 - `complete_challenge` EF: valida contra payload, atualiza mastery, XP, streak, calendar
 - `recompute_mastery` EF: replay idempotente do histórico
 - App cliente: consome payload server-side, sem geração local, tela offline, `use-network-status`
+- Retest em sessão: erros "continuados" (sem retry de bloco) reaparecem no fim da sessão antes
+  de completar (`retestQueue` em `challenge.store.ts`)
+- `question_count`, `timer_auto` (reduz por nível), `enabled_operations`/`mix_operations` são
+  configuráveis por criança via parent-area
 - A/B harness: `AB_TEST_ENABLED=true` para testar variantes de `adaptive-rules.json`
 
 ### Pendente (Phase 3+)
 Consultar `docs/implementation-phases.md` para o roadmap completo.
+⚠️ `docs/database-schema.md` e `docs/adaptive-multiplication-system.md` estão desatualizados
+face ao estado actual (multi-operação, ranking realtime) — tratar numa sessão de docs dedicada.
 
 ---
 
@@ -257,16 +267,32 @@ Consultar `docs/implementation-phases.md` para o roadmap completo.
 - O cliente **NUNCA escreve** diretamente em colunas de progressão de `child_profiles`
 - Todos os updates de jogo passam pela Edge Function `complete_challenge`
 
-### Challenge (Phase 2.5 — adaptive engine) ⚠️ CRÍTICO
+### Challenge (Phase 2.5 + E — adaptive engine multi-operação) ⚠️ CRÍTICO
 - **Online-only**: sem queue offline para challenge sessions. Se offline, tela de erro amigável.
-- Questões geradas **server-side** por `start_challenge` EF de forma adaptativa.
-- Payload persistido em `challenge_sessions.questions_payload` — cliente só renderiza.
+- Questões geradas **server-side** por `start_challenge` EF de forma adaptativa, a partir de
+  `arithmetic_facts` (coluna `operation`: multiplication/addition/subtraction/division).
+- `child_profiles.enabled_operations` (mín. 1) + `mix_operations` decidem de que operações a
+  sessão tira questões. Se >1 activada e não mistura, o cliente mostra um seletor antes de
+  chamar `start_challenge` (module_id do request = operação escolhida).
+- Cada operação é seleccionada **independentemente** (mastery/tiers não fazem sentido
+  misturados entre operações) e depois combinadas + reembaralhadas (seed = session_id —
+  aleatoriedade real por sessão, resume estável).
+- Payload persistido em `challenge_sessions.questions_payload` — cliente só renderiza. Cada
+  questão tem `operation` — nunca assumir `×`/multiplicação a renderizar operador ou calcular
+  resposta local (usar `computeAnswer`/`OPERATION_SYMBOLS` de `constants/config.ts`).
 - Mastery por questão em `child_fact_mastery`: NEW→LEARNING→REVIEWING→MASTERED←→WEAK.
-- 20 respostas enviadas em batch via `complete_challenge` no fim da sessão.
-- `complete_challenge` valida contra `questions_payload` (não regenera com seed).
+  `fact_group_id` só existe para operações comutativas (multiplicação/adição) — subtração e
+  divisão não têm par comutativo.
+- `question_count` (0=AUTO) e `timer_auto` (reduz por nível, ver `resolveTimerSeconds`) são
+  configuráveis por criança — nunca assumir os valores fixos antigos de `adaptive-rules.json`.
+- Respostas enviadas em batch via `complete_challenge` no fim da sessão. Erros "continuados"
+  (sem retry) reaparecem no fim antes de completar (`retestQueue`).
+- `complete_challenge` valida contra `questions_payload` (não regenera com seed). `is_perfect`
+  compara contra `session.total_questions`, não o valor fixo da regra global.
 - Cache local apenas: completions de calendário, activeChild, idioma, tema.
 - A/B harness: `AB_TEST_ENABLED=true` ativa variante v2 das regras para 50% das crianças.
-- Docs: `docs/adaptive-multiplication-system.md`, `docs/ab-testing.md`.
+- Docs: `docs/adaptive-multiplication-system.md` (desatualizado pós-Fase E, ver nota acima),
+  `docs/ab-testing.md`.
 
 ### Serviços vs. Telas
 - Telas **não chamam `supabase` diretamente** — usam `src/services/` + TanStack Query

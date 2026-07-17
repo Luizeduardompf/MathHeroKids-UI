@@ -2,6 +2,13 @@
 
 > Status: **Decisões fechadas em 2026-06-11.** Pronto para implementação na Phase 2.5.
 > Documento companheiro: `docs/phase-2.5-implementation-handoff.md` (guia executável de implementação).
+>
+> ⚠️ **Desatualizado desde a Fase E (2026-07-17/18).** O design abaixo descreve corretamente o
+> algoritmo (buckets por mastery, pesos, tiers T1-T5, comutatividade), mas `multiplication_facts`
+> foi generalizada para `arithmetic_facts` (coluna `operation`: multiplication/addition/
+> subtraction/division), e `start_challenge` agora corre o mesmo algoritmo **uma vez por operação
+> activada** e combina + reembaralha o resultado. Ver `CLAUDE.md` secção "Challenge" para o estado
+> actual; este documento fica como referência do algoritmo base, não do schema literal.
 
 ## 1. Resumo executivo
 
