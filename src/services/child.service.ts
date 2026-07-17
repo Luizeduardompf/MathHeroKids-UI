@@ -113,7 +113,7 @@ export const childService = {
 
     if (error) {
       console.error('[child.createChild] error:', error.code, error.message, error.details, error.hint);
-      throw new Error(__DEV__ ? `${error.code}: ${error.message}` : mapChildError(error));
+      throw new Error(mapChildError(error));
     }
     return data as ChildProfile;
   },

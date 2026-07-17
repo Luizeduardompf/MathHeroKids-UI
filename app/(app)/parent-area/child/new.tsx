@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,6 +35,7 @@ function parseBirthDate(raw: string): string | null {
 export default function NovaFilhaScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const parentId = useAuthStore(selectParentId);
 
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarId>('sofia');
@@ -67,9 +69,10 @@ export default function NovaFilhaScreen() {
         birth_date: parseBirthDate(birthDate),
         avatar_id: selectedAvatar,
       });
+      await queryClient.invalidateQueries({ queryKey: ['children', parentId] });
       router.back();
     } catch (e) {
-      setError((e as Error).message);
+      setError(t((e as Error).message));
     } finally {
       setLoading(false);
     }

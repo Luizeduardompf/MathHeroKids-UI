@@ -3,8 +3,9 @@
  * PIN verification happens in settings.tsx before navigating here.
  */
 
-import { useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -52,6 +53,7 @@ function ActionRow({
 export default function ParentAreaScreen() {
   const { t }    = useTranslation();
   const router   = useRouter();
+  const queryClient = useQueryClient();
   const parentId = useAuthStore(selectParentId);
 
   const { data: children = [], isLoading } = useQuery({
@@ -59,6 +61,12 @@ export default function ParentAreaScreen() {
     queryFn:  () => childService.listChildren(parentId!),
     enabled:  !!parentId,
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      if (parentId) void queryClient.invalidateQueries({ queryKey: ['children', parentId] });
+    }, [parentId, queryClient])
+  );
 
   return (
     <View style={s.root}>

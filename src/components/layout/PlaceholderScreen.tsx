@@ -57,5 +57,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: space.md,
   },
-  emoji: { fontSize: 48 },
+  emoji: { fontSize: 48, lineHeight: 56 },
 });

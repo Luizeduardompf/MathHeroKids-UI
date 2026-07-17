@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -14,7 +14,7 @@ import {
 import { Alert } from 'react-native'; // eslint-disable-line
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { Avatar, Button, Card, ConfirmDialog, Text } from '@/components/ui';
 import { childService, getChildLocalSettings, setChildLocalSettings } from '@/services/child.service';
@@ -468,10 +468,12 @@ function ChildrenInfoCard() {
   const parentId = useAuthStore(selectParentId);
   const [children, setChildren] = useState<ChildProfile[]>([]);
 
-  useEffect(() => {
-    if (!parentId) return;
-    void childService.listChildren(parentId).then(setChildren).catch(() => {});
-  }, [parentId]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!parentId) return;
+      void childService.listChildren(parentId).then(setChildren).catch(() => {});
+    }, [parentId])
+  );
 
   if (children.length === 0) return null;
 

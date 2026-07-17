@@ -137,6 +137,7 @@ export default function EditarCriancaScreen() {
       });
       // Keep store in sync if editing the active child
       if (activeChild?.id === child.id) setActiveChild(updated);
+      await queryClient.invalidateQueries({ queryKey: ['children', parentId] });
       router.back();
     } catch (e) {
       setError((e as Error).message);
