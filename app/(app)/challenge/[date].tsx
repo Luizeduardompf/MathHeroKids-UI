@@ -714,6 +714,13 @@ export default function ChallengeScreen() {
     Array<{ type: 'trophy'; data: Trophy } | { type: 'achievement'; data: Achievement }>
   >([]);
   const pendingNavRef = useRef<(() => void) | null>(null);
+  // Data já tratada (sessão iniciada ou confirmada como já concluída) nesta
+  // instância do ecrã. Impede reentrar em init() quando handleComplete() ou o
+  // catch de ALREADY_COMPLETED chamam storeActions.reset() — isso devolve
+  // phase a 'idle' com o mesmo `date` ainda montado, o que sem esta guarda
+  // reentrava em init() num loop (start_challenge → ALREADY_COMPLETED → alert
+  // → reset → phase 'idle' → init() outra vez → alert de novo, sem parar).
+  const initedDateRef = useRef<string | null>(null);
 
   // Animations
   const progressWidth = useSharedValue(0);
@@ -734,6 +741,7 @@ export default function ChallengeScreen() {
 
   useEffect(() => {
     if (!child || !date || phase !== 'idle') return;
+    if (initedDateRef.current === date) return; // já tratada nesta instância — ver initedDateRef
     async function init() {
       if (!child || !date) return;
       storeActions.setPhase('loading');
@@ -765,6 +773,7 @@ export default function ChallengeScreen() {
           fact_id: q.fact_id,
         }));
 
+        initedDateRef.current = date; // sessão em curso — não reentrar em init() para esta data
         storeActions.startSession({
           sessionId: result.sessionId,
           childId: child.id,
@@ -776,6 +785,7 @@ export default function ChallengeScreen() {
         });
       } catch (e) {
         if ((e as Error).message === 'ALREADY_COMPLETED') {
+          initedDateRef.current = date; // idem — evita voltar a tentar e re-alertar em loop
           storeActions.reset();
           Alert.alert(
             t('challenge.alreadyCompletedTitle'),
