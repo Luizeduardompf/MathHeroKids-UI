@@ -150,23 +150,6 @@ export const challengeService = {
     }
   },
 
-  /** Returns whether a specific date has been completed (any completion, retroactive or not). */
-  async isDateCompleted(childId: string, date: string): Promise<boolean> {
-    const completions = await challengeService.getLocalCompletions(childId, date, date);
-    if (completions.length > 0) return true;
-    // Also check Supabase calendar_days
-    try {
-      const { data } = await supabase
-        .from('calendar_days')
-        .select('id')
-        .eq('child_id', childId)
-        .eq('challenge_date', date)
-        .maybeSingle();
-      return !!data;
-    } catch {
-      return false;
-    }
-  },
 
   /**
    * Retorna as completions locais para um child dentro de um intervalo de datas.

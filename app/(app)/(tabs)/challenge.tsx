@@ -26,6 +26,7 @@ import { Text } from '@/components/ui';
 import { MiloMessage } from '@/components/milo/MiloMessage';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { challengeService } from '@/services/challenge.service';
+import { supabase } from '@/lib/supabase';
 import { CHALLENGE } from '@/constants/config';
 import { colors, fontFamily, radius, shadows, space } from '@/theme';
 
@@ -121,9 +122,26 @@ export default function ChallengeTab() {
     if (!child) return;
     setChecking(true);
 
-    const todayComplete = await challengeService.isDateCompleted(child.id, today);
+    // Uma única query de intervalo (não uma por dia) — evita inconsistências entre
+    // este ecrã e o Calendário, que já lê calendar_days desta forma.
+    const oldestDate = pastDates[pastDates.length - 1] ?? today;
+    const [calResult, localComps] = await Promise.all([
+      supabase
+        .from('calendar_days')
+        .select('day_date, state')
+        .eq('child_id', child.id)
+        .gte('day_date', oldestDate)
+        .lte('day_date', today),
+      challengeService.getLocalCompletions(child.id, oldestDate, today),
+    ]);
 
-    if (!todayComplete) {
+    const doneSet = new Set<string>();
+    for (const d of (calResult.data ?? []) as Array<{ day_date: string; state: string }>) {
+      if (d.state === 'completed') doneSet.add(d.day_date);
+    }
+    for (const lc of localComps) doneSet.add(lc.challengeDate);
+
+    if (!doneSet.has(today)) {
       // Not done today → go straight to challenge
       setChecking(false);
       router.replace(`/(app)/challenge/${today}`);
@@ -131,15 +149,6 @@ export default function ChallengeTab() {
     }
 
     setTodayDone(true);
-
-    // Check which past days are completed
-    const results = await Promise.all(
-      pastDates.map(async (d) => ({
-        date: d,
-        done: await challengeService.isDateCompleted(child.id, d),
-      })),
-    );
-    const doneSet = new Set(results.filter((r) => r.done).map((r) => r.date));
     setCompletions(doneSet);
     setChecking(false);
   }, [child, today]); // eslint-disable-line react-hooks/exhaustive-deps
