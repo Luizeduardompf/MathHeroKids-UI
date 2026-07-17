@@ -4,14 +4,75 @@
 
 ---
 
-## Estado actual — 2026-07-16 (sessão 12)
+## Estado actual — 2026-07-17 (sessão 13)
 
 ### 🟢 Em curso
 ```
-ESTADO: LIVRE — Supabase recriado e validado E2E, app reinstalada e testada em 2 iPhones físicos.
+ESTADO: LIVRE — redesenho de XP concluído, commitado (b57e502) e pushed.
 DÍVIDA: expo-router 5→6 desalinhado com SDK 54.
 DÍVIDA: 3 erros TypeScript pré-existentes (friends.tsx: Image, social_enabled; ranking.tsx: social_enabled).
+NOTA: working tree tem trabalho social/sons em curso (não desta sessão, não tocado) —
+app.json, _layout.tsx, CompletedScreen/CorrectOverlay/LevelUpModal/StatusScreens/TrophyEarnedModal,
+social.service.ts, src/components/social/, sound.service.ts, assets/sounds/*.mp3 — por commitar
+por quem estiver a fazer esse trabalho.
 ```
+
+---
+
+### ✅ Concluído (sessão 13 — 2026-07-17) — Redesenho do sistema de XP
+
+**Motivo:** user reportou totais de XP exorbitantes (ex: 1.203.329xp). Diagnóstico: `level_thresholds`
+parava no nível 50 (60.000xp) sem mais entradas acima — `xp_total` continuava a crescer sem qualquer
+nível correspondente depois disso, e por isso o número perdia todo o significado no longo prazo (não
+é fisicamente possível chegar lá jogando 1×/dia, o número exorbitante citado veio quase de certeza de
+dados de teste/QA, não de uso orgânico).
+
+**1. Ganhos reduzidos ~5x** (`backend/functions/complete_challenge/index.ts`, fonte autoritativa):
+`XP_PER_CORRECT` 10→2, `XP_COMPLETION_BONUS` 20→4, `XP_PERFECT_BONUS` 50→10. `xp_total` continua
+cumulativo e nunca reseta por nível (já era assim, confirmado ao user).
+
+**2. Níveis de prestígio 55–100 acrescentados** a `LEVEL_THRESHOLDS_FALLBACK` (na EF),
+`backend/seeds/level_thresholds.sql` (aplicado ao DB via `supabase db query --linked -f`, confirmado
+por SELECT) e `src/constants/config.ts` — até nível 100 / 200.000xp, para o total continuar a mapear
+para um nível mesmo em uso multi-anual. Novas chaves i18n `levels.campeao/campeao_supremo/
+mestre_absoluto/genio/genio_supremo/imortal` em pt/en (es/fr não tinham secção `levels`, fallback pt).
+
+**3. Bug de UI descoberto e corrigido** — `getXpNextLevel`/`getXpCeil`/`getXpRange` em 3 ecrãs
+(`(tabs)/index.tsx`, `(tabs)/calendar.tsx`, `progression.tsx`) faziam lookup exacto `level+1` numa
+tabela esparsa; para níveis "planalto" (15, 20, 50, e agora todos os de prestígio) isto falhava e caía
+no fallback (último threshold da tabela = tecto errado, ex: "faltam 200.000xp" para quem está no nível
+15). Extraídos dois helpers partilhados `getLevelXpFloor`/`getLevelXpCeil` para `config.ts` (procuram o
+primeiro threshold com `level > current`, não `level === current+1`) e usados nos 3 sítios.
+
+**4. Client-side tinha os seus próprios valores de XP hardcoded, divergentes da EF** (mais grave que
+o problema original — a EF é a fonte autoritativa, o cliente nunca devia recalcular):
+- `src/stores/challenge.store.ts` `selectSessionXp`: `correct.size * 10` hardcoded → agora usa
+  `CHALLENGE.XP_PER_CORRECT_ANSWER`.
+- `app/(app)/challenge/[date].tsx`: `CorrectOverlay xpGain={10}` hardcoded → `CHALLENGE.XP_PER_CORRECT_ANSWER`.
+  `totalXp = sessionXp + 200 + (perfeito?100:0)` hardcoded → `CHALLENGE.XP_COMPLETION_BONUS` +
+  `CHALLENGE.XP_PERFECT_BONUS`.
+- `home.challenge.xpReward` (badge "+150 XP" fixo no card do desafio de hoje, em `(tabs)/index.tsx`)
+  era um texto estático em 4 locales, sem relação com o valor real — convertido para interpolação
+  `+{{xp}}` calculada a partir de `CHALLENGE.*`.
+- `config.ts`: removido `XP_COMPLETION_BONUS: 200` e `MILESTONE_XP` (mortos, nunca usados, valores
+  divergentes da EF) — só ficaram os 3 valores reais (2/4/10) documentados como "apenas exibição,
+  fonte autoritativa é a EF".
+
+**Nota:** `MILESTONE_CFG.xp` em `[date].tsx` (valores 50/100/150 nas telas de milestone q5/q10/q15)
+ficou como estava — é dead code (a chamada sempre passa `xpOverride={sessionXp}`, que vence), não
+afecta comportamento. Não mexido para não expandir o escopo.
+
+**Deploy:** `complete_challenge` re-deployada (`supabase functions deploy complete_challenge --use-api`).
+`backend/functions/` e `supabase/functions/` são hardlinks (mesmo inode) — editar um edita ambos,
+não precisou de `cp`. Seed aplicado directo ao DB linked (`pelhtuspcofmejzqtibx`) via
+`supabase db query --linked -f backend/seeds/level_thresholds.sql`.
+
+**Validação:** `npx tsc --noEmit` limpo nos ficheiros tocados (erros pré-existentes noutros ficheiros,
+não relacionados). ESLint não corre neste ambiente (erro de config `ajv` pré-existente, não relacionado).
+**Não testado no Simulator/device** — só validação estática + confirmação da tabela no DB.
+
+**Commit:** `b57e502` — 12 ficheiros, `git add` explícito por nome (não `-A`), para não misturar com o
+trabalho social/sons em curso na working tree. Pushed para `origin main`.
 
 ---
 

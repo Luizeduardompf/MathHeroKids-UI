@@ -240,3 +240,21 @@ O mount virtiofs (macOS→Linux sandbox) não suporta `unlink` — `rm -f` falha
 - Alternativa: usar `AuthScreen` component (já tem o padrão correto) para telas com scroll/form
 - Nunca usar `SafeAreaView` com fundo sólido ou `‹` texto como back button
 - Referência: `friends/list.tsx` (manual) e `trophy-room.tsx` (AuthScreen) como exemplos correctos
+
+---
+
+**Cliente NUNCA deve recalcular XP localmente com valores próprios — só ecoar `CHALLENGE.*` ou o
+resultado real da EF.** (sessão 13, 2026-07-17)
+- Descoberto ao reduzir os ganhos de XP (10/20/50 → 2/4/10 na EF): o cliente tinha 3 sítios com os
+  próprios valores hardcoded (`selectSessionXp`: `*10`; `CorrectOverlay xpGain={10}`; tela de conclusão:
+  `sessionXp + 200 + (perfeito?100:0)`), já divergentes da EF *antes* desta sessão (EF usava 20/50,
+  cliente assumia 200/100 — nunca ninguém reparou porque o número real só aparece se houver level-up
+  ou trophy).
+- Regra: qualquer número de XP mostrado ANTES da resposta da EF (overlays optimistas, badges de preview)
+  tem de vir de `CHALLENGE.XP_PER_CORRECT_ANSWER/XP_COMPLETION_BONUS/XP_PERFECT_BONUS` em `config.ts`
+  (que por sua vez tem de ser mantido manualmente em sincronia com as constantes da EF — não há
+  import cross-runtime entre Deno EF e RN app). Nunca literal solto tipo `+10`, `*10`, `+200`.
+- Tabelas de threshold esparsas (nem todo nível tem entrada) precisam de lookup por "próximo threshold
+  com level > current", nunca `level === current + 1` — este último falha silenciosamente em qualquer
+  nível-planalto e cai no fallback errado (visto em 3 telas: `(tabs)/index.tsx`, `(tabs)/calendar.tsx`,
+  `progression.tsx`). Helpers correctos: `getLevelXpFloor`/`getLevelXpCeil` em `config.ts`.
