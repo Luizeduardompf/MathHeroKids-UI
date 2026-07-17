@@ -7,8 +7,11 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
 const SOUND_FILES = {
   correct:         require('../../assets/sounds/correct.mp3') as number,
   wrong:           require('../../assets/sounds/wrong.mp3') as number,
+  timeout:         require('../../assets/sounds/timeout.mp3') as number,
+  blockEnd:        require('../../assets/sounds/block-end.mp3') as number,
   levelUp:         require('../../assets/sounds/level-up.mp3') as number,
   trophy:          require('../../assets/sounds/trophy.mp3') as number,
+  milestone:       require('../../assets/sounds/milestone.mp3') as number,
   complete:        require('../../assets/sounds/complete.mp3') as number,
   friendRequest:   require('../../assets/sounds/friend-request.mp3') as number,
   messageSent:     require('../../assets/sounds/message-sent.mp3') as number,

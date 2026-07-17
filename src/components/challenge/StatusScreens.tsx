@@ -211,7 +211,7 @@ export function TimeExpiredScreen({ onRetry, onGoHome }: { onRetry: () => void; 
   const { t } = useTranslation();
 
   useEffect(() => {
-    playSound('wrong');
+    playSound('timeout');
   }, []);
 
   return (
@@ -310,16 +310,16 @@ const wa = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'center', gap: 8,
   },
-  num:     { fontFamily: fontFamily.extraBold, fontSize: 32, color: '#1A1F36', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
-  op:      { fontFamily: fontFamily.bold,      fontSize: 24, color: '#6B7280' },
-  correct: { fontFamily: fontFamily.extraBold, fontSize: 32, color: '#22C55E', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
+  num:     { fontFamily: fontFamily.extraBold, fontSize: 32, lineHeight: 38, color: '#1A1F36', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
+  op:      { fontFamily: fontFamily.bold,      fontSize: 24, lineHeight: 30, color: '#6B7280' },
+  correct: { fontFamily: fontFamily.extraBold, fontSize: 32, lineHeight: 38, color: '#22C55E', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
   check:   { width: 24, height: 24, borderRadius: 12, backgroundColor: '#22C55E', alignItems: 'center', justifyContent: 'center' },
   userRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: '#F3F4F6', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 10,
   },
   userLabel: { fontFamily: fontFamily.semiBold, fontSize: 13, color: '#6B7280' },
-  userWrong: { fontFamily: fontFamily.extraBold, fontSize: 18, color: '#EF4444', textDecorationLine: 'line-through', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
+  userWrong: { fontFamily: fontFamily.extraBold, fontSize: 18, lineHeight: 24, color: '#EF4444', textDecorationLine: 'line-through', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
 });
 
 // ─── BlockEndScreen ───────────────────────────────────────────────────────────
@@ -331,7 +331,7 @@ export function BlockEndScreen({ correct, total, onRetry, onGoHome }: {
   const pct = Math.round((correct / total) * 100);
 
   useEffect(() => {
-    playSound('wrong');
+    playSound('blockEnd');
   }, []);
 
   return (

@@ -215,7 +215,7 @@ function MilestoneScreen({
   const pct = Math.round((qs / (useChallengeStore.getState().totalQuestions || CHALLENGE.TOTAL_QUESTIONS)) * 100);
 
   useEffect(() => {
-    playSound('trophy');
+    playSound('milestone');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

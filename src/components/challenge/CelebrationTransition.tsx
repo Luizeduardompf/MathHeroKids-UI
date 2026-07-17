@@ -467,6 +467,7 @@ const cs = StyleSheet.create({
   title: {
     fontFamily:       fontFamily.extraBold,
     fontSize:         40,
+    lineHeight:       48,
     color:            '#fff',
     textAlign:        'center',
     marginTop:        36,
@@ -477,6 +478,7 @@ const cs = StyleSheet.create({
   subtitle: {
     fontFamily: fontFamily.bold,
     fontSize:   18,
+    lineHeight: 26,
     color:      'rgba(255,255,255,0.9)',
     textAlign:  'center',
     marginTop:  8,
