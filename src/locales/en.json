@@ -199,7 +199,15 @@
     "completed": {
       "title": "Challenge complete!",
       "subtitle": "Amazing! You finished today's challenge. Milo is proud!",
-      "continue": "Continue"
+      "subtitlePast": "Amazing! You finished this past challenge. Milo is proud!",
+      "continue": "Continue",
+      "xp": "+{{xp}} XP",
+      "questionsLabel": "{{done}}/{{total}} questions",
+      "xpBreakdown": {
+        "answers": "+{{xp}} XP correct answers",
+        "bonus": "+{{xp}} XP completion bonus",
+        "perfect": "+{{xp}} XP perfect bonus"
+      }
     },
     "miloDizLabel": "MILO SAYS",
     "retroactive": {
@@ -227,7 +235,8 @@
     "alreadyCompletedMessage": "This day is already done — the XP was already counted. Come back tomorrow to earn more!",
     "celebration": {
       "title": "Trophy Earned!",
-      "subtitle": "You completed today's challenge!"
+      "subtitle": "You completed today's challenge!",
+      "subtitlePast": "You completed this past challenge!"
     }
   },
   "calendar": {
@@ -238,7 +247,8 @@
       "completed": "Completed",
       "failed": "Failed",
       "locked": "Locked",
-      "late": "Late"
+      "late": "Recovered",
+      "recoverableHint": "Missed day with orange outline: can still be recovered"
     },
     "progress": {
       "title": "Your progress",
@@ -292,7 +302,9 @@
     "reject": "Reject",
     "alert": {
       "newMessage": "New message from {{name}}",
-      "newFriendRequest": "{{name}} wants to be your friend!"
+      "newFriendRequest": "{{name}} wants to be your friend!",
+      "rankingOvertaken": "{{name}} passed you in the ranking!",
+      "rankingOvertook": "You passed {{name}} in the ranking! 🎉"
     },
     "add": {
       "title": "Add friend",

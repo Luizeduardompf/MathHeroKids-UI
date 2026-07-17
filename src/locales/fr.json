@@ -216,7 +216,9 @@
     "reject": "Refuser",
     "alert": {
       "newMessage": "Nouveau message de {{name}}",
-      "newFriendRequest": "{{name}} veut être ton ami !"
+      "newFriendRequest": "{{name}} veut être ton ami !",
+      "rankingOvertaken": "{{name}} t'a dépassé au classement !",
+      "rankingOvertook": "Tu as dépassé {{name}} au classement ! 🎉"
     },
     "emptyRanking": "Pas encore de classement",
     "emptyRankingDesc": "Ajoute des amis et relève des défis pour apparaître dans le classement !",
@@ -300,7 +302,8 @@
       "completed": "Terminé",
       "failed": "Manqué",
       "locked": "Bloqué",
-      "late": "Tardif"
+      "late": "Récupéré",
+      "recoverableHint": "Manqué avec contour orange : encore récupérable"
     },
     "progress": {
       "title": "Vos progrès",
@@ -343,6 +346,19 @@
     ]
   },
   "challenge": {
+    "completed": {
+      "title": "Défi terminé !",
+      "subtitle": "Incroyable ! Tu as terminé le défi d'aujourd'hui. Milo est fier !",
+      "subtitlePast": "Incroyable ! Tu as terminé ce défi en retard. Milo est fier !",
+      "continue": "Continuer",
+      "xp": "+{{xp}} XP",
+      "questionsLabel": "{{done}}/{{total}} questions",
+      "xpBreakdown": {
+        "answers": "+{{xp}} XP bonnes réponses",
+        "bonus": "+{{xp}} XP bonus de complétion",
+        "perfect": "+{{xp}} XP bonus parfait"
+      }
+    },
     "miloDizLabel": "MILO DIT",
     "retroactive": {
       "title": "Défis",
@@ -367,7 +383,8 @@
     "offlineMsg": "Milo a besoin d'internet pour préparer ton défi. Connecte-toi et réessaie.",
     "celebration": {
       "title": "Trophée Conquis !",
-      "subtitle": "Tu as complété le défi d'aujourd'hui !"
+      "subtitle": "Tu as complété le défi d'aujourd'hui !",
+      "subtitlePast": "Tu as complété ce défi en retard !"
     }
   },
   "parentArea": {

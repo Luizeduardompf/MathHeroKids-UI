@@ -203,9 +203,15 @@
     "completed": {
       "title": "Desafio concluído!",
       "subtitle": "Incrível! Você terminou o desafio de hoje. Milo está orgulhoso!",
+      "subtitlePast": "Incrível! Você completou este desafio atrasado. Milo está orgulhoso!",
       "continue": "Continuar",
       "xp": "+{{xp}} XP",
-      "questionsLabel": "{{done}}/{{total}} questões"
+      "questionsLabel": "{{done}}/{{total}} questões",
+      "xpBreakdown": {
+        "answers": "+{{xp}} XP respostas certas",
+        "bonus": "+{{xp}} XP bónus de conclusão",
+        "perfect": "+{{xp}} XP bónus perfeito"
+      }
     },
     "miloDiz": "MILO DIZ",
     "yourAnswer": "Sua resposta:",
@@ -234,7 +240,8 @@
     "alreadyCompletedMessage": "Este dia já foi feito — o XP já foi contado. Volta amanhã para ganhares mais!",
     "celebration": {
       "title": "Troféu Conquistado!",
-      "subtitle": "Você completou o desafio de hoje!"
+      "subtitle": "Você completou o desafio de hoje!",
+      "subtitlePast": "Você completou este desafio atrasado!"
     }
   },
   "calendar": {
@@ -245,7 +252,8 @@
       "completed": "Concluído",
       "failed": "Perdido",
       "locked": "Bloqueado",
-      "late": "Atrasado"
+      "late": "Recuperado",
+      "recoverableHint": "Perdido com contorno laranja: ainda pode ser recuperado"
     },
     "progress": {
       "title": "Seu progresso",
@@ -299,7 +307,9 @@
     "reject": "Rejeitar",
     "alert": {
       "newMessage": "Nova mensagem de {{name}}",
-      "newFriendRequest": "{{name}} quer ser teu amigo!"
+      "newFriendRequest": "{{name}} quer ser teu amigo!",
+      "rankingOvertaken": "{{name}} passou-te no ranking!",
+      "rankingOvertook": "Ultrapassaste {{name}} no ranking! 🎉"
     },
     "add": {
       "title": "Adicionar amigo",

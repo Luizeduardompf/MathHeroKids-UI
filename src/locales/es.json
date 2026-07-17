@@ -195,7 +195,15 @@
     "completed": {
       "title": "¡Desafío completado!",
       "subtitle": "¡Increíble! Terminaste el desafío de hoy.",
-      "continue": "Continuar"
+      "subtitlePast": "¡Increíble! Completaste este desafío atrasado.",
+      "continue": "Continuar",
+      "xp": "+{{xp}} XP",
+      "questionsLabel": "{{done}}/{{total}} preguntas",
+      "xpBreakdown": {
+        "answers": "+{{xp}} XP respuestas correctas",
+        "bonus": "+{{xp}} XP bono de finalización",
+        "perfect": "+{{xp}} XP bono perfecto"
+      }
     },
     "miloDizLabel": "MILO DICE",
     "retroactive": {
@@ -223,7 +231,8 @@
     "alreadyCompletedMessage": "Este día ya se hizo — el XP ya fue contado. ¡Vuelve mañana para ganar más!",
     "celebration": {
       "title": "¡Trofeo Conquistado!",
-      "subtitle": "¡Completaste el desafío de hoy!"
+      "subtitle": "¡Completaste el desafío de hoy!",
+      "subtitlePast": "¡Completaste este desafío atrasado!"
     }
   },
   "settings": {
@@ -301,7 +310,9 @@
     "reject": "Rechazar",
     "alert": {
       "newMessage": "Nuevo mensaje de {{name}}",
-      "newFriendRequest": "¡{{name}} quiere ser tu amigo!"
+      "newFriendRequest": "¡{{name}} quiere ser tu amigo!",
+      "rankingOvertaken": "¡{{name}} te ha superado en el ranking!",
+      "rankingOvertook": "¡Has superado a {{name}} en el ranking! 🎉"
     },
     "emptyRanking": "Sin ranking aún",
     "emptyRankingDesc": "¡Añade amigos y completa desafíos para aparecer en el ranking!",
@@ -385,7 +396,8 @@
       "completed": "Completado",
       "failed": "Perdido",
       "locked": "Bloqueado",
-      "late": "Tardío"
+      "late": "Recuperado",
+      "recoverableHint": "Perdido con contorno naranja: todavía se puede recuperar"
     },
     "progress": {
       "title": "Tu progreso",
