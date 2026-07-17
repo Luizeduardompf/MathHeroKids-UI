@@ -26,6 +26,7 @@ import { Text } from '@/components/ui';
 import { MiloMessage } from '@/components/milo/MiloMessage';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { challengeService } from '@/services/challenge.service';
+import { CHALLENGE } from '@/constants/config';
 import { colors, fontFamily, radius, shadows, space } from '@/theme';
 
 // Returns YYYY-MM-DD for today and the previous N days
@@ -113,8 +114,8 @@ export default function ChallengeTab() {
   const [completions, setCompletions] = useState<Set<string>>(new Set());
 
   const today = new Date().toISOString().split('T')[0]!;
-  // 7 past days (not including today — today is shown separately at top)
-  const pastDates = getPastDates(8).slice(1); // indices 1–7 = yesterday to 7 days ago
+  // N past days (not including today — today is shown separately at top)
+  const pastDates = getPastDates(CHALLENGE.RETROACTIVE_WINDOW_DAYS + 1).slice(1);
 
   const checkDates = useCallback(async () => {
     if (!child) return;

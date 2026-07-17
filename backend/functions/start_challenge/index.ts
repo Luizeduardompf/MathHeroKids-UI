@@ -35,7 +35,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { getRules, getRulesVersion } from '../_shared/adaptive-rules.ts';
 import { selectQuestions } from '../_shared/question-selector.ts';
 
-const RETROACTIVE_WINDOW_DAYS = 7;
+const RETROACTIVE_WINDOW_DAYS = 30;
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
