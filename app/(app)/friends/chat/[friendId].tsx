@@ -13,6 +13,8 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+// @ts-expect-error RN strict typing quirk
+import { Alert } from 'react-native'; // eslint-disable-line
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -36,6 +38,7 @@ import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { chatService, type ChatMessage } from '@/services/chat.service';
 import { socialService, type FriendProfile } from '@/services/social.service';
 import { colors, fontFamily, radius, shadows } from '@/theme';
+import { playSound } from '@/services/sound.service';
 
 // ─── Bubble ──────────────────────────────────────────────────────────────────
 
@@ -160,6 +163,7 @@ export default function ChatScreen() {
     setSending(true);
     try {
       const newMsg = await chatService.sendMessage(myId, friendId, text);
+      playSound('messageSent');
       setMessages((prev) => {
         if (prev.some((m) => m.id === newMsg.id)) return prev;
         return [...prev, newMsg];
@@ -167,6 +171,7 @@ export default function ChatScreen() {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
     } catch {
       setInputText(text);
+      Alert.alert(t('common.error'), t('friends.chat.errorSendFailed'));
     } finally {
       setSending(false);
     }
@@ -255,6 +260,7 @@ export default function ChatScreen() {
           placeholderTextColor={colors.text.tertiary}
           value={inputText}
           onChangeText={setInputText}
+          editable={!sending}
           multiline
           maxLength={500}
           returnKeyType="send"

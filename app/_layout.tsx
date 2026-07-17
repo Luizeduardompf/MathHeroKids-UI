@@ -21,6 +21,7 @@ import { initI18n, LOCALE_STORAGE_KEY } from '@/lib/i18n';
 import { useAuthListener } from '@/hooks/use-auth';
 import type { SupportedLocale } from '@/constants/config';
 import SplashScreen from '@/components/SplashScreen';
+import { initSounds } from '@/services/sound.service';
 
 // Keep the splash screen visible while we load resources
 ExpoSplashScreen.preventAutoHideAsync().catch(() => {
@@ -56,6 +57,11 @@ export default function RootLayout() {
       .then((saved) => initI18n((saved as SupportedLocale) ?? undefined))
       .catch(() => initI18n())
       .finally(() => setI18nReady(true));
+  }, []);
+
+  // Preload sound effects — não bloqueia o splash
+  useEffect(() => {
+    void initSounds();
   }, []);
 
   // Tempo mínimo do splash

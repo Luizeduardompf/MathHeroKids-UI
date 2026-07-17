@@ -13,6 +13,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { AvatarId } from '@/constants/config';
 import type { FriendRequest } from '@/types/database.types';
@@ -509,6 +510,39 @@ export const socialService = {
     } catch {
       return [];
     }
+  },
+
+  /**
+   * Subscribe to new incoming friend requests (Realtime).
+   * Use at the app root for a global "novo pedido de amizade" alert.
+   *
+   * @param childId  - active child's UUID
+   * @param onRequest - callback with the inserted row (id + from_child_id)
+   * @returns unsubscribe function — call on unmount
+   */
+  subscribeToFriendRequests(
+    childId: string,
+    onRequest: (row: { id: string; from_child_id: string }) => void,
+  ): () => void {
+    const channel: RealtimeChannel = supabase
+      .channel(`friend_requests_${childId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'friend_requests',
+          filter: `to_child_id=eq.${childId}`,
+        },
+        (payload) => {
+          onRequest(payload.new as { id: string; from_child_id: string });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   },
 };
 

@@ -309,6 +309,20 @@ npm run format     # prettier
 
 ---
 
+## Versionamento
+
+Após qualquer alteração de código, antes de commitar:
+
+```bash
+bash scripts/bump-version.sh
+```
+
+Incrementa o patch de `APP_VERSION` em `src/constants/version.ts`. Esta versão é mostrada no fim
+do ecrã de início (Math Hero Kids v0.1.x) para identificar facilmente qual build está em cada
+dispositivo.
+
+---
+
 ## Variáveis de ambiente
 
 Copiar `.env.example` → `.env`:

@@ -16,6 +16,7 @@ import { childService } from '@/services/child.service';
 import { challengeService } from '@/services/challenge.service';
 import { supabase } from '@/lib/supabase';
 import { CHALLENGE, getLevelXpFloor, getLevelXpCeil } from '@/constants/config';
+import { APP_VERSION } from '@/constants/version';
 import { colors, fontFamily, radius, space } from '@/theme';
 import type { ChildProfile } from '@/types';
 
@@ -438,6 +439,11 @@ export default function HomeScreen() {
             </Card>
           ))}
         </View>
+
+        {/* Version */}
+        <Text variant="caption" color={colors.text.tertiary} align="center" style={styles.versionText}>
+          Math Hero Kids {APP_VERSION}
+        </Text>
       </ScrollView>
     </View>
   );
@@ -697,4 +703,7 @@ const styles = StyleSheet.create({
     marginBottom: space.xs,
   },
   statValue: { marginBottom: 2 },
+
+  // ── Version ─────────────────────────────────────────────────────────────────
+  versionText: { marginTop: space.sm },
 });

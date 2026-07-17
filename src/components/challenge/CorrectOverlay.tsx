@@ -6,7 +6,7 @@
  * - Badge +XP: posição absoluta no bordo superior-direito do círculo,
  *              anima de cima para baixo (drop-in)
  * - "Acertou!": fade + slide-up
- * - Som: expo-av → assets/sounds/success.wav
+ * - Som: expo-audio → assets/sounds/correct.mp3 (via sound.service)
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -26,13 +26,7 @@ import type { SharedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { fontFamily } from '@/theme';
-
-// ─── Sound helper ─────────────────────────────────────────────────────────────
-// expo-av não está disponível no Expo Go (native module removido).
-// Usa `isAvailableAsync` para verificar antes de tentar reproduzir.
-
-// TODO: reativar após `npx expo install expo-av && pod install && npx expo run:ios`
-// async function playSuccessSound() { ... }
+import { playSound } from '@/services/sound.service';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -161,7 +155,7 @@ export function CorrectOverlay({ xpGain = 10 }: { xpGain?: number }) {
 
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    // void playSuccessSound(); // reativar após expo install expo-av + pod install
+    playSound('correct');
 
     circleScale.value = withSpring(1, { damping: 9, stiffness: 240, mass: 0.9 });
 

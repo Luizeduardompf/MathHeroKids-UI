@@ -55,6 +55,7 @@ import {
 import { challengeService } from '@/services/challenge.service';
 import { useNetworkStatus } from '@/hooks/use-network-status';
 import { MODULE_ID, CHALLENGE } from '@/constants/config';
+import { playSound } from '@/services/sound.service';
 
 // ─── Milo celebrate asset ─────────────────────────────────────────────────────
 const MILO_CELEBRATE = require('../../../assets/images/milo-celebrate.png') as number;
@@ -212,6 +213,11 @@ function MilestoneScreen({
   const xp = xpOverride ?? cfg.xp;
   const qs = questionsCorrect ?? cfg.questions;
   const pct = Math.round((qs / (useChallengeStore.getState().totalQuestions || CHALLENGE.TOTAL_QUESTIONS)) * 100);
+
+  useEffect(() => {
+    playSound('trophy');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <View style={[msStyles.root, { backgroundColor: cfg.bg }]}>
@@ -506,39 +512,40 @@ function useTimer(seconds: number, active: boolean, onExpire: () => void) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onExpireRef = useRef(onExpire);
   onExpireRef.current = onExpire;
-  // Tracks whether onExpire was already fired for the current run
-  const firedRef = useRef(false);
 
   const reset = useCallback(() => setRemaining(seconds), [seconds]);
 
   useEffect(() => {
-    if (!active || seconds === 0) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      return;
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
-    firedRef.current = false;
+    if (!active || seconds === 0) return;
+
     setRemaining(seconds);
     intervalRef.current = setInterval(() => {
       // Pure updater — no side effects inside
       setRemaining((prev) => {
         if (prev <= 1) {
-          clearInterval(intervalRef.current!);
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          intervalRef.current = null;
+          // Fire outside the render/update cycle — tied directly to this
+          // tick reaching zero, never to a stale `remaining` from a
+          // previous run (that race caused an immediate re-expiry right
+          // after retrying a block).
+          setTimeout(() => onExpireRef.current(), 0);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [active, seconds]);
-
-  // Fire onExpire outside of the state updater to avoid the
-  // "Cannot update a component while rendering" React warning.
-  useEffect(() => {
-    if (remaining === 0 && active && !firedRef.current) {
-      firedRef.current = true;
-      onExpireRef.current();
-    }
-  }, [remaining, active]);
 
   return { remaining, reset };
 }

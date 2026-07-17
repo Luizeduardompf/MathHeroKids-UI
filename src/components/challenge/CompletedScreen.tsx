@@ -40,6 +40,7 @@ import { Text } from '@/components/ui';
 import { CHALLENGE } from '@/constants/config';
 import { useChallengeStore } from '@/stores/challenge.store';
 import { fontFamily } from '@/theme';
+import { playSound } from '@/services/sound.service';
 
 const MILO_CELEBRATE = require('../../../assets/images/milo-celebrate.png') as number;
 
@@ -178,6 +179,8 @@ export function CompletedScreen({
   const btnOp       = useSharedValue(0);
 
   useEffect(() => {
+    playSound('complete');
+
     // XP badge (100ms)
     badgeY.value     = withDelay(100, withSpring(0, { stiffness: 320, damping: 18 }));
     badgeScale.value = withDelay(100, withSpring(1, { stiffness: 320, damping: 18 }));

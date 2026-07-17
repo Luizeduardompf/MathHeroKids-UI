@@ -20,6 +20,7 @@ import { withDelay, withRepeat, withSequence } from 'react-native-reanimated';
 import { Text } from '@/components/ui';
 import { colors, fontFamily, radius, spacing } from '@/theme';
 import type { LevelReward } from '@/types/database.types';
+import { playSound } from '@/services/sound.service';
 
 // ─── Tier emoji helper ────────────────────────────────────────────────────────
 
@@ -57,6 +58,7 @@ export function LevelUpModal({ visible, newLevel, xpEarned, unlockedReward, onCo
       translateY.value = 0;
       return;
     }
+    playSound('levelUp');
     opacity.value = withTiming(1, { duration: 250 });
     scale.value = withSpring(1, { damping: 14, stiffness: 180 });
     // bounce gentle após entrada

@@ -18,6 +18,7 @@ import Animated, {
 import { Text } from '@/components/ui';
 import { colors, fontFamily, radius, spacing } from '@/theme';
 import type { Achievement, Trophy } from '@/types/database.types';
+import { playSound } from '@/services/sound.service';
 
 type Item = { type: 'trophy'; data: Trophy } | { type: 'achievement'; data: Achievement };
 
@@ -40,6 +41,7 @@ export function TrophyEarnedModal({ items, onDone }: Props) {
     opacity.value = 0;
     opacity.value = withTiming(1, { duration: 200 });
     scale.value = withSpring(1, { damping: 14, stiffness: 180 });
+    playSound('trophy');
   }
 
   useEffect(() => {

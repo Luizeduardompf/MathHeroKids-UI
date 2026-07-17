@@ -29,6 +29,7 @@ import { Easing } from 'react-native-reanimated'; // eslint-disable-line
 
 import { Text } from '@/components/ui';
 import { fontFamily } from '@/theme';
+import { playSound } from '@/services/sound.service';
 
 // ─── MiloBubble ───────────────────────────────────────────────────────────────
 // Port do zip: components/milo-bubble.tsx
@@ -208,6 +209,11 @@ const si = StyleSheet.create({
 
 export function TimeExpiredScreen({ onRetry, onGoHome }: { onRetry: () => void; onGoHome: () => void }) {
   const { t } = useTranslation();
+
+  useEffect(() => {
+    playSound('wrong');
+  }, []);
+
   return (
     <View style={[sc.root, { backgroundColor: '#FEF2F2' }]}>
       <EntranceView style={sc.body}>
@@ -238,6 +244,11 @@ export function WrongAnswerScreen({ operandA, operandB, correctAnswer, userAnswe
   userAnswer: number | null; onContinue: () => void; onRetry: () => void;
 }) {
   const { t } = useTranslation();
+
+  useEffect(() => {
+    playSound('wrong');
+  }, []);
+
   return (
     <View style={[sc.root, { backgroundColor: '#FFFBEB' }]}>
       <EntranceView style={sc.body}>
@@ -318,6 +329,11 @@ export function BlockEndScreen({ correct, total, onRetry, onGoHome }: {
 }) {
   const { t } = useTranslation();
   const pct = Math.round((correct / total) * 100);
+
+  useEffect(() => {
+    playSound('wrong');
+  }, []);
+
   return (
     <View style={[sc.root, { backgroundColor: '#FFFBEB' }]}>
       <EntranceView style={sc.body}>

@@ -11,7 +11,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import type React from 'react';
 
-import { colors, radius } from '@/theme';
+import { colors, fontFamily, radius } from '@/theme';
+import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
+import { useUnreadMessagesCount } from '@/hooks/use-unread-messages';
 
 // ─── Spring config ────────────────────────────────────────────────────────────
 
@@ -25,9 +27,10 @@ type FeatherName = React.ComponentProps<typeof Feather>['name'];
 interface TabIconProps {
   name: FeatherName;
   focused: boolean;
+  badgeCount?: number;
 }
 
-function TabIcon({ name, focused }: TabIconProps): React.JSX.Element {
+function TabIcon({ name, focused, badgeCount = 0 }: TabIconProps): React.JSX.Element {
   const scale = useSharedValue(focused ? 1.15 : 1);
 
   useEffect(() => {
@@ -45,6 +48,11 @@ function TabIcon({ name, focused }: TabIconProps): React.JSX.Element {
         size={24}
         color={focused ? colors.tabBar.active : colors.tabBar.inactive}
       />
+      {badgeCount > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badgeCount > 99 ? '99+' : badgeCount}</Text>
+        </View>
+      )}
     </Animated.View>
   );
 }
@@ -84,6 +92,8 @@ function ChallengeFAB({ focused }: { focused: boolean }): React.JSX.Element {
 
 export default function TabsLayout() {
   const { t } = useTranslation();
+  const activeChild = useProfileStore(selectActiveChild);
+  const { data: unreadCount = 0 } = useUnreadMessagesCount(activeChild?.id);
 
   return (
     <Tabs
@@ -131,7 +141,7 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: t('nav.friends'),
           tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <TabIcon name="users" focused={focused} />
+            <TabIcon name="users" focused={focused} badgeCount={unreadCount} />
           ),
         }}
       />
@@ -171,6 +181,25 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 11,
     fontWeight: '600',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#F5722A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: colors.tabBar.background,
+  },
+  badgeText: {
+    fontFamily: fontFamily.extraBold,
+    fontSize: 9,
+    color: '#fff',
   },
   tabLabelAccent: {
     fontSize: 11,

@@ -37,6 +37,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Text } from '@/components/ui';
 import { fontFamily } from '@/theme';
+import { playSound } from '@/services/sound.service';
 
 // ─── Confetti ─────────────────────────────────────────────────────────────────
 
@@ -350,6 +351,12 @@ export function CelebrationTransition({ onComplete }: { onComplete: () => void }
     const t = setTimeout(onComplete, 3000);
     return () => clearTimeout(t);
   }, [onComplete]);
+
+  // Som do troféu — sincronizado com a entrada do cartão (450ms)
+  useEffect(() => {
+    const t = setTimeout(() => playSound('trophy'), 450);
+    return () => clearTimeout(t);
+  }, []);
 
   // Flash background
   const bgScale = useSharedValue(0);
