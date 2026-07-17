@@ -142,6 +142,7 @@
   },
   "challenge": {
     "question": "Question {{current}} of {{total}}",
+    "retestLabel": "🔁 Let's review!",
     "timerLabel": "{{seconds}}s",
     "timerUnlimited": "∞",
     "category": "Multiplication Table",
@@ -675,6 +676,8 @@
       "registeredSince": "Member since",
       "lastAccess": "Last access",
       "gameSettings": "Game settings",
+      "questionsLabel": "Number of questions",
+      "questionsHint": "How many questions each challenge has",
       "timerLabel": "Response time",
       "timerHint": "Seconds to answer each question",
       "tablesLabel": "Times tables up to",

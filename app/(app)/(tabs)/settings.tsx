@@ -17,12 +17,12 @@ import { useTranslation } from 'react-i18next';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import { Avatar, Button, Card, ConfirmDialog, Text } from '@/components/ui';
-import { childService, getChildLocalSettings, setChildLocalSettings } from '@/services/child.service';
+import { childService } from '@/services/child.service';
 import { authService } from '@/services/auth.service';
 import { pinService } from '@/services/pin.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { useProfileStore } from '@/stores/profile.store';
-import { SUPPORTED_LOCALES, TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT_OPTIONS, DEFAULT_QUESTION_COUNT } from '@/constants/config';
+import { SUPPORTED_LOCALES, TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT_OPTIONS } from '@/constants/config';
 import type { SupportedLocale, TimerOption, MultiplicationRange, QuestionCountOption } from '@/constants/config';
 import type { ChildProfile } from '@/types';
 import { changeLocale, LOCALE_STORAGE_KEY } from '@/lib/i18n';
@@ -286,19 +286,14 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
   const [savingMult,      setSavingMult]      = useState(false);
   const [savingQuestions, setSavingQuestions] = useState(false);
   const [localChild,      setLocalChild]      = useState(child);
-  const [questionsCount,  setQuestionsCount]  = useState<QuestionCountOption>(DEFAULT_QUESTION_COUNT);
-
-  // Carregar setting local de questões ao montar
-  useEffect(() => {
-    void getChildLocalSettings(child.id).then((s) => setQuestionsCount(s.questions_count));
-  }, [child.id]);
 
   async function handleQuestions(value: QuestionCountOption) {
-    if (value === questionsCount || savingQuestions) return;
+    if (value === localChild.question_count || savingQuestions) return;
     setSavingQuestions(true);
     try {
-      await setChildLocalSettings(child.id, { questions_count: value });
-      setQuestionsCount(value);
+      const updated = await childService.updateChild(localChild.id, { question_count: value });
+      setLocalChild(updated);
+      if (activeChild?.id === updated.id) setActiveChild(updated);
     } finally { setSavingQuestions(false); }
   }
 
@@ -352,7 +347,7 @@ function ChildSettingsCard({ child }: { child: ChildProfile }) {
         </View>
         <View style={styles.chipRow}>
           {QUESTION_COUNT_OPTIONS.map((val) => {
-            const selected = questionsCount === val;
+            const selected = localChild.question_count === val;
             return (
               <TouchableOpacity
                 key={val}

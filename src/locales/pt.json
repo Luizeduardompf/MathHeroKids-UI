@@ -142,6 +142,7 @@
   },
   "challenge": {
     "question": "Questão {{current}} de {{total}}",
+    "retestLabel": "🔁 Vamos rever!",
     "timerLabel": "{{seconds}}s",
     "timerUnlimited": "∞",
     "category": "Tabuada da Multiplicação",
@@ -680,6 +681,8 @@
       "registeredSince": "Membro desde",
       "lastAccess": "Último acesso",
       "gameSettings": "Configurações do jogo",
+      "questionsLabel": "Nº de questões",
+      "questionsHint": "Quantas questões tem cada desafio",
       "timerLabel": "Tempo de resposta",
       "timerHint": "Segundos para responder cada questão",
       "tablesLabel": "Tabuadas até",

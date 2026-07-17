@@ -65,6 +65,12 @@ interface ChallengeState {
   timerSeconds: number;       // configured limit (0 = unlimited)
   questionStartTime: number;  // Date.now() when question was presented
 
+  // Retest — perguntas erradas que o filho "continuou" sem corrigir (retryBlock já
+  // reintroduz naturalmente via replay do bloco) ficam em fila e reaparecem no fim
+  // da sessão, antes de completar, para dar uma segunda oportunidade imediata.
+  retestQueue: number[];             // índices (em `questions`) por re-testar
+  retestQuestionIndex: number | null; // índice em re-teste neste momento, se houver
+
   // Phase / UI
   phase: ChallengePhase;
   lastAnswerCorrect: boolean | null;
@@ -102,7 +108,23 @@ interface ChallengeState {
 // ─── Selectors ────────────────────────────────────────────────────────────────
 
 export const selectCurrentQuestion = (s: ChallengeState): Question | null =>
-  s.questions[s.currentQuestionIndex] ?? null;
+  s.retestQuestionIndex != null
+    ? (s.questions[s.retestQuestionIndex] ?? null)
+    : (s.questions[s.currentQuestionIndex] ?? null);
+
+export const selectIsRetestActive = (s: ChallengeState): boolean =>
+  s.retestQuestionIndex != null;
+
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = out[i]!;
+    out[i] = out[j]!;
+    out[j] = tmp;
+  }
+  return out;
+}
 
 export const selectProgressFraction = (s: ChallengeState): number =>
   s.totalQuestions > 0 ? s.currentQuestionIndex / s.totalQuestions : 0;
@@ -150,6 +172,8 @@ const initialState = {
   blockAnswers: [] as AnswerDraft[],
   timerSeconds: 15,
   questionStartTime: 0,
+  retestQueue: [] as number[],
+  retestQuestionIndex: null as number | null,
   phase: 'idle' as ChallengePhase,
   lastAnswerCorrect: null as boolean | null,
   lastCorrectAnswer: null as number | null,
@@ -178,6 +202,8 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
       blockAnswers: [],
       timerSeconds,
       questionStartTime: Date.now(),
+      retestQueue: [],
+      retestQuestionIndex: null,
       phase: 'playing',
       lastAnswerCorrect: null,
       lastCorrectAnswer: null,
@@ -193,6 +219,55 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
 
   submitAnswer: (childAnswer) => {
     const state = get();
+
+    if (state.retestQuestionIndex != null) {
+      const question = state.questions[state.retestQuestionIndex];
+      if (!question) return;
+      const timeTakenMs = state.questionStartTime > 0 ? Date.now() - state.questionStartTime : null;
+      const isCorrect = childAnswer !== null && childAnswer === question.correct_answer;
+      const draft: AnswerDraft = {
+        question_index: question.index,
+        block_number: state.currentBlock,
+        attempt_number: state.blockAttempt + 1,
+        operand_a: question.operand_a,
+        operand_b: question.operand_b,
+        child_answer: childAnswer,
+        time_taken_ms: timeTakenMs,
+        ...(question.fact_id != null ? { fact_id: question.fact_id, position: question.index + 1 } : {}),
+      };
+      const newAnswers = [...state.answers, draft];
+
+      if (!isCorrect) {
+        set({
+          answers: newAnswers,
+          lastAnswerCorrect: false,
+          lastCorrectAnswer: question.correct_answer,
+          lastUserAnswer: childAnswer,
+          lastAnsweredQuestion: {
+            operand_a: question.operand_a,
+            operand_b: question.operand_b,
+            correct_answer: question.correct_answer,
+          },
+          phase: childAnswer === null ? 'timeout' : 'wrong',
+        });
+        return;
+      }
+
+      const [next, ...rest] = state.retestQueue;
+      set({
+        answers: newAnswers,
+        retestQueue: rest,
+        retestQuestionIndex: next ?? null,
+        lastAnswerCorrect: true,
+        lastCorrectAnswer: null,
+        lastUserAnswer: null,
+        lastAnsweredQuestion: null,
+        phase: next != null ? 'playing' : 'completed',
+        questionStartTime: Date.now(),
+      });
+      return;
+    }
+
     const question = state.questions[state.currentQuestionIndex];
     if (!question) return;
 
@@ -248,15 +323,19 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
 
     // Correct answer
     if (isLast) {
+      const [firstRetest, ...restRetest] = state.retestQueue;
       set({
         answers: newAnswers,
         blockAnswers: newBlockAnswers,
         currentQuestionIndex: nextIndex,
+        retestQueue: restRetest,
+        retestQuestionIndex: firstRetest ?? null,
         lastAnswerCorrect: true,
         lastCorrectAnswer: null,
         lastUserAnswer: null,
         lastAnsweredQuestion: null,
-        phase: 'completed',
+        phase: firstRetest != null ? 'playing' : 'completed',
+        questionStartTime: Date.now(),
       });
       return;
     }
@@ -305,8 +384,21 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
 
   retryBlock: () => {
     const state = get();
+
+    if (state.retestQuestionIndex != null) {
+      // Em reteste não há "bloco" — repetir é só reiniciar o timer da mesma questão.
+      set({ phase: 'playing', questionStartTime: Date.now() });
+      return;
+    }
+
     const blockStart = (state.currentBlock - 1) * CHALLENGE.QUESTIONS_PER_BLOCK;
+    const blockLength = Math.min(CHALLENGE.QUESTIONS_PER_BLOCK, state.questions.length - blockStart);
+    const reshuffled = shuffle(state.questions.slice(blockStart, blockStart + blockLength));
+    const newQuestions = [...state.questions];
+    newQuestions.splice(blockStart, blockLength, ...reshuffled);
+
     set({
+      questions: newQuestions,
       currentQuestionIndex: blockStart,
       blockAttempt: state.blockAttempt + 1,
       blockAnswers: [],
@@ -317,10 +409,33 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
 
   advanceAfterWrong: () => {
     const state = get();
+
+    if (state.retestQuestionIndex != null) {
+      const [next, ...rest] = state.retestQueue;
+      set({
+        retestQueue: rest,
+        retestQuestionIndex: next ?? null,
+        phase: next != null ? 'playing' : 'completed',
+        questionStartTime: Date.now(),
+      });
+      return;
+    }
+
     const nextIndex = state.currentQuestionIndex + 1;
+    const missedIndex = state.currentQuestionIndex;
+    const newRetestQueue = state.retestQueue.includes(missedIndex)
+      ? state.retestQueue
+      : [...state.retestQueue, missedIndex];
 
     if (nextIndex >= state.totalQuestions) {
-      set({ currentQuestionIndex: nextIndex, phase: 'completed' });
+      const [firstRetest, ...restRetest] = newRetestQueue;
+      set({
+        currentQuestionIndex: nextIndex,
+        retestQueue: restRetest,
+        retestQuestionIndex: firstRetest ?? null,
+        phase: firstRetest != null ? 'playing' : 'completed',
+        questionStartTime: Date.now(),
+      });
       return;
     }
 
@@ -333,6 +448,7 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
 
     set({
       currentQuestionIndex: nextIndex,
+      retestQueue: newRetestQueue,
       ...(isLastInBlock ? { currentBlock: state.currentBlock + 1, blockAttempt: 1, blockAnswers: [] } : {}),
       phase: isMilestone ? 'milestone' : 'playing',
     });

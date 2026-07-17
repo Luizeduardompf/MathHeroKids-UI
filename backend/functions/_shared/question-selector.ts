@@ -35,6 +35,39 @@ interface SelectInput {
   mastery: MasteryRow[];
   excludedFactIds: Set<string>;
   rules: AdaptiveRules;
+  /** Semente de aleatoriedade — normalmente o session_id. Mesma sessão = mesma ordem (resume estável); sessões diferentes = ordens diferentes. */
+  seed: string;
+  /** Número de questões a selecionar. Default: rules.session.questionsPerChallenge (config por criança sobrepõe-se à regra global). */
+  questionCount?: number;
+}
+
+// ─── PRNG determinístico por seed (mulberry32) ────────────────────────────────
+// Mesma seed = mesma sequência (resume de sessão estável); seeds diferentes
+// (session_id novo a cada dia) = ordens diferentes. Não é para segurança,
+// só para variar a apresentação das questões.
+function seedFromString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0;
+  return h;
+}
+
+function mulberry32(seed: number): () => number {
+  let t = seed;
+  return function () {
+    t |= 0; t = (t + 0x6d2b79f5) | 0;
+    let x = Math.imul(t ^ (t >>> 15), 1 | t);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededShuffle<T>(arr: T[], rng: () => number): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
 
 export function selectQuestions(input: SelectInput): {
@@ -42,7 +75,10 @@ export function selectQuestions(input: SelectInput): {
   metadata: SelectionMetadata;
 } {
   const { facts, mastery, excludedFactIds, rules } = input;
-  const N = rules.session.questionsPerChallenge;
+  const N = input.questionCount ?? rules.session.questionsPerChallenge;
+  const rng = mulberry32(seedFromString(input.seed));
+  const tieBreak = new Map<string, number>();
+  facts.forEach(f => tieBreak.set(f.id, rng()));
 
   // Map fact_id -> mastery (default NEW)
   const masteryMap = new Map<string, MasteryRow>();
@@ -64,12 +100,14 @@ export function selectQuestions(input: SelectInput): {
     buckets[state].push(f);
   });
 
-  // Ordenar cada bucket por prioridade
-  buckets.WEAK.sort((a, b) => strengthOf(a, masteryMap) - strengthOf(b, masteryMap));
-  buckets.LEARNING.sort((a, b) => strengthOf(a, masteryMap) - strengthOf(b, masteryMap));
-  buckets.NEW.sort((a, b) => a.base_difficulty - b.base_difficulty || hash(a.id) - hash(b.id));
-  buckets.REVIEWING.sort((a, b) => ageOf(b, masteryMap) - ageOf(a, masteryMap)); // mais antigo primeiro
-  buckets.MASTERED.sort((a, b) => ageOf(b, masteryMap) - ageOf(a, masteryMap));
+  // Ordenar cada bucket por prioridade — em caso de empate, tieBreak (aleatório
+  // por sessão) decide, para não repetir sempre a mesma ordem para o mesmo estado.
+  const tb = (id: string) => tieBreak.get(id) ?? 0;
+  buckets.WEAK.sort((a, b) => strengthOf(a, masteryMap) - strengthOf(b, masteryMap) || tb(a.id) - tb(b.id));
+  buckets.LEARNING.sort((a, b) => strengthOf(a, masteryMap) - strengthOf(b, masteryMap) || tb(a.id) - tb(b.id));
+  buckets.NEW.sort((a, b) => a.base_difficulty - b.base_difficulty || tb(a.id) - tb(b.id));
+  buckets.REVIEWING.sort((a, b) => ageOf(b, masteryMap) - ageOf(a, masteryMap) || tb(a.id) - tb(b.id)); // mais antigo primeiro
+  buckets.MASTERED.sort((a, b) => ageOf(b, masteryMap) - ageOf(a, masteryMap) || tb(a.id) - tb(b.id));
 
   // Calcular cotas por bucket
   const w = rules.selectionMix.weights;
@@ -125,8 +163,10 @@ export function selectQuestions(input: SelectInput): {
     }
   }
 
-  // Intercalar por dificuldade para nao agrupar T5 no fim
-  const shuffled = interleaveByDifficulty(selected);
+  // Embaralhar a ordem final — aleatorização real por sessão (antes era
+  // determinístico: interleaveByDifficulty produzia sempre a mesma ordem para
+  // o mesmo conjunto de questões, e sem seed nenhuma sessão variava).
+  const shuffled = seededShuffle(selected, rng);
 
   const questions: SelectedQuestion[] = shuffled.map((f, idx) => ({
     position: idx + 1,
@@ -160,13 +200,6 @@ function stateOf(f: Fact, m: Map<string, MasteryRow>): MasteryState {
   return (m.get(f.id)?.state ?? 'NEW') as MasteryState;
 }
 
-function hash(s: string): number {
-  // Tie-break deterministico
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  return h;
-}
-
 function computeUnlockedTiers(
   facts: Fact[],
   m: Map<string, MasteryRow>,
@@ -194,23 +227,4 @@ function computeUnlockedTiers(
   unlocked.add(1);
   unlocked.add(2);
   return [...unlocked].sort((a, b) => a - b);
-}
-
-function interleaveByDifficulty(facts: Fact[]): Fact[] {
-  const groups = new Map<number, Fact[]>();
-  facts.forEach(f => {
-    if (!groups.has(f.base_difficulty)) groups.set(f.base_difficulty, []);
-    groups.get(f.base_difficulty)!.push(f);
-  });
-  const tiers = [...groups.keys()].sort((a, b) => a - b);
-  const out: Fact[] = [];
-  let i = 0;
-  const maxIter = facts.length * tiers.length + 1;
-  while (out.length < facts.length && i < maxIter) {
-    const tier = tiers[i % tiers.length]!;
-    const arr = groups.get(tier);
-    if (arr && arr.length > 0) out.push(arr.shift()!);
-    i++;
-  }
-  return out;
 }

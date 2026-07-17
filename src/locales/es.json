@@ -142,6 +142,7 @@
   },
   "challenge": {
     "question": "Pregunta {{current}} de {{total}}",
+    "retestLabel": "🔁 ¡A repasar!",
     "timerLabel": "{{seconds}}s",
     "timerUnlimited": "∞",
     "category": "Tabla de Multiplicar",
@@ -478,6 +479,8 @@
       "registeredSince": "Miembro desde",
       "lastAccess": "Último acceso",
       "gameSettings": "Configuración del juego",
+      "questionsLabel": "Nº de preguntas",
+      "questionsHint": "Cuántas preguntas tiene cada desafío",
       "timerLabel": "Tiempo de respuesta",
       "timerHint": "Segundos para responder cada pregunta",
       "tablesLabel": "Tablas de multiplicar hasta",

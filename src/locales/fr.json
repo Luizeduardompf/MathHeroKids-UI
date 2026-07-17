@@ -346,6 +346,7 @@
     ]
   },
   "challenge": {
+    "retestLabel": "🔁 On révise !",
     "completed": {
       "title": "Défi terminé !",
       "subtitle": "Incroyable ! Tu as terminé le défi d'aujourd'hui. Milo est fier !",
@@ -426,6 +427,8 @@
       "registeredSince": "Membre depuis",
       "lastAccess": "Dernier accès",
       "gameSettings": "Paramètres du jeu",
+      "questionsLabel": "Nombre de questions",
+      "questionsHint": "Combien de questions par défi",
       "timerLabel": "Temps de réponse",
       "timerHint": "Secondes pour répondre à chaque question",
       "tablesLabel": "Tables de multiplication jusqu'à",

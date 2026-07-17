@@ -15,7 +15,7 @@ import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { childService } from '@/services/child.service';
 import { challengeService } from '@/services/challenge.service';
 import { supabase } from '@/lib/supabase';
-import { CHALLENGE, getLevelXpFloor, getLevelXpCeil } from '@/constants/config';
+import { CHALLENGE, getLevelXpFloor, getLevelXpCeil, resolveQuestionCount } from '@/constants/config';
 import { APP_VERSION } from '@/constants/version';
 import { colors, fontFamily, radius, space } from '@/theme';
 import type { ChildProfile } from '@/types';
@@ -115,6 +115,7 @@ export default function HomeScreen() {
   const [editingAvatar, setEditingAvatar] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [headerBottom, setHeaderBottom] = useState(0);
+  const questionCount = resolveQuestionCount(child?.question_count ?? 0, child?.level ?? 1);
 
   const queryClient = useQueryClient();
 
@@ -362,7 +363,7 @@ export default function HomeScreen() {
             <View style={styles.xpBadge}>
               <Text variant="caption" style={styles.xpBadgeText}>
                 {t('home.challenge.xpReward', {
-                  xp: CHALLENGE.XP_PER_CORRECT_ANSWER * CHALLENGE.TOTAL_QUESTIONS
+                  xp: CHALLENGE.XP_PER_CORRECT_ANSWER * questionCount
                     + CHALLENGE.XP_COMPLETION_BONUS + CHALLENGE.XP_PERFECT_BONUS,
                 })}
               </Text>
@@ -376,8 +377,8 @@ export default function HomeScreen() {
           </Text>
           <Text variant="bodySmall" color="rgba(255,255,255,0.70)">
             {t('home.challenge.questions', {
-              current: stats?.todayCompleted ? CHALLENGE.TOTAL_QUESTIONS : 0,
-              total: CHALLENGE.TOTAL_QUESTIONS,
+              current: stats?.todayCompleted ? questionCount : 0,
+              total: questionCount,
             })}
           </Text>
           <ProgressBar

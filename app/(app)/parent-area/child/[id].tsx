@@ -14,7 +14,7 @@ import { childService } from '@/services/child.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { colors, fontFamily, radius, shadows, space } from '@/theme';
-import { TIMER_OPTIONS, MULTIPLICATION_RANGES, type TimerOption, type MultiplicationRange } from '@/constants/config';
+import { TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT_OPTIONS, type TimerOption, type MultiplicationRange, type QuestionCountOption } from '@/constants/config';
 import type { AvatarId } from '@/constants/config';
 import type { ChildProfile } from '@/types';
 
@@ -82,6 +82,7 @@ export default function EditarCriancaScreen() {
   const [birthDate, setBirthDate] = useState('');
   const [timerSeconds, setTimerSeconds] = useState<TimerOption>(15);
   const [multiMax, setMultiMax] = useState<MultiplicationRange>(10);
+  const [questionCount, setQuestionCount] = useState<QuestionCountOption>(20);
   const [socialEnabled, setSocialEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +106,7 @@ export default function EditarCriancaScreen() {
       setBirthDate(formatDateForDisplay(found.birth_date));
       if (found.timer_seconds !== undefined) setTimerSeconds(found.timer_seconds as TimerOption);
       if (found.multiplication_max !== undefined) setMultiMax(found.multiplication_max as MultiplicationRange);
+      if (found.question_count !== undefined) setQuestionCount(found.question_count as QuestionCountOption);
       setSocialEnabled(found.social_enabled ?? true);
     }).catch(() => setLoadError('Erro ao carregar perfil.')); // i18n-ignore — internal error state
   }, [id, parentId]);
@@ -133,6 +135,7 @@ export default function EditarCriancaScreen() {
         birth_date: birthDate ? parseBirthDate(birthDate) : child.birth_date,
         timer_seconds: timerSeconds,
         multiplication_max: multiMax,
+        question_count: questionCount,
         social_enabled: socialEnabled,
       });
       // Keep store in sync if editing the active child
@@ -264,6 +267,32 @@ export default function EditarCriancaScreen() {
 
         {/* ── Game settings ──────────────────────────────────────── */}
         <Text variant="h3" style={styles.sectionLabel}>{t('parentArea.child.gameSettings')}</Text>
+
+        {/* Question count */}
+        <View style={styles.settingCard}>
+          <View style={styles.settingHeader}>
+            <View style={styles.settingIcon}>
+              <Ionicons name="list-outline" size={18} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.child.questionsLabel')}</Text>
+              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.questionsHint')}</Text>
+            </View>
+          </View>
+          <View style={styles.optionRow}>
+            {QUESTION_COUNT_OPTIONS.map((opt) => (
+              <Pressable
+                key={opt}
+                style={[styles.optionBtn, questionCount === opt && styles.optionBtnActive]}
+                onPress={() => setQuestionCount(opt)}
+              >
+                <RNText style={[styles.optionText, questionCount === opt && styles.optionTextActive]}>
+                  {opt === 0 ? 'AUTO' : String(opt)}
+                </RNText>
+              </Pressable>
+            ))}
+          </View>
+        </View>
 
         {/* Timer */}
         <View style={styles.settingCard}>

@@ -160,12 +160,22 @@ Deno.serve(async (req: Request) => {
       (s.questions_payload ?? []).forEach(q => excludedFactIds.add(q.fact_id));
     });
 
-    // Selecionar 20 questoes adaptativamente
+    // Selecionar questoes adaptativamente — quantidade vem do perfil da crianca
+    // (fallback para a regra global se a coluna ainda nao existir/for null)
+    const { data: childRow } = await supabase
+      .from('child_profiles')
+      .select('question_count')
+      .eq('id', child_id)
+      .maybeSingle();
+    const questionCount = childRow?.question_count ?? rules.session.questionsPerChallenge;
+
     const { questions, metadata } = selectQuestions({
       facts,
       mastery: mastery ?? [],
       excludedFactIds,
       rules,
+      seed: effectiveSessionId,
+      questionCount,
     });
 
     // Upsert da sessao com payload persistido

@@ -4,7 +4,7 @@
  * This is the hand-written version until Supabase is connected.
  */
 
-import type { AvatarId, ModuleId, SupportedLocale, TimerOption, MultiplicationRange } from '@/constants/config';
+import type { AvatarId, ModuleId, SupportedLocale, TimerOption, MultiplicationRange, QuestionCountOption } from '@/constants/config';
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -43,6 +43,7 @@ export interface ChildProfile {
   timer_seconds: TimerOption;
   multiplication_max: MultiplicationRange;
   social_enabled: boolean;
+  question_count: QuestionCountOption;
   // Management
   is_active: boolean;
   sort_order: number;

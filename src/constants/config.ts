@@ -4,9 +4,8 @@
  */
 
 export const CHALLENGE = {
-  TOTAL_QUESTIONS: 5, // DEV: reduzido para testes rápidos (produção: 20)
+  TOTAL_QUESTIONS: 20,
   QUESTIONS_PER_BLOCK: 5,
-  BLOCKS_PER_SESSION: 1, // DEV: 1 bloco de 5 (produção: 4)
   // Valores de exibição apenas — a fonte autoritativa dos ganhos é a Edge
   // Function complete_challenge (backend/functions/complete_challenge/index.ts).
   XP_PER_CORRECT_ANSWER: 2,
@@ -16,16 +15,16 @@ export const CHALLENGE = {
 } as const;
 
 export const TIMER_OPTIONS = [10, 15, 20, 30, 0] as const;
-// 0 = AUTO (futuramente ajustado ao nível; por agora = sem limite de tempo)
+// 0 = AUTO (ajustado ao nível — ver resolveTimerSeconds)
 export type TimerOption = (typeof TIMER_OPTIONS)[number];
 export const DEFAULT_TIMER = 15 satisfies TimerOption;
 
 // Número de questões por sessão. 0 = AUTO (ajustado ao nível, default = 20)
 export const QUESTION_COUNT_OPTIONS = [5, 10, 15, 20, 25, 0] as const;
 export type QuestionCountOption = (typeof QUESTION_COUNT_OPTIONS)[number];
-export const DEFAULT_QUESTION_COUNT = 5 satisfies QuestionCountOption; // DEV (produção: 20)
+export const DEFAULT_QUESTION_COUNT = 20 satisfies QuestionCountOption;
 
-/** Resolve o número real de questões (0 = AUTO → default 20 para MVP) */
+/** Resolve o número real de questões (0 = AUTO → default 20) */
 export function resolveQuestionCount(opt: QuestionCountOption, _level = 1): number {
   return opt === 0 ? CHALLENGE.TOTAL_QUESTIONS : opt;
 }
