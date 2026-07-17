@@ -258,3 +258,31 @@ resultado real da EF.** (sessão 13, 2026-07-17)
   com level > current", nunca `level === current + 1` — este último falha silenciosamente em qualquer
   nível-planalto e cai no fallback errado (visto em 3 telas: `(tabs)/index.tsx`, `(tabs)/calendar.tsx`,
   `progression.tsx`). Helpers correctos: `getLevelXpFloor`/`getLevelXpCeil` em `config.ts`.
+
+**Princípio confirmado pelo user (sessão 13, mesma sessão): "os XPs precisam sempre refletir a
+realidade em tempo real, para não frustrar."** Mais dois bugs da mesma família encontrados a seguir
+ao acima, ambos com o mesmo padrão — número mostrado ao user não bate com o que o servidor
+realmente gravou:
+- **`complete_challenge` calculava `newXpTotal` (cumulativo) e gravava-o em `child_profiles`, mas
+  nunca o devolvia na resposta.** O cliente, sem esse valor, chamava
+  `updateChildXp(result.session.xp_awarded, ...)` — o XP ganho só NAQUELA sessão — sobrescrevendo o
+  total cumulativo cacheado localmente (`activeChild` em AsyncStorage) com um número bem menor.
+  Fix: EF devolve `xp_total` no corpo da resposta (caminho normal e o de idempotência); cliente usa
+  `result.xp_total`, nunca `result.session.xp_awarded`, para actualizar o saldo geral.
+- **`start_challenge` só verificava se `questions_payload` existia, nunca se `status === 'completed'`**
+  — reabria (e devolvia as mesmas perguntas de) um dia já concluído como se fosse resumível. O ecrã
+  de conclusão mostra sempre um total optimista local (`sessionXp + bonuses`, calculado ANTES da
+  EF confirmar) — para um dia já pago, esse número nunca correspondia a nada real, porque
+  `complete_challenge` (correctamente idempotente por dia) devolvia o resultado antigo em cache sem
+  somar XP outra vez. Fix: `start_challenge` devolve `409 ALREADY_COMPLETED` quando o dia já está
+  feito, em vez de reabrir o payload.
+- Bónus relacionado: o ecrã de milestone a meio da sessão (Q25%/50%/75%) calcula os checkpoints como
+  percentagem de `totalQuestions` — com `CHALLENGE.TOTAL_QUESTIONS=5` (config DEV), isso colapsa para
+  disparar a quase cada pergunta, e a tela é visualmente quase idêntica à de conclusão real (fundo
+  cheio, confetti, badge XP, um botão "Continuar") — fácil de confundir com "já acabei" e sair a meio
+  sem completar. Guard aplicado: milestone só é avaliado com `totalQuestions >= 10`.
+
+**Regra geral daqui para a frente:** qualquer número de progressão (XP, nível, streak) no ecrã tem de
+vir do resultado confirmado do servidor, ou estar claramente rotulado como provisório/em curso — nunca
+um valor calculado no cliente apresentado como se já fosse definitivo. Ver também memória global
+`feedback-xp-realtime-truth`.

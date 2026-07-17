@@ -8,14 +8,64 @@
 
 ### 🟢 Em curso
 ```
-ESTADO: LIVRE — redesenho de XP concluído, commitado (b57e502) e pushed.
+ESTADO: LIVRE — redesenho de XP + 3 bugs de "XP não reflete a realidade" corrigidos e pushed
+(último commit desta sessão: 266327f, depois só docs/memória).
 DÍVIDA: expo-router 5→6 desalinhado com SDK 54.
 DÍVIDA: 3 erros TypeScript pré-existentes (friends.tsx: Image, social_enabled; ranking.tsx: social_enabled).
-NOTA: working tree tem trabalho social/sons em curso (não desta sessão, não tocado) —
-app.json, _layout.tsx, CompletedScreen/CorrectOverlay/LevelUpModal/StatusScreens/TrophyEarnedModal,
-social.service.ts, src/components/social/, sound.service.ts, assets/sounds/*.mp3 — por commitar
-por quem estiver a fazer esse trabalho.
+NOTA: working tree continua a ter trabalho social/sons em curso doutra sessão, não tocado —
+app.json, _layout.tsx, vários components/challenge/*, social.service.ts, src/components/social/,
+sound.service.ts, assets/sounds/*.mp3, scripts/, src/constants/version.ts — por commitar por quem
+estiver a fazer esse trabalho.
 ```
+
+---
+
+### ✅ Concluído (sessão 13 cont. — 2026-07-17) — 3 bugs de "XP não bate" encontrados a testar o redesenho
+
+Depois do redesenho de XP (abaixo), o user testou em 2 devices físicos e encontrou 3 sintomas do
+mesmo padrão — número mostrado ao user divergia do que o servidor realmente tinha gravado.
+Princípio confirmado pelo user, guardado em memória (`.ai/feedback-tech-approach.md` +
+memória global `feedback-xp-realtime-truth`): **XP tem sempre de refletir a realidade do servidor
+em tempo real, nunca um número optimista local apresentado como definitivo.**
+
+1. **`complete_challenge` nunca devolvia `xp_total`** (commit `fcaf467`) — calculava e gravava o
+   novo total cumulativo em `child_profiles`, mas a resposta só tinha `xp_earned` (o ganho *daquela
+   sessão*). Cliente usava esse valor por engano para sobrescrever o total cumulativo cacheado
+   localmente (`activeChild` em AsyncStorage) — sintoma: "900xp" e "120xp" a aparecerem para a mesma
+   criança em ecrãs diferentes. Fix: EF devolve `xp_total`; cliente usa-o em vez de
+   `result.session.xp_awarded`.
+
+2. **Card "Desafio de hoje" na home estava hardcoded** (commit `12fb495`) — sempre "0/5 questões" +
+   badge "HOJE" + botão "Iniciar Desafio", nunca lia se o dia já estava concluído. `ChildStats` ganhou
+   `todayCompleted` (derivado do merge de `calendar_days` + completions locais já calculado em
+   `fetchStats`, sem query extra); card alterna badge/progresso/CTA conforme o estado real.
+
+3. **Milestone (Q25/50/75%) disparava a quase cada pergunta em DEV** (commit `7529d0d`) — checkpoints
+   calculados como percentagem de `totalQuestions`; com `CHALLENGE.TOTAL_QUESTIONS=5` (config DEV),
+   colapsam para as perguntas 1/2/3. A tela de milestone é visualmente quase idêntica à de conclusão
+   real (fundo cheio, confetti, badge XP, um botão "Continuar") — fácil de sair a meio pensando que
+   já tinha acabado. Fix: milestone só é avaliado com `totalQuestions >= 10`.
+
+4. **`start_challenge` reabria um dia já concluído** (commit `266327f`) — só verificava se
+   `questions_payload` existia, não `status`. Sintoma final: user respondeu tudo certo, ecrã de
+   conclusão mostrou "+24 XP" (cálculo local optimista, `sessionXp + bonuses`, computado ANTES da
+   resposta do servidor), mas o saldo nunca mudou — porque `complete_challenge`, correctamente
+   idempotente por dia, devolvia o resultado antigo em cache sem somar XP outra vez para um dia já
+   pago. Fix: `start_challenge` devolve `409 ALREADY_COMPLETED` (com `correctCount`/`xpAwarded`/
+   `isPerfect` da sessão original) em vez de reabrir o payload; `challenge.service.ts` propaga o
+   código de erro real da EF (padrão já usado em `social.service.ts` para `send_friend_request`);
+   ecrã de desafio mostra alerta claro e volta para trás em vez de simular gameplay sem efeito.
+
+**Também:** banner "XP desta sessão: N" visível durante o jogo (distinto do saldo geral) + aviso de
+saída (botão X) menciona o XP que se perde ao sair a meio — commit `09c2258`.
+
+**Todas as EFs afectadas (`complete_challenge`, `start_challenge`) re-deployadas via
+`supabase functions deploy <nome> --use-api`.** Mudanças de app são só JS/i18n — Metro reload chega,
+sem rebuild nativo.
+
+**Não testado E2E de novo depois do fix #4** — recomendado antes de dar como fechado: fazer um dia em
+atraso completo (ex: 15/07 ou 14/07 pendentes na lista de retroactive) e confirmar que `xp_total` sobe
+o valor certo (2/questão + 4 completar + 10 se perfeito).
 
 ---
 
