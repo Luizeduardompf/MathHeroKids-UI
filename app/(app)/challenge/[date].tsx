@@ -775,6 +775,15 @@ export default function ChallengeScreen() {
           totalQuestions: questions.length,
         });
       } catch (e) {
+        if ((e as Error).message === 'ALREADY_COMPLETED') {
+          storeActions.reset();
+          Alert.alert(
+            t('challenge.alreadyCompletedTitle'),
+            t('challenge.alreadyCompletedMessage'),
+            [{ text: t('common.ok'), onPress: () => router.back() }],
+          );
+          return;
+        }
         console.error('[Challenge] start_challenge falhou:', e);
         storeActions.setPhase('error');
       }

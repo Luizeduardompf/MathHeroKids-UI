@@ -223,6 +223,8 @@
     "errorRetry": "Try again",
     "offlineTitle": "No internet",
     "offlineMsg": "Milo needs internet to prepare your challenge. Connect and try again.",
+    "alreadyCompletedTitle": "Challenge already done",
+    "alreadyCompletedMessage": "This day is already done — the XP was already counted. Come back tomorrow to earn more!",
     "celebration": {
       "title": "Trophy Earned!",
       "subtitle": "You completed today's challenge!"

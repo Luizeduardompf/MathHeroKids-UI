@@ -70,9 +70,17 @@ Deno.serve(async (req: Request) => {
     // Idempotencia: 1) por session_id (mesmo cliente)
     const { data: existing } = await supabase
       .from('challenge_sessions')
-      .select('id, status, questions_payload, rules_version')
+      .select('id, status, questions_payload, rules_version, correct_count, xp_awarded, is_perfect')
       .eq('id', session_id)
       .maybeSingle();
+
+    if (existing?.status === 'completed') {
+      return jsonError(409, 'ALREADY_COMPLETED', 'Este desafio ja foi concluido.', {
+        correctCount: existing.correct_count,
+        xpAwarded: existing.xp_awarded,
+        isPerfect: existing.is_perfect,
+      });
+    }
 
     if (existing?.questions_payload) {
       return jsonOk({
@@ -87,11 +95,21 @@ Deno.serve(async (req: Request) => {
     // Inclui sessoes sem payload (criadas por tentativas anteriores que falharam a meio).
     const { data: existingByDate } = await supabase
       .from('challenge_sessions')
-      .select('id, status, questions_payload, rules_version')
+      .select('id, status, questions_payload, rules_version, correct_count, xp_awarded, is_perfect')
       .eq('child_id', child_id)
       .eq('challenge_date', challenge_date)
       .eq('module_id', module_id)
       .maybeSingle();
+
+    // Dia ja concluido: recusar reabertura — nao ha XP a ganhar de novo e as
+    // perguntas seriam as mesmas (o filho estaria so a repetir sem efeito real).
+    if (existingByDate?.status === 'completed') {
+      return jsonError(409, 'ALREADY_COMPLETED', 'Este desafio ja foi concluido.', {
+        correctCount: existingByDate.correct_count,
+        xpAwarded: existingByDate.xp_awarded,
+        isPerfect: existingByDate.is_perfect,
+      });
+    }
 
     // Se ja tem payload: retornar directamente
     if (existingByDate?.questions_payload) {
@@ -195,8 +213,8 @@ function jsonOk(body: unknown) {
   });
 }
 
-function jsonError(status: number, code: string, message: string) {
-  return new Response(JSON.stringify({ error: code, message }), {
+function jsonError(status: number, code: string, message: string, extra?: Record<string, unknown>) {
+  return new Response(JSON.stringify({ error: code, message, ...extra }), {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });

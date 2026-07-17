@@ -230,6 +230,8 @@
     "errorRetry": "Tentar novamente",
     "offlineTitle": "Sem internet",
     "offlineMsg": "O Milo precisa de internet para preparar o teu desafio. Liga a conexão e tenta de novo.",
+    "alreadyCompletedTitle": "Desafio já concluído",
+    "alreadyCompletedMessage": "Este dia já foi feito — o XP já foi contado. Volta amanhã para ganhares mais!",
     "celebration": {
       "title": "Troféu Conquistado!",
       "subtitle": "Você completou o desafio de hoje!"

@@ -72,7 +72,19 @@ export const challengeService = {
       },
     );
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      // Parseia FunctionsHttpError.context para expor o código de erro real da EF
+      // (ex: ALREADY_COMPLETED — cliente decide como apresentar).
+      let code = error.message;
+      try {
+        const ctx = (error as { context?: Response }).context;
+        if (ctx) {
+          const body = await ctx.clone().json() as { error?: string };
+          if (body.error) code = body.error;
+        }
+      } catch { /* usar mensagem default */ }
+      throw new Error(code);
+    }
     if (!data) throw new Error('errors.generic');
 
     return data;
