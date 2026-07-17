@@ -240,6 +240,7 @@ Deno.serve(async (req: Request) => {
       return jsonOk({
         session,
         xp_earned: session.xp_awarded,
+        xp_total: session.child_profiles.xp_total,
         level_up: false,
         new_level: session.child_profiles.level,
         unlocked_reward: null,
@@ -524,6 +525,7 @@ Deno.serve(async (req: Request) => {
     return jsonOk({
       session: updatedSession ?? { id: session_id, status: 'completed', correct_count: correctCount, xp_awarded: totalXpEarned, is_perfect: isPerfect },
       xp_earned: totalXpEarned,
+      xp_total: newXpTotal,
       level_up: levelUp,
       new_level: levelUp ? newLevel : null,
       unlocked_reward: unlockedReward,

@@ -853,7 +853,7 @@ export default function ChallengeScreen() {
         answers: allAnswers,
       });
       useProfileStore.getState().updateChildXp(
-        result.session.xp_awarded,
+        result.xp_total,
         result.new_level ?? child.level,
       );
       storeActions.reset();

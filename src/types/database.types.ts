@@ -201,6 +201,8 @@ export interface NotificationPreferences {
 export interface CompleteChallengeResponse {
   session: ChallengeSession;
   xp_earned: number;
+  /** Novo total cumulativo de XP da criança (child_profiles.xp_total já actualizado). */
+  xp_total: number;
   level_up: boolean;
   new_level: number | null;
   unlocked_reward: LevelReward | null;
