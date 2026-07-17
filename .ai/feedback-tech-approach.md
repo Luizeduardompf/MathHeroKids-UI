@@ -289,6 +289,23 @@ um valor calculado no cliente apresentado como se já fosse definitivo. Ver tamb
 
 ---
 
+**Cuidado ao testar aleatoriedade do `question-selector.ts` com uma criança nova e poucas sessões —
+o "ciclo" de resultados repetidos pode ser o `crossSessionCooldown` a funcionar, não um bug de RNG.**
+(sessão 15, 2026-07-17)
+- Com uma criança nível 1 (só T1+T2 desbloqueados = 19+30 factos) e mastery vazio, todas as buckets
+  WEAK/LEARNING/REVIEWING/MASTERED ficam vazias — a seleção reduz-se a "os N primeiros do bucket NEW
+  ordenados por tiebreak seedado". `crossSessionCooldown=2` exclui os factos das últimas 2 sessões;
+  com um pool pequeno, isto faz o conjunto de "disponíveis após exclusão" ciclar rapidamente entre
+  poucas combinações — parece determinístico mesmo com RNG genuinamente aleatório.
+- Antes de assumir bug de RNG: testar directo a Edge Function via `curl` com `session_id` e
+  `challenge_date` genuinamente novos (nunca usados antes por aquela criança) — se as combinações
+  variarem aí, o RNG está correcto e o que se viu no Simulator foi idempotência (`start_challenge`
+  devolve o payload já persistido se a sessão daquele dia já existir) ou exaustão do pool pequeno.
+- `mulberry32(seedFromString(seed))` foi validado directamente em Node com UUIDs reais — seeds
+  diferentes dão sequências e *rankings relativos* bem diferentes; o algoritmo em si não tem bug.
+
+---
+
 **Cuidado com `useEffect` de init que tem `phase` (ou qualquer campo que `reset()` também mexe) na
 dependency array E chama `storeActions.reset()` dentro do próprio handler.** (sessão 13, mesmo dia)
 O fix do `ALREADY_COMPLETED` acima introduziu um loop infinito real (app travava): `handleComplete()`

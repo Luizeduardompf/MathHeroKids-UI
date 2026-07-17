@@ -4,19 +4,104 @@
 
 ---
 
-## Estado actual — 2026-07-17 (sessão 14)
+## Estado actual — 2026-07-17 23:58 (sessão 15)
 
 ### 🟢 Em curso
 ```
-ESTADO: LIVRE — feature "eliminar filho definitivamente" (parent-area) implementada, deployada e a
-ser commitada nesta sessão.
-DÍVIDA: expo-router 5→6 desalinhado com SDK 54.
-DÍVIDA: 3 erros TypeScript pré-existentes (friends.tsx: Image, social_enabled; ranking.tsx: social_enabled).
-NÃO TESTADO NO SIMULATOR/DEVICE — só validação estática (type-check limpo nos ficheiros tocados).
-Recomendado antes de fechar: testar o fluxo completo (parent-area → editar filho → zona de perigo →
-escrever @username → confirmar → verificar que a criança desaparece da lista e, se era a activa, que
-o app volta ao seletor de perfis).
+ESTADO: A MEIO — redesenho do motor de questões (pedido grande do user, 8 pontos).
+Tag de segurança: v1.3-pre-question-engine-v2 (antes de qualquer alteração desta sessão).
+
+Roadmap de 5 fases (todas as fases commitadas + pushed para origin/main, exceto onde indicado):
+  Fase B — Randomização real + retest imediato de erros: ✅ COMPLETA, testada no Simulator + EF direta.
+  Fase C — question_count por criança ligado end-to-end: ✅ COMPLETA, testada no Simulator.
+  Fase D — Timer automático que reduz com o nível: ⏳ POR FAZER (próximo passo).
+  Fase E — Adição/subtração/divisão + modo misto: ⏳ POR FAZER (maior fase, schema novo).
+  Fase F — Docs, versão, testes de regressão: ⏳ POR FAZER.
+
+Testadao (@tesgado) é uma criança de teste criada nesta sessão para iterar rápido (question_count=5,
+timer_seconds=0/∞) — tem várias challenge_sessions "in_progress" órfãs de datas de Junho/Julho
+(criadas por automação de teste, algumas por um bug de simulador descrito abaixo) — inofensivo,
+dados de teste, não apagar sem necessidade mas também não é preciso preservar.
 ```
+
+### ⚠️ Achado nesta sessão — simulador "iPhone 17" ficou preso após reload, possível bug de navegação
+
+Durante os testes desta sessão, o simulador "iPhone 17" (não o "iPhone 17 Pro") ficou com um toast
+"The action 'GO_BACK' was not handled by any navigator" e um spinner infinito depois de um `cmd+r`.
+Nos minutos seguintes apareceram 7 `challenge_sessions` "in_progress" para Testadao em datas de Junho/
+Julho diferentes, todas criadas em ~90 segundos — sem eu ter navegado manualmente por essas datas.
+**Não investigado a fundo** (o simulador "iPhone 17 Pro" funcionava bem e foi o que usei para todos os
+testes reais) — pode ser só o app a tentar reconectar a um Metro morto em loop, ou pode ser um bug real
+de navegação retroativa a criar sessões para múltiplos dias em sequência. Se reaparecer, vale a pena
+investigar `app/(app)/challenge/[date].tsx` `init()` e o fluxo de "recuperar dias em atraso" no
+calendário/home. Não bloqueou o trabalho porque o outro simulador reconectou bem.
+
+---
+
+### ✅ Concluído (sessão 15 — 2026-07-17) — Fases B+C do redesenho do motor de questões
+
+**Pedido do user:** análise completa como "desenvolvedor arquiteto senior" ao motor de questões —
+8 pontos (aleatoriedade real, retest de erros, question count configurável, dificuldade progressiva
+por nível, timer que reduz com o nível, +soma/subtração/divisão com modo misto, sistema tipo Duolingo,
+tag de segurança antes de mudar). Trabalho autónomo enquanto o user estava fora — acesso ao Simulator +
+clipboard concedido via `request_access` no início da sessão.
+
+**Antes de começar:** encontradas ~1130 linhas não commitadas de sessões anteriores (ranking realtime
++ retest, sons, calendário retroativo) que o handoff nunca mencionou — commitadas em 4 commits lógicos
+(`f202432`, `69c243e`, `22ad0c1`, `3e5ac6b`) e pushed antes de tocar em código novo. Tag
+`v1.3-pre-question-engine-v2` criada a seguir, como baseline de rollback.
+
+**Causa raiz dos 2 bugs principais reportados pelo user:**
+1. **"Sempre a mesma ordem"** — `question-selector.ts` não tinha NENHUMA fonte de aleatoriedade.
+   `interleaveByDifficulty()` e os desempates de sort (`hash(a.id)`) eram 100% deterministos — para o
+   mesmo estado de mastery, a ordem nunca mudava, mesmo em sessões diferentes.
+2. **"Reiniciar bloco repete igual"** — `retryBlock()` em `challenge.store.ts` reaproveitava o mesmo
+   array `questions` já buscado no início da sessão, sem nunca reembaralhar.
+
+**Fix (commit `909ec25`):**
+- `question-selector.ts`: PRNG mulberry32 seedado por `session_id` — tie-breaks e ordem final
+  (`seededShuffle`) passam a variar por sessão; resume da mesma sessão continua estável (mesma seed).
+- `retryBlock()`: reembaralha as questões do bloco (Fisher-Yates) em vez de repetir a ordem.
+- Fila de reteste (`retestQueue`/`retestQuestionIndex` no store): quando o filho erra e escolhe
+  "Continuar" (sem retry), a questão fica marcada e reaparece no fim da sessão antes de completar —
+  header muda para "🔁 Vamos rever!". Testado end-to-end no Simulator: sessão de 5 perguntas, 1 erro
+  "continuado", reapareceu correctamente no fim, acertar nessa 2ª vez contou para o bónus "perfeito".
+- `child_profiles.question_count` (migration 011) ligado end-to-end — `start_challenge` lê o valor real
+  da criança em vez do fixo de `adaptive-rules.json`. O picker já existia na UI (parent-area E também
+  num `ChildSettingsCard` morto em settings.tsx — ver issue abaixo) mas escrevia só em AsyncStorage,
+  completamente desligado do motor.
+- Migration 011 também corrigiu CHECK constraints latentes (`question_index between 0 and 19`,
+  `block_number between 1 and 4`) que já estavam desalinhados com `QUESTION_COUNT_OPTIONS` incluir 25
+  — nunca disparou porque question_count nunca era lido, mas ia rebentar assim que fosse.
+- Reverte flags DEV (`TOTAL_QUESTIONS=5`→20, `BLOCKS_PER_SESSION` removido) — question_count real
+  torna o atalho de teste desnecessário.
+
+**Achado durante o teste (não é bug, é comportamento esperado):** testando rapidamente com uma criança
+nova (Testadao, nível 1, só T1+T2 desbloqueados), pareceu que a mesma combinação de 5 factos repetia em
+padrão de período 3 entre sessões — pareceu um bug de RNG. Isolado com testes directos ao PRNG (Node) e
+chamadas directas à Edge Function via curl com datas/seeds genuinamente novas: a aleatoriedade está
+correcta (5 datas novas → 5 combinações diferentes). A causa real: `crossSessionCooldown=2` +
+pool pequeno (19 factos T1, quotas concentradas no bucket NEW porque a criança não tem mastery
+nenhuma ainda) faz o conjunto de "factos disponíveis após exclusão" ciclar rapidamente — e o teste
+apanhou uma sessão retroativa (dia 16) que já tinha um payload cacheado de uma tentativa anterior
+(idempotência a funcionar correctamente, não a repetir por bug). Não é preciso ajustar
+`crossSessionCooldown` agora — registado aqui para não se confundir com um bug real numa sessão futura.
+
+**Issue nova encontrada (não corrigida, fora do âmbito):** `ChildSettingsCard` em
+`app/(app)/(tabs)/settings.tsx` (linhas ~280-438) está completamente morto — define pickers de
+timer/tabuadas/nº de questões só ligados a `childService.updateChild`, mas nunca é renderizado em
+lado nenhum (só `<ChildrenInfoCard />`, versão só-leitura, aparece no render de `SettingsScreen`).
+Sinalizado como spawn_task (`task_a3242239`) para remoção numa sessão separada.
+
+**Validação:** `npx tsc --noEmit` limpo (só os 3 erros pré-existentes de friends.tsx/ranking.tsx,
+`Image`/`social_enabled`, confirmados no `git log` como não desta sessão). Testado no Simulator
+(iPhone 17 Pro) com criança de teste: question_count=5 aplicado, sessão completa, retry de bloco
+reembaralhado, retest de erro no fim da sessão, XP/nível actualizados correctamente.
+
+**Deploy:** `start_challenge` re-deployada (`supabase functions deploy start_challenge --use-api`).
+Migration 011 aplicada directo ao DB linked via `supabase db query --linked -f`.
+
+**Próximo passo:** Fase D (timer automático por nível) — ver roadmap em "Em curso" acima.
 
 ---
 
@@ -642,28 +727,32 @@ Se persistir cache Xcode: `rm -rf ~/Library/Developer/Xcode/DerivedData`.
 - Avatares PNG ~1.2 MB — optimizar para ≤200 KB antes de produção
 - `friends/list.tsx`: "Nível X" nos sub-labels ainda hardcoded
 - **`expo-router ~5.0.0` desalinhado** — SDK 54 fixa `~6.0.24`. Migração v5→v6 pendente (breaking changes de routing). Correr `npx expo install --check` para listar todos os pacotes fora do pin.
+- **`ChildSettingsCard` morto em `settings.tsx`** (linhas ~280-438) — nunca renderizado, duplica a
+  funcionalidade viva de `parent-area/child/[id].tsx`. Sinalizado como spawn_task `task_a3242239`.
+- **Simulador "iPhone 17" com `GO_BACK` não tratado + spinner infinito** após `cmd+r` (sessão 15) —
+  gerou 7 `challenge_sessions` órfãs para uma criança de teste em datas diferentes em ~90s. Não
+  reproduzido de forma controlada; ver nota completa na sessão 15 acima antes de investigar.
 
 ---
 
 ### ⏭️ Próximos passos (por prioridade)
 
-**A — Testar Phase 2.5 + Phase 3 end-to-end no Simulator:**
-- Completar um challenge → verificar que `complete_challenge` atualiza mastery
-- Verificar Level Up modal se XP suficiente
-- Verificar TrophyEarnedModal (firstChallenge achievement deve disparar)
-- Testar trophy-room, achievements, rewards screens com dados reais
-- Testar tela offline (desligar WiFi)
+**A — Continuar o redesenho do motor de questões (sessão 15, em curso):**
+- Fase D — timer automático que reduz com o nível (coluna `timer_auto`, `resolveTimerSeconds(level)`)
+- Fase E — adição/subtração/divisão + modo misto (maior fase: generalizar `multiplication_facts` →
+  `arithmetic_facts` com coluna `operation`, gerar catálogos novos com tiers de dificuldade próprios,
+  `enabled_operations`/`mix_operations` em `child_profiles`, seletor de operação pré-desafio)
+- Fase F — docs (`adaptive-multiplication-system.md` → generalizar), version bump, testes de
+  regressão completos no Simulator
 
-**B — Phase 4 — Calendar:**
-- Calendar screen com estados reais (completed, failed, in_progress, perfect)
-- Retroactive challenge flow
-- Ver `docs/implementation-phases.md`
+**B — Phase 4 — Calendar (pendente de sessões anteriores, ainda válido):**
+- Retroactive challenge flow — já em uso, mas revisitar após a Fase E (múltiplas operações por dia)
 
 **C — Push notifications em device:**
 - Mac Terminal: `bash .scripts/setup-push-notifications.sh`
 - EAS build Android (gratuito)
 
-**D — Issues conhecidos:**
+**D — Issues conhecidos (ver lista completa acima):**
 - `expo-av` incompatível com SDK — sons comentados com TODO
 - `friends/list.tsx`: "Nível X" nos sub-labels ainda hardcoded
 - Git locks virtiofs: usar `/tmp` clone para commits (ver workaround em CLAUDE.md)
