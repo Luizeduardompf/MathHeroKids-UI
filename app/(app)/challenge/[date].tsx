@@ -952,7 +952,12 @@ export default function ChallengeScreen() {
   // ─── Correct overlay — CorrectOverlay com confetti animado ─────────────────
 
   if (phase === 'correct') {
-    return <CorrectOverlay xpGain={CHALLENGE.XP_PER_CORRECT_ANSWER} />;
+    return (
+      <CorrectOverlay
+        xpGain={CHALLENGE.XP_PER_CORRECT_ANSWER}
+        onContinue={() => storeActions.setPhase('playing')}
+      />
+    );
   }
 
   // ─── Milestone — full screen colored with Milo ────────────────────────────
@@ -1085,18 +1090,22 @@ export default function ChallengeScreen() {
         }}
       />
 
-      {/* Retroactive banner */}
-      {isRetroactive && (
-        <View style={gs.retroBanner}>
-          <Ionicons name="time-outline" size={14} color="#92400E" />
-          <Text style={gs.retroBannerText}>{t('challenge.retroactive.xpOnly')}</Text>
-        </View>
-      )}
-      {/* XP desta sessão — provisório, só é gravado no saldo geral ao concluir */}
-      {sessionXp > 0 && (
-        <View style={gs.sessionXpBanner}>
-          <Ionicons name="flash" size={14} color="#1E40AF" />
-          <Text style={gs.sessionXpBannerText}>{t('challenge.sessionXp', { xp: sessionXp })}</Text>
+      {/* Banners: retroativo + XP da sessão, lado a lado numa única linha */}
+      {(isRetroactive || sessionXp > 0) && (
+        <View style={gs.bannerRow}>
+          {isRetroactive && (
+            <View style={gs.retroBanner}>
+              <Ionicons name="time-outline" size={14} color="#92400E" />
+              <Text style={gs.retroBannerText}>{t('challenge.retroactive.xpOnly')}</Text>
+            </View>
+          )}
+          {/* XP desta sessão — provisório, só é gravado no saldo geral ao concluir */}
+          {sessionXp > 0 && (
+            <View style={gs.sessionXpBanner}>
+              <Ionicons name="flash" size={14} color="#1E40AF" />
+              <Text style={gs.sessionXpBannerText}>{t('challenge.sessionXp', { xp: sessionXp })}</Text>
+            </View>
+          )}
         </View>
       )}
       <ConfirmDialog
@@ -1355,6 +1364,16 @@ const gs = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  // Linha com os banners de retroativo + XP da sessão, lado a lado
+  bannerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 8,
+  },
+
   // Retroactive challenge banner (shown when date != today)
   retroBanner: {
     flexDirection: 'row',
@@ -1364,8 +1383,6 @@ const gs = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 5,
-    alignSelf: 'center',
-    marginBottom: 8,
   },
   retroBannerText: {
     fontFamily: fontFamily.semiBold,
@@ -1382,8 +1399,6 @@ const gs = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 5,
-    alignSelf: 'center',
-    marginBottom: 8,
   },
   sessionXpBannerText: {
     fontFamily: fontFamily.semiBold,

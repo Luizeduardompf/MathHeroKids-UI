@@ -10,8 +10,9 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, Text as RNText, View } from 'react-native';
+import { Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -137,7 +138,8 @@ function ConfettiLayer({ fallDistance }: { fallDistance: number }) {
 
 // ─── CorrectOverlay ───────────────────────────────────────────────────────────
 
-export function CorrectOverlay({ xpGain = 10 }: { xpGain?: number }) {
+export function CorrectOverlay({ xpGain = 10, onContinue }: { xpGain?: number; onContinue: () => void }) {
+  const { t } = useTranslation();
   const circleScale  = useSharedValue(0);
   const badgeOpacity = useSharedValue(0);
   const badgeY       = useSharedValue(-20);
@@ -207,11 +209,14 @@ export function CorrectOverlay({ xpGain = 10 }: { xpGain?: number }) {
           </Animated.View>
         </View>
 
-        {/* "Acertou!" */}
-        <Animated.View style={textAnim as StyleProp<ViewStyle>}>
+        {/* "Acertou!" + Continuar — deixa a criança avançar sem esperar pelo auto-advance */}
+        <Animated.View style={[s.textCol, textAnim] as StyleProp<ViewStyle>}>
           <RNText style={s.label} numberOfLines={1}>
-            Acertou!
+            {t('challenge.correct')}
           </RNText>
+          <Pressable onPress={onContinue} style={s.continueBtn} hitSlop={12}>
+            <RNText style={s.continueBtnText}>{t('common.continue')}</RNText>
+          </Pressable>
         </Animated.View>
 
       </View>
@@ -289,8 +294,30 @@ const s = StyleSheet.create({
   label: {
     fontFamily:         fontFamily.extraBold,
     fontSize:           38,
+    lineHeight:         46,
     color:              '#166534',
     letterSpacing:      -0.5,
     includeFontPadding: false,
+  },
+
+  textCol: {
+    alignItems: 'center',
+    gap: 20,
+  },
+  continueBtn: {
+    backgroundColor:   '#fff',
+    borderRadius:      999,
+    paddingHorizontal: 32,
+    paddingVertical:   14,
+    shadowColor:       '#166534',
+    shadowOpacity:     0.15,
+    shadowRadius:      8,
+    shadowOffset:      { width: 0, height: 3 },
+    elevation:          3,
+  },
+  continueBtnText: {
+    fontFamily: fontFamily.extraBold,
+    fontSize:   16,
+    color:      '#16A34A',
   },
 });
