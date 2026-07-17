@@ -27,6 +27,7 @@ interface ChildStats {
   perfectWeeks:  number;
   perfectMonths: number;
   challengesDone: number;
+  todayCompleted: boolean;
 }
 
 function isoWeekKey(dateStr: string): string {
@@ -93,11 +94,14 @@ async function fetchStats(childId: string): Promise<ChildStats> {
     if (cnt >= daysInMonth) perfectMonths++;
   }
 
+  const todayDate = new Date().toISOString().split('T')[0]!;
+
   return {
     perfectDays:   perfectDates.size,
     perfectWeeks,
     perfectMonths,
     challengesDone,
+    todayCompleted: completedDates.has(todayDate),
   };
 }
 
@@ -350,9 +354,9 @@ export default function HomeScreen() {
 
           <View style={styles.challengeHeader}>
             <Badge
-              label={t('home.challenge.notStarted')}
-              variant="neutral"
-              icon="sparkles"
+              label={t(stats?.todayCompleted ? 'home.challenge.completed' : 'home.challenge.notStarted')}
+              variant={stats?.todayCompleted ? 'success' : 'neutral'}
+              icon={stats?.todayCompleted ? 'checkmark-circle' : 'sparkles'}
               style={styles.challengeStatusBadge}
             />
             <View style={styles.xpBadge}>
@@ -371,20 +375,25 @@ export default function HomeScreen() {
             Multiplication Mountain
           </Text>
           <Text variant="bodySmall" color="rgba(255,255,255,0.70)">
-            {t('home.challenge.questions', { current: 0, total: CHALLENGE.TOTAL_QUESTIONS })}
+            {t('home.challenge.questions', {
+              current: stats?.todayCompleted ? CHALLENGE.TOTAL_QUESTIONS : 0,
+              total: CHALLENGE.TOTAL_QUESTIONS,
+            })}
           </Text>
           <ProgressBar
-            value={0}
+            value={stats?.todayCompleted ? 1 : 0}
             color="rgba(255,255,255,0.9)"
             trackColor="rgba(255,255,255,0.25)"
             style={{ marginTop: space.xs }}
           />
-          <Button
-            label={t('home.challenge.start')}
-            variant="secondary"
-            onPress={() => router.push(`/(app)/challenge/${todayDate}`)}
-            style={{ marginTop: space.md }}
-          />
+          {!stats?.todayCompleted && (
+            <Button
+              label={t('home.challenge.start')}
+              variant="secondary"
+              onPress={() => router.push(`/(app)/challenge/${todayDate}`)}
+              style={{ marginTop: space.md }}
+            />
+          )}
         </LinearGradient>
 
         {/* Section 4 — Recent Trophies (Phase 3 will populate) */}
