@@ -4,7 +4,7 @@
  * RLS constraints (sem EFs deployadas):
  * - friendships:    SELECT próprias (funciona)
  * - friend_requests: SELECT próprias (funciona)
- * - child_profiles: sem política cross-child — search/ranking requer EF ou política extra
+ * - child_profiles: SELECT própria + amigos (migration 010 — security-definer helpers)
  * - child_xp_ledger: só próprias crianças — ranking de amigos requer EF
  *
  * Block list: stored in AsyncStorage for MVP (Supabase blocked_users table is Phase 5+).
@@ -536,6 +536,40 @@ export const socialService = {
         },
         (payload) => {
           onRequest(payload.new as { id: string; from_child_id: string });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  },
+
+  /**
+   * Realtime: XP do próprio filho ou de um amigo mudou (ranking overtake detection).
+   *
+   * @param ids - ids a vigiar (o próprio filho + amigos)
+   * @param onUpdate - callback com o id e o xp_total novo
+   * @returns unsubscribe function — call on unmount
+   */
+  subscribeToRankingChanges(
+    ids: string[],
+    onUpdate: (row: { id: string; xp_total: number }) => void,
+  ): () => void {
+    if (ids.length === 0) return () => {};
+
+    const channel: RealtimeChannel = supabase
+      .channel(`ranking_${ids[0]}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'child_profiles',
+          filter: `id=in.(${ids.join(',')})`,
+        },
+        (payload) => {
+          onUpdate(payload.new as { id: string; xp_total: number });
         },
       )
       .subscribe();

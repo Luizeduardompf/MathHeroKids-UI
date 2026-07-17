@@ -21,12 +21,19 @@ import Animated, {
 
 import { Avatar } from '@/components/ui/Avatar';
 import { Text } from '@/components/ui/Text';
-import { useSocialAlertStore } from '@/stores/social-alert.store';
+import { useSocialAlertStore, type SocialAlertKind } from '@/stores/social-alert.store';
 import { colors, fontFamily, radius, shadows } from '@/theme';
 
 const AUTO_DISMISS_MS = 5000;
 const SPRING = { damping: 12, stiffness: 260, mass: 0.8 };
 const HIDDEN_Y = -160;
+
+const ALERT_ICONS: Record<SocialAlertKind, React.ComponentProps<typeof Ionicons>['name']> = {
+  message: 'chatbubble',
+  friend_request: 'person-add',
+  ranking_overtaken: 'trending-down',
+  ranking_overtook: 'trophy',
+};
 
 export function TopAlert(): React.JSX.Element {
   const current = useSocialAlertStore((s) => s.current);
@@ -82,7 +89,7 @@ export function TopAlert(): React.JSX.Element {
             <View style={styles.textBlock}>
               <View style={styles.titleRow}>
                 <Ionicons
-                  name={current.kind === 'message' ? 'chatbubble' : 'person-add'}
+                  name={ALERT_ICONS[current.kind]}
                   size={13}
                   color={colors.accent}
                 />

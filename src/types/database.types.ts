@@ -101,6 +101,7 @@ export interface CalendarDay {
   day_date: string; // ISO date
   state: CalendarDayState;
   is_perfect: boolean;
+  is_retroactive: boolean;
   session_id: string | null;
 }
 

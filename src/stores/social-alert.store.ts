@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { AvatarId } from '@/constants/config';
 
-export type SocialAlertKind = 'message' | 'friend_request';
+export type SocialAlertKind = 'message' | 'friend_request' | 'ranking_overtaken' | 'ranking_overtook';
 
 export interface SocialAlertItem {
   /** Dedupe key — e.g. `msg_${fromId}` or `req_${requestId}`. */

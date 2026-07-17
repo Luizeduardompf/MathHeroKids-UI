@@ -5,7 +5,7 @@
  * - Header fixo: avatar + nome + XP bar
  * - MiloMessage contextual
  * - Stats row: Sequência + Recorde
- * - Mês actual + 3 meses anteriores (lista vertical)
+ * - Mês actual + pelo menos 2 anteriores, mais qualquer mês antigo com dia concluído (scroll horizontal)
  * - Legenda: Perfeito | Concluído | Perdido | Bloqueado
  * - "Seu progresso": ring mensal + barra semanal + troféu mensal + XP mês
  */
@@ -19,6 +19,8 @@ import {
   Text as RNText,
   View,
 } from 'react-native';
+// @ts-expect-error RN 0.85 — Dimensions presente em runtime mas TS quirk
+import { Dimensions } from 'react-native'; // eslint-disable-line
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -37,21 +39,20 @@ import type { CalendarDay } from '@/types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MONTHS_TO_SHOW = 4;
-const DAY_SIZE       = 44;
+const MIN_MONTHS_SHOWN = 3; // actual + pelo menos 2 anteriores, mesmo sem actividade
+const DAY_SIZE         = 44;
+const SCREEN_WIDTH     = (Dimensions as { get: (s: string) => { width: number; height: number } }).get('window').width;
+
+// Peek de mês adjacente: sugere ao utilizador que o calendário desliza na horizontal
+const CONTENT_PADDING = 20;
+const MONTH_GAP       = 10;
+const MONTH_PEEK      = 16;
+const MONTH_CARD_WIDTH = SCREEN_WIDTH - CONTENT_PADDING - MONTH_GAP - MONTH_PEEK;
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
 function toISO(d: Date): string {
   return d.toISOString().split('T')[0]!;
-}
-
-function monthsToShow(): Array<{ year: number; month: number }> {
-  const now = new Date();
-  return Array.from({ length: MONTHS_TO_SHOW }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    return { year: d.getFullYear(), month: d.getMonth() };
-  });
 }
 
 // ─── Supabase + local query ───────────────────────────────────────────────────
@@ -60,6 +61,7 @@ interface SessionFallback {
   challenge_date: string;
   status: string;
   is_perfect: boolean;
+  is_retroactive: boolean;
 }
 
 interface CalendarData {
@@ -71,30 +73,26 @@ interface CalendarData {
 
 async function fetchCalendarData(childId: string): Promise<CalendarData> {
   const now        = new Date();
-  const rangeEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const rangeStart = new Date(now.getFullYear(), now.getMonth() - (MONTHS_TO_SHOW - 1), 1);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
+  // Sem limite inferior de data: precisamos de todo o histórico para detectar
+  // meses antigos com pelo menos 1 dia concluído, mesmo fora da janela recente.
   const [calResult, sessResult, xpResult, localComps] = await Promise.all([
     supabase
       .from('calendar_days')
       .select('*')
-      .eq('child_id', childId)
-      .gte('day_date', toISO(rangeStart))
-      .lte('day_date', toISO(rangeEnd)),
+      .eq('child_id', childId),
     supabase
       .from('challenge_sessions')
-      .select('challenge_date, status, is_perfect')
+      .select('challenge_date, status, is_perfect, is_retroactive')
       .eq('child_id', childId)
-      .eq('status', 'completed')
-      .gte('challenge_date', toISO(rangeStart))
-      .lte('challenge_date', toISO(rangeEnd)),
+      .eq('status', 'completed'),
     supabase
       .from('child_xp_ledger')
       .select('amount')
       .eq('child_id', childId)
       .gte('created_at', monthStart.toISOString()),
-    challengeService.getLocalCompletions(childId, toISO(rangeStart), toISO(rangeEnd)),
+    challengeService.getLocalCompletions(childId),
   ]);
 
   const monthlyXp = ((xpResult.data ?? []) as Array<{ amount: number }>)
@@ -123,10 +121,12 @@ function buildDayGrid(
   const sessByDate  = new Map<string, SessionFallback>(sessions.map((s) => [s.challenge_date, s]));
   const localByDate = new Map<string, LocalCompletion>(localComps.map((c) => [c.challengeDate, c]));
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const startDow    = new Date(year, month, 1).getDay();
 
-  const cells: Array<DayInfo | null> = Array(startDow).fill(null);
-  for (let d = 1; d <= daysInMonth; d++) {
+  // Mês exibido do fim para o início (dia mais recente primeiro), sem alinhamento
+  // por dia da semana — a grelha de 7 colunas é apenas uma sequência de dias, não
+  // um calendário de semanas.
+  const cells: Array<DayInfo | null> = [];
+  for (let d = daysInMonth; d >= 1; d--) {
     const dateStr  = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const calDay   = byDate.get(dateStr);
     const session  = sessByDate.get(dateStr);
@@ -134,11 +134,12 @@ function buildDayGrid(
 
     let variant: DayVariant;
     if (calDay) {
-      if (calDay.state === 'completed' && calDay.is_perfect) variant = 'perfect';
+      if (calDay.state === 'completed' && calDay.is_retroactive) variant = 'late';
+      else if (calDay.state === 'completed' && calDay.is_perfect) variant = 'perfect';
       else if (calDay.state === 'completed') variant = 'completed';
       else variant = 'failed';
     } else if (session) {
-      variant = session.is_perfect ? 'perfect' : 'completed';
+      variant = session.is_retroactive ? 'late' : session.is_perfect ? 'perfect' : 'completed';
     } else if (localComp) {
       if (localComp.isRetroactive) variant = 'late';
       else variant = localComp.isPerfect ? 'perfect' : 'completed';
@@ -182,11 +183,13 @@ function DayCell({ info, today }: { info: DayInfo | null; today: string }) {
 
   const st = DAY_STYLE[info.variant];
 
-  // Dias clicáveis: passados não completados (failed/missed) + hoje
-  // Retroactive: qualquer dia passado não completado nos últimos 7 dias
+  // Dias clicáveis: hoje + qualquer dia passado não completado (failed/missed/late)
+  // dentro da janela retroativa aceite pela EF start_challenge (RETROACTIVE_WINDOW_DAYS
+  // = 30 em backend/functions/start_challenge/index.ts). Além da janela, a EF recusa
+  // com RETROACTIVE_WINDOW_EXPIRED — não vale a pena mostrar como clicável.
   const isTappable = info.variant === 'today' ||
-    info.variant === 'failed' ||
-    (info.variant === 'missed' && info.dateStr !== undefined && info.dateStr >= getPastCutoff(today));
+    ((info.variant === 'failed' || info.variant === 'missed' || info.variant === 'late') &&
+      info.dateStr >= getRetroactiveCutoff(today));
 
   function handlePress() {
     if (!info?.dateStr) return;
@@ -203,10 +206,19 @@ function DayCell({ info, today }: { info: DayInfo | null; today: string }) {
     );
   }
 
+  // Perdido (failed/missed) ainda dentro da janela de recuperação: destaca com um
+  // contorno âmbar para o utilizador perceber que ainda pode tocar para recuperar.
+  const isRecoverable = isTappable && (info.variant === 'failed' || info.variant === 'missed');
+
   if (isTappable) {
     return (
       <Pressable
-        style={({ pressed }) => [dc.cell, { backgroundColor: st.bg }, pressed && { opacity: 0.75 }]}
+        style={({ pressed }) => [
+          dc.cell,
+          { backgroundColor: st.bg },
+          isRecoverable && dc.recoverableRing,
+          pressed && { opacity: 0.75 },
+        ]}
         onPress={handlePress}
       >
         {st.icon && <Ionicons name={st.icon as never} size={17} color={st.iconColor} />}
@@ -223,9 +235,12 @@ function DayCell({ info, today }: { info: DayInfo | null; today: string }) {
   );
 }
 
-function getPastCutoff(today: string): string {
+// Mesmo valor que RETROACTIVE_WINDOW_DAYS em backend/functions/start_challenge/index.ts
+const RETROACTIVE_WINDOW_DAYS = 30;
+
+function getRetroactiveCutoff(today: string): string {
   const d = new Date(today);
-  d.setDate(d.getDate() - 7);
+  d.setDate(d.getDate() - RETROACTIVE_WINDOW_DAYS);
   return d.toISOString().split('T')[0]!;
 }
 
@@ -234,6 +249,8 @@ const dc = StyleSheet.create({
   num:      { fontFamily: fontFamily.bold, fontSize: 11, lineHeight: 13 },
   todayNum: { fontFamily: fontFamily.extraBold, fontSize: 12, lineHeight: 13, color: '#fff' },
   todayLbl: { fontFamily: fontFamily.extraBold, fontSize: 8,  lineHeight: 10, color: '#fff', letterSpacing: 0.3 },
+  // Contorno de destaque para "Perdido" ainda recuperável (dentro dos RETROACTIVE_WINDOW_DAYS)
+  recoverableRing: { borderWidth: 2.5, borderColor: '#F59E0B' },
 });
 
 // ─── Month calendar card ──────────────────────────────────────────────────────
@@ -245,16 +262,11 @@ function MonthCalendar({ year, month, calDays, sessions, localComps, today }: {
 }) {
   const { t } = useTranslation();
   const monthNames = t('calendar.months', { returnObjects: true }) as unknown as string[];
-  const weekdays   = t('calendar.weekdays', { returnObjects: true }) as unknown as string[];
+  // Dias em ordem invertida (mais recente primeiro), sem alinhamento por semana.
   const grid = buildDayGrid(year, month, calDays, sessions, localComps, today);
   return (
     <View style={mc.card}>
       <Text style={mc.title}>{(monthNames[month] ?? '') + ' ' + year}</Text>
-      <View style={mc.dowRow}>
-        {weekdays.map((lbl, i) => (
-          <RNText key={i} style={mc.dowLbl}>{lbl}</RNText>
-        ))}
-      </View>
       <View style={mc.grid}>
         {grid.map((info, i) => <DayCell key={i} info={info} today={today} />)}
       </View>
@@ -264,8 +276,6 @@ function MonthCalendar({ year, month, calDays, sessions, localComps, today }: {
 const mc = StyleSheet.create({
   card:   { backgroundColor: '#fff', borderRadius: radius['2xl'], padding: 16, ...shadows.md },
   title:  { fontFamily: fontFamily.extraBold, fontSize: 18, color: colors.text.primary, textAlign: 'center', marginBottom: 14 },
-  dowRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 8 },
-  dowLbl: { width: DAY_SIZE, textAlign: 'center', fontFamily: fontFamily.bold, fontSize: 12, color: colors.text.secondary },
   grid:   { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', rowGap: 8 },
 });
 
@@ -343,7 +353,7 @@ function RingProgress({ pct, size = 80, stroke = 9, color = '#22C55E' }: {
       {deg > 180 && (
         <View style={{ position:'absolute', top:0, left:0, width:R, height:size, overflow:'hidden' }}>
           <View style={{
-            position:'absolute', top:0, right:0, width:size, height:size,
+            position:'absolute', top:0, left:0, width:size, height:size,
             borderRadius:R, borderWidth:stroke, borderColor:color,
             transform:[{ rotate:`${leftRot}deg` }],
           }} />
@@ -553,15 +563,18 @@ function LegendRow() {
     { bg: '#E5E7EB', icon: 'lock-closed', label: t('calendar.legend.locked'),    iconColor: '#9CA3AF'  },
   ] as const;
   return (
-    <View style={[s.legend, { flexWrap: 'wrap', justifyContent: 'center', gap: 8 }]}>
-      {items.map((item) => (
-        <View key={item.label} style={s.legendItem}>
-          <View style={[s.legendDot, { backgroundColor: item.bg }]}>
-            <Ionicons name={item.icon as never} size={16} color={item.iconColor} />
+    <View style={{ gap: 6 }}>
+      <View style={[s.legend, { flexWrap: 'wrap', justifyContent: 'center', gap: 8 }]}>
+        {items.map((item) => (
+          <View key={item.label} style={s.legendItem}>
+            <View style={[s.legendDot, { backgroundColor: item.bg }]}>
+              <Ionicons name={item.icon as never} size={16} color={item.iconColor} />
+            </View>
+            <RNText style={s.legendLabel}>{item.label}</RNText>
           </View>
-          <RNText style={s.legendLabel}>{item.label}</RNText>
-        </View>
-      ))}
+        ))}
+      </View>
+      <RNText style={s.legendHint}>{t('calendar.legend.recoverableHint')}</RNText>
     </View>
   );
 }
@@ -574,7 +587,6 @@ export default function CalendarioScreen() {
   const insets       = useSafeAreaInsets();
   const queryClient  = useQueryClient();
   const today        = useMemo(() => toISO(new Date()), []);
-  const months       = useMemo(() => monthsToShow(), []);
 
   useFocusEffect(
     useCallback(() => {
@@ -597,22 +609,32 @@ export default function CalendarioScreen() {
   const sessions   = data?.sessions   ?? [];
   const localComps = data?.localComps ?? [];
 
-  // Meses com pelo menos 1 desafio realizado + sempre o mês actual
+  // Baseline: mês actual + pelo menos 2 anteriores (sempre visíveis, mesmo sem actividade).
+  // Além disso, qualquer outro mês — por mais antigo que seja — com pelo menos 1 dia concluído.
   const completedMonths = useMemo(() => {
-    const hasActivity = (year: number, month: number): boolean => {
-      const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
-      return (
-        calDays.some((d)    => d.day_date.startsWith(prefix)) ||
-        sessions.some((s)   => s.challenge_date.startsWith(prefix)) ||
-        localComps.some((l) => l.challengeDate.startsWith(prefix))
-      );
-    };
-    const currentMonth = months[0]!; // índice 0 = mês actual
-    return months.filter(
-      (m, i) => i === 0 || hasActivity(m.year, m.month),
-    );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [calDays, sessions, localComps, months]);
+    const now = new Date();
+    const baseline = Array.from({ length: MIN_MONTHS_SHOWN }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      return { year: d.getFullYear(), month: d.getMonth() };
+    });
+    const keyOf = (year: number, month: number) => `${year}-${String(month + 1).padStart(2, '0')}`;
+    const baselineKeys = new Set(baseline.map((m) => keyOf(m.year, m.month)));
+
+    const activeKeys = new Set<string>();
+    for (const d of calDays)    if (d.state === 'completed') activeKeys.add(d.day_date.slice(0, 7));
+    for (const s of sessions)   activeKeys.add(s.challenge_date.slice(0, 7));
+    for (const l of localComps) activeKeys.add(l.challengeDate.slice(0, 7));
+
+    const extra = Array.from(activeKeys)
+      .filter((k) => !baselineKeys.has(k))
+      .sort((a, b) => (a < b ? 1 : -1)) // mais recente primeiro
+      .map((k) => {
+        const [y, m] = k.split('-');
+        return { year: Number(y), month: Number(m) - 1 };
+      });
+
+    return [...baseline, ...extra];
+  }, [calDays, sessions, localComps]);
 
   const xpFloor    = getLevelXpFloor(child.level);
   const xpCeil     = getLevelXpCeil(child.level);
@@ -646,18 +668,28 @@ export default function CalendarioScreen() {
           <RecordCard value={child.best_streak} />
         </View>
 
-        {/* Calendars — só meses com actividade + mês actual */}
+        {/* Calendars — só meses com actividade + mês actual — scroll horizontal com peek do próximo mês */}
         {isLoading ? (
           <ActivityIndicator color={colors.primary} size="large" style={{ marginTop: 32 }} />
         ) : (
-          completedMonths.map(({ year, month }) => (
-            <MonthCalendar
-              key={`${year}-${month}`}
-              year={year} month={month}
-              calDays={calDays} sessions={sessions}
-              localComps={localComps} today={today}
-            />
-          ))
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={MONTH_CARD_WIDTH + MONTH_GAP}
+            decelerationRate="fast"
+            style={s.monthsScroll}
+            contentContainerStyle={s.monthsScrollContent}
+          >
+            {completedMonths.map(({ year, month }) => (
+              <View key={`${year}-${month}`} style={s.monthPage}>
+                <MonthCalendar
+                  year={year} month={month}
+                  calDays={calDays} sessions={sessions}
+                  localComps={localComps} today={today}
+                />
+              </View>
+            ))}
+          </ScrollView>
         )}
 
         {/* Legenda */}
@@ -689,9 +721,15 @@ const s = StyleSheet.create({
 
   statsRow: { flexDirection: 'row', gap: 12 },
 
+  // Calendários mensais: scroll horizontal com peek do mês seguinte, contrariando o padding do content
+  monthsScroll:        { marginHorizontal: -20 },
+  monthsScrollContent: { paddingHorizontal: CONTENT_PADDING, gap: MONTH_GAP },
+  monthPage:           { width: MONTH_CARD_WIDTH },
+
   // Legenda: uma única linha, círculos iguais aos dias do calendário
   legend:     { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: 4 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot:  { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   legendLabel:{ fontFamily: fontFamily.semiBold, fontSize: 12, color: colors.text.secondary },
+  legendHint: { fontFamily: fontFamily.regular, fontSize: 11, color: colors.text.secondary, textAlign: 'center', paddingHorizontal: 12 },
 });

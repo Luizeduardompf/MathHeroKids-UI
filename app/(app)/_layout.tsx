@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 
 import { useAuthStore, selectAuthStatus } from '@/stores/auth.store';
 import { useProfileStore, selectHasActiveChild, selectActiveChild } from '@/stores/profile.store';
@@ -120,6 +121,88 @@ export default function AppLayout() {
       unsubRequests();
     };
   }, [activeChild?.id, router, t]);
+
+  // Ranking overtake — deteta em tempo real quando o próprio filho ou um amigo cruza a
+  // posição do outro (comparação por par contra o próprio, não o ranking inteiro — XP só
+  // cresce, então "ultrapassar" só pode acontecer no lado que acabou de mudar).
+  const { data: friendsForRanking = [] } = useQuery({
+    queryKey: ['friends', activeChild?.id],
+    queryFn: () => socialService.getFriends(activeChild!.id),
+    enabled: !!activeChild?.id,
+    staleTime: 30_000,
+  });
+  const friendIdsKey = friendsForRanking.map((f) => f.id).sort().join(',');
+  const xpMapRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    const childId = activeChild?.id;
+    if (!childId) return;
+
+    xpMapRef.current = {
+      [childId]: activeChild.xp_total,
+      ...Object.fromEntries(friendsForRanking.map((f) => [f.id, f.xp_total])),
+    };
+
+    const unsubRanking = socialService.subscribeToRankingChanges(
+      [childId, ...friendsForRanking.map((f) => f.id)],
+      (row) => {
+        const xpMap = xpMapRef.current;
+        const prevSelfXp = xpMap[childId];
+        const prevRowXp = xpMap[row.id];
+
+        if (prevRowXp === undefined || prevSelfXp === undefined) {
+          xpMap[row.id] = row.xp_total;
+          return;
+        }
+
+        if (row.id === childId) {
+          // O próprio filho ganhou XP — verifica se ultrapassou algum amigo.
+          friendsForRanking.forEach((friend) => {
+            const friendXp = xpMap[friend.id];
+            if (friendXp === undefined) return;
+            const wasAbove = friendXp > prevSelfXp;
+            const isAbove = friendXp > row.xp_total;
+            if (wasAbove && !isAbove) {
+              playSound('milestone');
+              useSocialAlertStore.getState().show({
+                id: `rank_over_${friend.id}`,
+                kind: 'ranking_overtook',
+                avatarDisplayName: friend.display_name,
+                avatarId: friend.avatar_id,
+                title: t('friends.alert.rankingOvertook', { name: friend.display_name }),
+                onPress: () => router.push('/friends/ranking'),
+              });
+            }
+          });
+        } else {
+          // Um amigo ganhou XP — verifica se ultrapassou o próprio filho.
+          const friend = friendsForRanking.find((f) => f.id === row.id);
+          if (friend) {
+            const wasAbove = prevRowXp > prevSelfXp;
+            const isAbove = row.xp_total > prevSelfXp;
+            if (!wasAbove && isAbove) {
+              playSound('friendRequest');
+              useSocialAlertStore.getState().show({
+                id: `rank_overtaken_${friend.id}`,
+                kind: 'ranking_overtaken',
+                avatarDisplayName: friend.display_name,
+                avatarId: friend.avatar_id,
+                title: t('friends.alert.rankingOvertaken', { name: friend.display_name }),
+                onPress: () => router.push('/friends/ranking'),
+              });
+            }
+          }
+        }
+
+        xpMap[row.id] = row.xp_total;
+      },
+    );
+
+    return () => {
+      unsubRanking();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeChild?.id, activeChild?.xp_total, friendIdsKey, router, t]);
 
   useEffect(() => {
     if (status === 'loading') return;

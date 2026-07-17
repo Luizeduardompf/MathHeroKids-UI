@@ -154,7 +154,7 @@ function EmptyFriends({ onAdd }: { onAdd: () => void }) {
 }
 const es = StyleSheet.create({
   wrap:    { alignItems: 'center', paddingVertical: 40, gap: 8 },
-  emoji:   { fontSize: 48 },
+  emoji:   { fontSize: 48, lineHeight: 56 },
   title:   { fontFamily: fontFamily.extraBold, fontSize: 18, color: colors.text.primary },
   sub:     { fontFamily: fontFamily.regular, fontSize: 14, color: colors.text.secondary, textAlign: 'center' },
   btn:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 20, paddingVertical: 12, marginTop: 8 },

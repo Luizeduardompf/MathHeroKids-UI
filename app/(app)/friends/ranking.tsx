@@ -20,6 +20,7 @@ import {
   type StyleProp,
   type TextStyle,
 } from 'react-native';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +31,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from '@/components/ui';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { socialService, type RankedFriend } from '@/services/social.service';
+import { useRankingReposition } from '@/hooks/use-ranking-reposition';
 import { colors, fontFamily, radius, shadows } from '@/theme';
 import { FriendAvatar } from './../../(app)/(tabs)/friends';
 
@@ -191,7 +193,7 @@ function EmptyRanking() {
 }
 const emp = StyleSheet.create({
   wrap:  { alignItems: 'center', paddingVertical: 40, gap: 8 },
-  emoji: { fontSize: 48 },
+  emoji: { fontSize: 48, lineHeight: 56 },
   title: { fontFamily: fontFamily.extraBold, fontSize: 18, color: colors.text.primary },
   sub:   { fontFamily: fontFamily.regular, fontSize: 14, color: colors.text.secondary, textAlign: 'center', maxWidth: 260 },
 });
@@ -219,10 +221,12 @@ export default function RankingScreen() {
     staleTime: 60_000,
   });
 
+  const displayed = useRankingReposition(`${child?.id}:${period}`, ranked);
+
   if (!child) return null;
 
-  const top3 = ranked.slice(0, 3);
-  const rest = ranked.slice(3);
+  const top3 = displayed.slice(0, 3);
+  const rest = displayed.slice(3);
 
   const first  = top3.find((r) => r.position === 1);
   const second = top3.find((r) => r.position === 2);
@@ -262,16 +266,26 @@ export default function RankingScreen() {
           <>
             {/* Podium */}
             <View style={s.podium}>
-              <PodiumSpot ranked={second} position={2} />
-              <PodiumSpot ranked={first}  position={1} />
-              <PodiumSpot ranked={third}  position={3} />
+              <Animated.View layout={LinearTransition.springify()}>
+                <PodiumSpot ranked={second} position={2} />
+              </Animated.View>
+              <Animated.View layout={LinearTransition.springify()}>
+                <PodiumSpot ranked={first} position={1} />
+              </Animated.View>
+              <Animated.View layout={LinearTransition.springify()}>
+                <PodiumSpot ranked={third} position={3} />
+              </Animated.View>
             </View>
 
             {/* Divider */}
             {rest.length > 0 && <View style={s.divider} />}
 
             {/* Remaining list */}
-            {rest.map((r) => <RankRow key={r.child.id} ranked={r} />)}
+            {rest.map((r) => (
+              <Animated.View key={r.child.id} layout={LinearTransition.springify()}>
+                <RankRow ranked={r} />
+              </Animated.View>
+            ))}
           </>
         )}
 

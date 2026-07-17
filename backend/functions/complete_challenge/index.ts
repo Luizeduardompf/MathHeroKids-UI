@@ -423,6 +423,7 @@ Deno.serve(async (req: Request) => {
         day_date: session.challenge_date,
         state: 'completed',
         is_perfect: isPerfect,
+        is_retroactive: isRetroactive,
         session_id,
       }, { onConflict: 'child_id,day_date' });
 
