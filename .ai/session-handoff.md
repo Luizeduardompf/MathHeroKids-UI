@@ -4,15 +4,85 @@
 
 ---
 
-## Estado actual — 2026-07-16 (sessão 11)
+## Estado actual — 2026-07-16 (sessão 12)
 
 ### 🟢 Em curso
 ```
-ESTADO: LIVRE — app standalone a correr no iPhone 16 Pro físico (confirmado pelo user).
+ESTADO: LIVRE — Supabase recriado e validado E2E, app reinstalada e testada em 2 iPhones físicos.
 DÍVIDA: expo-router 5→6 desalinhado com SDK 54.
 DÍVIDA: 3 erros TypeScript pré-existentes (friends.tsx: Image, social_enabled; ranking.tsx: social_enabled).
-NOTA: EAS Update deixou de ser prioridade — instalação directa por cabo funciona.
 ```
+
+---
+
+### ✅ Concluído (sessão 12 — 2026-07-16) — Recriação completa do Supabase
+
+**O projecto Supabase original foi APAGADO.** Ref antigo `lrwlmxyafvmxqyfpawzg` (org `jcbuwtthpcyexkikrawv`)
+dava NXDOMAIN no DNS — sinal de eliminação (projecto pausado mantém DNS). Perderam-se contas e progresso
+(tudo de teste). Código estava versionado.
+
+**Projecto novo:** `MathHeroKids`, ref `pelhtuspcofmejzqtibx`, conta `luizeduardompf2@gmail.com`
+(org `LuizEduardoMPF2`), região `eu-west-1`. ⚠️ Conta **diferente** da do Luka
+(`luizeduardompf.lixo@gmail.com`) — o CLI guarda um só token, alternar com `supabase login`.
+
+**1. DB reconstruída** (via Management API `/database/query`, com header `User-Agent` senão Cloudflare dá 1010):
+- 8 migrations aplicadas por ordem. **Migration 007 tinha bug** (`user_id` em RLS policy — coluna
+  inexistente); corrigido para `parent_id = auth.uid()` e versionado.
+- 4 seeds: level_thresholds (17), trophies (15), achievements (13), level_rewards (7). +100 mult. facts.
+
+**2. Catálogos reconstruídos e VERSIONADOS** — antes só existiam no DB (aplicados ad-hoc via API na
+sessão 7, nunca commitados → perderam-se):
+- `backend/migrations/008_gamification_rpc_and_catalog_keys.sql` — RPC `get_challenge_counts_for_gamification`
+  + índices únicos em `name_key` (dão chave natural → seeds re-executáveis).
+- `backend/seeds/{trophies,achievements,level_rewards}.sql`. Valores derivados das descrições em
+  `pt.json` + dos `switch` de requirement_type/condition_type na EF. 63 chaves i18n validadas em pt/en/es/fr.
+- ⚠️ **REGRA:** nunca aplicar SQL via Studio/API sem versionar em `backend/`. Foi o que causou a perda.
+
+**3. Edge Functions** — as 7 deployadas com `--use-api`. `backend/functions/` e `supabase/functions/`
+são **hardlinks** (mesmo inode) — editar um edita ambos.
+
+**4. Bug corrigido — `complete_challenge` EF:** avaliação de trophies/achievements corria ANTES de a
+sessão ser marcada `completed`; como `fetchGamificationStats` conta sessões completadas, no 1º desafio
+contava 0 e `daily1`/`firstChallenge`/`perfect1`/`firstPerfect` nunca disparavam. Fix: mover o update
+`status='completed'` para antes da avaliação. Bug pré-existente, nunca testado E2E.
+
+**5. `.env`** actualizado (URL + anon key do projecto novo; anon key validada — ref no JWT bate certo).
+
+**6. Validação E2E** — conta de teste + challenge completo: 120 XP, 5 factos mastery, **2 trophies +
+2 achievements a disparar**, ledger + calendar OK. Progresso limpo depois; conta pronta a usar.
+
+**Conta de teste:** `teste.mathhero@gmail.com` / `Teste1234!` · criança `Testinho`/`testinho`.
+Nota: Supabase rejeita domínios `.dev` no signup; confirmar email via admin API `{"email_confirm":true}`.
+
+**7. Reinstalação em 2 iPhones físicos** (2026-07-16/17) — ambos confirmados a funcionar:
+- **iPhone 16 Pro** (Luiz, UDID `00008140-001A45E80CEA801C`) — reinstalado com sucesso.
+- **iPhone 13** (Luana, UDID `00008110-00143041148A801E`) — primeiro deploy neste device: falhou com
+  `Provisioning profile ... doesn't include the currently selected device` (perfil ainda não conhecia
+  o UDID). Fix: `xcodebuild -workspace ios/MathHeroKids.xcworkspace -scheme MathHeroKids -configuration
+  Release -destination "id=<UDID>" -allowProvisioningUpdates build` — regista o device e regenera o
+  perfil. Depois o `expo run:ios` normal passou a funcionar.
+- ⚠️ **Xcode aberto bloqueou builds da CLI duas vezes** — ficavam presos indefinidamente (CPU parada)
+  até fechar o Xcode. Fechar sempre o Xcode antes de correr `expo run:ios` por linha de comandos.
+- ⚠️ Um `xcodebuild` de Debug para o simulador ficou preso a segurar
+  `DerivedData/.../XCBuildData/build.db`, bloqueando o build do device físico com
+  `database is locked`. Fix: `ps aux | grep xcodebuild`, matar o processo com CPU parada há minutos.
+- ⚠️ Um build em background morreu **em silêncio, sem notificação**, depois de ~9h — provavelmente o
+  Mac dormiu a meio da noite. Sempre confirmar `ps aux` antes de assumir que um build ainda corre.
+
+**8. Registo real bloqueado por rate limit — corrigido:** signup de `luizeduardompf@gmail.com` (conta
+real, não a de teste) deu 429 `over_email_send_rate_limit`. Causa: projecto novo usa o mailer interno
+do Supabase (sem SMTP próprio), limite de 2 emails/hora. A conta não chegou a ser criada (bloqueado
+antes disso). Fix aplicado: `mailer_autoconfirm: true` no config de auth do projecto — signup confirma
+na hora, sem depender de email. Decisão do user, documentada em `CLAUDE.md` (secção Auth) — reconsiderar
+se for para produção com pais desconhecidos (SMTP próprio + voltar a exigir confirmação).
+
+**9. Wireless debugging confirmado** — depois da 1ª instalação por cabo em cada device, o Xcode guarda
+"Connect via network" automaticamente (ícone de globo 🌐 em Window → Devices and Simulators). Reinstalações
+seguintes **não precisam de cabo** — confirmado no iPhone 16 Pro (`devicectl` mostra `connected` com o
+cabo desligado). Detalhe completo em `.ai/project-mathhero.md` (secção "Como testar").
+
+**Próximo passo:** nenhum pendente — ambiente estável. Builds caducam por device: iPhone 16 Pro ~23 Jul,
+iPhone 13 da Luana uns dias depois (instalado mais tarde).
 
 ---
 

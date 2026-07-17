@@ -11,6 +11,29 @@ React Native + Expo managed + TypeScript strict + Supabase + Expo Router + TanSt
 
 ---
 
+## Supabase — conta e projecto ⚠️
+
+| | |
+|---|---|
+| **Conta** | `luizeduardompf2@gmail.com` |
+| **Org** | `LuizEduardoMPF2` (`bqwqzagkqaqxnmnrfbdz`) |
+| **Projecto** | `MathHeroKids` — ref `pelhtuspcofmejzqtibx` |
+| **Região** | `eu-west-1` (Irlanda) |
+| **Dashboard** | https://supabase.com/dashboard/project/pelhtuspcofmejzqtibx |
+
+**Conta diferente da do Luka** (`luizeduardompf.lixo@gmail.com`, org `LuizEduardoMPF`, sa-east-1).
+O CLI guarda um só token global — alternar com `supabase login` (interactivo, corre o user).
+Confirmar sempre com `supabase projects list` antes de concluir que algo desapareceu: ver
+projectos do Luka ou um 403 significa token errado, não projecto em falta.
+
+Usar o `supabase` do Homebrew — o `.bin/supabase` do repo é um binário Linux e não corre no Mac.
+
+⚠️ **O projecto original (`lrwlmxyafvmxqyfpawzg`, org `jcbuwtthpcyexkikrawv`) foi apagado**
+(detectado 2026-07-16: NXDOMAIN no DNS — um projecto pausado mantinha o DNS). Perderam-se as contas
+de pais e o progresso das crianças; o código estava todo versionado. Recriação em curso.
+
+---
+
 ## Como testar (confirmado a funcionar — 2026-07-16)
 
 **Simulador (dev, com hot reload):**
@@ -22,15 +45,45 @@ npx expo start --dev-client --port 8082   # depois premir "i"
 - Build nativo já instalado no simulador iPhone 17. Só é preciso `npx expo run:ios` se mexer em
   código nativo, `app.json` ou dependências.
 
-**iPhone 16 Pro físico (standalone, Release):** ✅ confirmado 2026-07-16
+**iPhones físicos (standalone, Release):** ✅ confirmado 2026-07-16/17, em 2 dispositivos
 ```bash
-npx expo run:ios --device 00008140-001A45E80CEA801C --configuration Release --no-bundler
+npx expo run:ios --device <UDID> --configuration Release --no-bundler
 ```
-- Requer: iPhone desbloqueado + cabo + Developer Mode on. 1ª abertura: confiar no Apple ID em
+| Dispositivo | UDID |
+|---|---|
+| iPhone 16 Pro (Luiz) | `00008140-001A45E80CEA801C` |
+| iPhone 13 (Luana) | `00008110-00143041148A801E` |
+
+- Requer: iPhone desbloqueado + Developer Mode on. 1ª abertura: confiar no Apple ID em
   Definições → Geral → VPN e Gestão de Dispositivos.
-- **NÃO exige Apple Developer Program.** Personal Team gratuita chega. Custo: app **caduca a 7 dias**,
-  sem push, máx. 3 apps. Bundle ID: `com.luizeduardompf.mathherokids`.
+- **NÃO exige Apple Developer Program.** Personal Team gratuita chega. Custo: app **caduca a 7 dias**
+  por dispositivo (a partir da respectiva instalação — não é uma data única para todos), sem push,
+  máx. 3 apps por device. Bundle ID: `com.luizeduardompf.mathherokids`.
 - O Apple Developer Program ($99/ano) só é preciso para TestFlight, distribuição OTA/sem cabo e push.
+
+**Cabo vs Wi-Fi:**
+- **1ª instalação num dispositivo novo exige cabo.** Sem isso o build falha com
+  `Provisioning profile ... doesn't include the currently selected device` — o perfil ainda não
+  conhece o UDID. Fix nessa 1ª vez: `xcodebuild -workspace ios/MathHeroKids.xcworkspace -scheme
+  MathHeroKids -configuration Release -destination "id=<UDID>" -allowProvisioningUpdates build`
+  (regista o device no portal Apple e regenera o perfil), depois repetir o `expo run:ios` normal.
+- **Depois da 1ª vez, o Xcode guarda "Connect via network" automaticamente** (Window → Devices and
+  Simulators → o dispositivo mostra um ícone de globo 🌐, mesmo em "Disconnected") — reinstalações
+  seguintes **não precisam de cabo**, o mesmo comando `npx expo run:ios --device <UDID> ...` funciona
+  por Wi-Fi. Confirmado 2026-07-17 para o iPhone 16 Pro (`devicectl` mostra `connected` sem cabo).
+  Se não aparecer o globo, ligar o cabo uma vez, abrir Window → Devices and Simulators no Xcode,
+  seleccionar o device na lista (clicar no nome, não na miniatura) e procurar a checkbox
+  "Connect via network" — em versões recentes do Xcode também pode estar só no menu de contexto
+  (botão direito sobre o device na lista).
+- ⚠️ **Fechar o Xcode antes de correr `expo run:ios` pela CLI.** Se o Xcode estiver aberto a indexar
+  o mesmo projecto, o `xcodebuild` da CLI pode ficar preso indefinidamente (CPU praticamente parada)
+  — sintoma: o log fica sem avançar durante minutos. Fechar o Xcode destrava.
+- Se um build falhar com `error: unable to attach DB ... database is locked`, há um `xcodebuild`
+  anterior preso a segurar o `DerivedData/.../XCBuildData/build.db`. Verificar com
+  `ps aux | grep xcodebuild` — um processo com tempo de CPU parado (não sobe) há vários minutos está
+  preso; `kill <pid>` destrava. Um processo em background desta CLI também pode morrer em silêncio
+  (sem notificação) se o Mac dormir a meio — confirmar sempre `ps aux` antes de assumir que continua
+  a correr.
 
 **iPhone via Expo Go:** `npx expo start --tunnel` → ler QR. (`--tunnel` necessário; LAN não funcionou.)
 Expo Go SDK 54 já inclui Reanimated 4.1 + worklets.

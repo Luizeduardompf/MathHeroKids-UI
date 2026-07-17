@@ -244,6 +244,13 @@ Consultar `docs/implementation-phases.md` para o roadmap completo.
 - Fluxo pós-login: parent seleciona filho → `profileStore.setActiveChild()` → navega para `(app)`
 - `activeChild` persiste via Zustand persist + AsyncStorage (sobrevive restart)
 - PIN parental: bcrypt via Edge Function `verify_parent_pin` — **nunca client-side**
+- ⚠️ **`mailer_autoconfirm: true`** activado no projecto Supabase (2026-07-17) — signup confirma a
+  conta na hora, sem email de confirmação. Motivo: sem SMTP próprio configurado, o mailer interno do
+  Supabase limita a 2 emails/hora (`rate_limit_email_sent`), o que bloqueava qualquer registo real.
+  Trade-off aceite para o MVP: qualquer email pode registar-se sem provar que é dono dele. **Antes de
+  ir para produção com pais desconhecidos, reconsiderar** — configurar SMTP próprio (Resend/SendGrid/
+  Postmark) e voltar a exigir confirmação (`PATCH /v1/projects/{ref}/config/auth` com
+  `mailer_autoconfirm: false`).
 
 ### XP / Gamificação ⚠️ CRÍTICO
 - XP, level, streak, trophies, achievements são **SEMPRE mutados por Edge Functions**
@@ -315,9 +322,32 @@ EXPO_PUBLIC_APP_ENV=development
 
 ## Backend
 
+### Conta Supabase ⚠️
+
+O Supabase deste projecto está na conta **`luizeduardompf2@gmail.com`** — org `LuizEduardoMPF2`,
+projecto `MathHeroKids`, ref `pelhtuspcofmejzqtibx`, região `eu-west-1`.
+
+**Não é a mesma conta do outro projecto do user (Luka)**, que vive em `luizeduardompf.lixo@gmail.com`.
+O CLI guarda **um só token global** — se `supabase projects list` mostrar os projectos do Luka
+(`luka-psi`, `luka-psi-dev-localfirst`), ou se aparecer 403 "account does not have the necessary
+privileges", é o token errado, não um projecto em falta. Trocar com `supabase login` (interactivo:
+correr no Terminal, é o user que autoriza no browser).
+
+Usar o `supabase` do Homebrew. O `.bin/supabase` do repo é um ELF Linux do sandbox antigo e não
+corre no Mac (`exec format error`).
+
+⚠️ O projecto anterior (ref `lrwlmxyafvmxqyfpawzg`) foi **apagado** em Jul 2026 — ver
+`.ai/session-handoff.md`.
+
+### Workflow
+
 **Migrations**: executar em ordem no Supabase Studio ou via `supabase db push`.
 **Edge Functions**: fazer deploy via `supabase functions deploy <nome>`.
 **Seeds**: executar manualmente após migrations.
+
+⚠️ **Nunca aplicar SQL directamente via Studio/Management API sem versionar o ficheiro em `backend/`.**
+Os catálogos de gamificação foram aplicados assim na sessão 7, nunca chegaram ao repo, e perderam-se
+com o projecto antigo.
 
 Tabelas principais — schema completo em `docs/database-schema.md`:
 - `parent_profiles` — criada por DB trigger no signup (ver migration 001)
