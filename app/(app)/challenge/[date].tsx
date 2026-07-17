@@ -55,7 +55,11 @@ import {
 } from '@/stores/challenge.store';
 import { challengeService } from '@/services/challenge.service';
 import { useNetworkStatus } from '@/hooks/use-network-status';
-import { MODULE_ID, CHALLENGE, resolveTimerSeconds } from '@/constants/config';
+import {
+  MODULE_ID, CHALLENGE, resolveTimerSeconds, computeAnswer,
+  OPERATION_SYMBOLS, OPERATION_CATEGORY_KEYS,
+} from '@/constants/config';
+import type { ModuleId } from '@/constants/config';
 import { playSound } from '@/services/sound.service';
 
 // ─── Milo celebrate asset ─────────────────────────────────────────────────────
@@ -673,6 +677,8 @@ export default function ChallengeScreen() {
   const effectiveTimerSeconds = child
     ? resolveTimerSeconds(child.level, child.timer_seconds, child.timer_auto)
     : 15;
+  const needsOperationPicker = !!child && !child.mix_operations && child.enabled_operations.length > 1;
+  const [chosenOperation, setChosenOperation] = useState<ModuleId | null>(null);
 
   const phase = useChallengeStore((s) => s.phase);
   const sessionId = useChallengeStore((s) => s.sessionId);
@@ -749,6 +755,7 @@ export default function ChallengeScreen() {
 
   useEffect(() => {
     if (!child || !date || phase !== 'idle') return;
+    if (needsOperationPicker && !chosenOperation) return; // à espera da escolha no seletor
     if (initedDateRef.current === date) return; // já tratada nesta instância — ver initedDateRef
     async function init() {
       if (!child || !date) return;
@@ -761,13 +768,14 @@ export default function ChallengeScreen() {
       }
 
       const sid = randomUUID();
+      const moduleId = chosenOperation ?? child.enabled_operations[0] ?? MODULE_ID.MULTIPLICATION;
 
       try {
         // Questões geradas adaptativamente pelo servidor
         const result = await challengeService.startChallenge({
           childId: child.id,
           challengeDate: date,
-          moduleId: MODULE_ID.MULTIPLICATION,
+          moduleId,
           sessionId: sid,
           timerSeconds: effectiveTimerSeconds,
         });
@@ -777,8 +785,9 @@ export default function ChallengeScreen() {
           index: q.position - 1,
           operand_a: q.operand_a,
           operand_b: q.operand_b,
-          correct_answer: q.operand_a * q.operand_b,
+          correct_answer: computeAnswer(q.operation, q.operand_a, q.operand_b),
           fact_id: q.fact_id,
+          operation: q.operation,
         }));
 
         initedDateRef.current = date; // sessão em curso — não reentrar em init() para esta data
@@ -786,7 +795,7 @@ export default function ChallengeScreen() {
           sessionId: result.sessionId,
           childId: child.id,
           challengeDate: date,
-          moduleId: MODULE_ID.MULTIPLICATION,
+          moduleId,
           questions,
           timerSeconds: effectiveTimerSeconds,
           totalQuestions: questions.length,
@@ -943,6 +952,38 @@ export default function ChallengeScreen() {
       Alert.alert(t('common.error'), (e as Error).message);
     }
   }, [child, sessionId, challengeDate, moduleId, allAnswers, uniqueCorrect, router, t, storeActions, dismissCelebrationIfReady]);
+
+  // ─── Seletor de operação (quando >1 activada e não misturada) ────────────
+
+  if (needsOperationPicker && !chosenOperation && child) {
+    return (
+      <View style={[gs.container, gs.centered]}>
+        <View style={{ alignItems: 'center', gap: 20, paddingHorizontal: 32, width: '100%' }}>
+          <Text style={{ fontFamily: fontFamily.extraBold, fontSize: 20, color: colors.text.primary, textAlign: 'center' }}>
+            {t('challenge.pickOperationTitle')}
+          </Text>
+          <View style={{ width: '100%', gap: 12 }}>
+            {child.enabled_operations.map((op) => (
+              <Pressable
+                key={op}
+                style={{
+                  backgroundColor: colors.primary,
+                  borderRadius: 20,
+                  paddingVertical: 18,
+                  alignItems: 'center',
+                }}
+                onPress={() => setChosenOperation(op)}
+              >
+                <Text style={{ fontFamily: fontFamily.bold, fontSize: 18, color: '#fff' }}>
+                  {OPERATION_SYMBOLS[op]}  {t(OPERATION_CATEGORY_KEYS[op])}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   // ─── Loading ─────────────────────────────────────────────────────────────
 
@@ -1188,13 +1229,15 @@ export default function ChallengeScreen() {
       {/* Main: badge + equation — centered together (matches zip flex-1 items-center justify-center) */}
       <View style={gs.questionArea}>
         <View style={gs.categoryBadge}>
-          <Text style={gs.categoryBadgeText}>{t('challenge.category')}</Text>
+          <Text style={gs.categoryBadgeText}>
+            {t(OPERATION_CATEGORY_KEYS[question?.operation ?? MODULE_ID.MULTIPLICATION])}
+          </Text>
         </View>
 
         {question ? (
           <Animated.View style={[gs.equationRow, animatedQuestion] as StyleProp<ViewStyle>}>
             <Text style={gs.operandText}>{question.operand_a}</Text>
-            <Text style={gs.operatorText}>×</Text>
+            <Text style={gs.operatorText}>{OPERATION_SYMBOLS[question.operation ?? MODULE_ID.MULTIPLICATION]}</Text>
             <Text style={gs.operandText}>{question.operand_b}</Text>
             <Text style={gs.operatorText}>=</Text>
             <View style={[

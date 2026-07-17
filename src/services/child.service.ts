@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { ChildProfile } from '@/types';
-import type { AvatarId, TimerOption, MultiplicationRange, QuestionCountOption } from '@/constants/config';
+import type { AvatarId, TimerOption, MultiplicationRange, QuestionCountOption, ModuleId } from '@/constants/config';
 import { DEFAULT_TIMER, DEFAULT_MULTIPLICATION_MAX, DEFAULT_QUESTION_COUNT } from '@/constants/config';
 
 // ─── Input types ──────────────────────────────────────────────────────────────
@@ -22,6 +22,8 @@ export interface UpdateChildInput {
   multiplication_max?: MultiplicationRange;
   social_enabled?: boolean;
   question_count?: QuestionCountOption;
+  enabled_operations?: ModuleId[];
+  mix_operations?: boolean;
 }
 
 // ─── Error mapping ────────────────────────────────────────────────────────────

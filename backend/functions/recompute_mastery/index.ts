@@ -68,7 +68,7 @@ Deno.serve(async (req: Request) => {
       factIds = [fact_id];
     } else {
       const { data: facts } = await supabase
-        .from('multiplication_facts')
+        .from('arithmetic_facts')
         .select('id');
       factIds = (facts ?? []).map((f: { id: string }) => f.id);
     }

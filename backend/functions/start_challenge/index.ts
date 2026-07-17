@@ -1,16 +1,20 @@
 /**
- * start_challenge — Edge Function (Phase 2.5 — adaptive engine)
+ * start_challenge — Edge Function (Phase 2.5+ — adaptive engine multi-operacao)
  *
- * Cria ou retoma uma challenge_session. Diferenca para v1:
- * - Ignora question_seed (legacy).
- * - Gera 20 questoes adaptativamente a partir de child_fact_mastery + adaptive-rules.json.
- * - Persiste payload em challenge_sessions.questions_payload.
+ * Cria ou retoma uma challenge_session. Le enabled_operations/mix_operations do
+ * child_profiles para decidir de que operacoes tirar questoes:
+ * - mix_operations=true: usa todas as enabled_operations, module_id resolvido = 'mixed'.
+ * - mix_operations=false + 1 activada: usa-a, ignora module_id do request.
+ * - mix_operations=false + >1 activadas: exige module_id do request (uma delas) — o cliente
+ *   mostra um seletor antes de chamar esta EF.
+ * Questoes de cada operacao sao seleccionadas independentemente (mastery/tiers por operacao
+ * fazem sentido separados) e depois combinadas + reembaralhadas para a ordem final.
  *
  * Request body:
  * {
  *   child_id: string;
  *   challenge_date: string;   // YYYY-MM-DD
- *   module_id?: string;       // default 'multiplication'
+ *   module_id?: string;       // operacao escolhida quando ha mais de uma activada e nao mistura
  *   session_id: string;       // client UUID (idempotencia)
  *   timer_seconds: number;
  * }
@@ -22,6 +26,7 @@
  *   questions: Array<{
  *     position: number;
  *     fact_id: string;
+ *     operation: 'multiplication' | 'addition' | 'subtraction' | 'division';
  *     operand_a: number;
  *     operand_b: number;
  *     bucket: MasteryState;
@@ -34,8 +39,42 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getRules, getRulesVersion } from '../_shared/adaptive-rules.ts';
 import { selectQuestions } from '../_shared/question-selector.ts';
+import type { Fact, Operation, SelectedQuestion } from '../_shared/question-selector.ts';
 
 const RETROACTIVE_WINDOW_DAYS = 30;
+
+function splitCount(total: number, parts: number): number[] {
+  const base = Math.floor(total / parts);
+  const remainder = total % parts;
+  return Array.from({ length: parts }, (_, i) => base + (i < remainder ? 1 : 0));
+}
+
+function seedFromString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0;
+  return h;
+}
+
+function mulberry32(seed: number): () => number {
+  let t = seed;
+  return function () {
+    t |= 0; t = (t + 0x6d2b79f5) | 0;
+    let x = Math.imul(t ^ (t >>> 15), 1 | t);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededShuffle<T>(arr: T[], rng: () => number): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const tmp = out[i]!;
+    out[i] = out[j]!;
+    out[j] = tmp;
+  }
+  return out;
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -48,7 +87,7 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json();
     const { child_id, challenge_date, session_id, timer_seconds } = body;
-    const module_id = body.module_id ?? 'multiplication';
+    const requestedOperation = body.module_id as Operation | undefined;
 
     // Validacao de inputs
     if (!child_id || !challenge_date || !session_id || timer_seconds == null) {
@@ -65,6 +104,37 @@ Deno.serve(async (req: Request) => {
     }
     if (diffDays > RETROACTIVE_WINDOW_DAYS) {
       return jsonError(429, 'RETROACTIVE_WINDOW_EXPIRED', 'Outside 7-day retroactive window.');
+    }
+
+    // Configuracao de operacoes da crianca — determina o module_id resolvido ANTES de
+    // qualquer lookup de idempotencia (a unicidade da sessao e por module_id resolvido,
+    // nao pelo valor bruto que o cliente enviou).
+    const { data: childRow } = await supabase
+      .from('child_profiles')
+      .select('question_count, enabled_operations, mix_operations')
+      .eq('id', child_id)
+      .maybeSingle();
+
+    const enabledOperations: Operation[] = (childRow?.enabled_operations?.length
+      ? childRow.enabled_operations
+      : ['multiplication']) as Operation[];
+    const mixOperations = childRow?.mix_operations ?? false;
+
+    let sessionOperations: Operation[];
+    let module_id: string;
+    if (mixOperations) {
+      sessionOperations = enabledOperations;
+      module_id = 'mixed';
+    } else if (enabledOperations.length === 1) {
+      sessionOperations = enabledOperations;
+      module_id = enabledOperations[0]!;
+    } else {
+      if (!requestedOperation || !enabledOperations.includes(requestedOperation)) {
+        return jsonError(400, 'OPERATION_REQUIRED',
+          'Esta crianca tem varias operacoes activadas e nao mistura — module_id deve ser uma delas.');
+      }
+      sessionOperations = [requestedOperation];
+      module_id = requestedOperation;
     }
 
     // Idempotencia: 1) por session_id (mesmo cliente)
@@ -135,14 +205,16 @@ Deno.serve(async (req: Request) => {
       return jsonError(500, 'MASTERY_FETCH_FAILED', masteryErr.message);
     }
 
-    // Carregar catalogo de facts
-    const { data: facts, error: factsErr } = await supabase
-      .from('multiplication_facts')
-      .select('id, operand_a, operand_b, answer, fact_group_id, base_difficulty');
+    // Carregar catalogo de facts das operacoes desta sessao
+    const { data: allFacts, error: factsErr } = await supabase
+      .from('arithmetic_facts')
+      .select('id, operation, operand_a, operand_b, answer, fact_group_id, base_difficulty')
+      .in('operation', sessionOperations);
 
-    if (factsErr || !facts || facts.length === 0) {
-      return jsonError(500, 'FACTS_NOT_SEEDED', 'multiplication_facts table is empty.');
+    if (factsErr || !allFacts || allFacts.length === 0) {
+      return jsonError(500, 'FACTS_NOT_SEEDED', 'arithmetic_facts table is empty for the requested operations.');
     }
+    const facts = allFacts as Fact[];
 
     // Cooldown: facts usados nas ultimas N sessoes
     const rules = getRules();
@@ -160,23 +232,34 @@ Deno.serve(async (req: Request) => {
       (s.questions_payload ?? []).forEach(q => excludedFactIds.add(q.fact_id));
     });
 
-    // Selecionar questoes adaptativamente — quantidade vem do perfil da crianca
-    // (fallback para a regra global se a coluna ainda nao existir/for null)
-    const { data: childRow } = await supabase
-      .from('child_profiles')
-      .select('question_count')
-      .eq('id', child_id)
-      .maybeSingle();
-    const questionCount = childRow?.question_count ?? rules.session.questionsPerChallenge;
+    // Quantidade de questoes vem do perfil da crianca (0 = AUTO, cai no default da regra
+    // global; null/coluna inexistente idem), repartida por igual entre as operacoes da sessao.
+    const questionCount = childRow?.question_count || rules.session.questionsPerChallenge;
+    const perOpCounts = splitCount(questionCount, sessionOperations.length);
 
-    const { questions, metadata } = selectQuestions({
-      facts,
-      mastery: mastery ?? [],
-      excludedFactIds,
-      rules,
-      seed: effectiveSessionId,
-      questionCount,
-    });
+    const bucketCountsMerged: Record<string, number> = {};
+    let allQuestions: SelectedQuestion[] = [];
+    for (let i = 0; i < sessionOperations.length; i++) {
+      const op = sessionOperations[i]!;
+      const opFacts = facts.filter(f => f.operation === op);
+      const { questions: opQuestions, metadata: opMetadata } = selectQuestions({
+        facts: opFacts,
+        mastery: mastery ?? [],
+        excludedFactIds,
+        rules,
+        seed: `${effectiveSessionId}:${op}`,
+        questionCount: perOpCounts[i]!,
+      });
+      allQuestions = allQuestions.concat(opQuestions);
+      for (const [bucket, count] of Object.entries(opMetadata.bucketCounts)) {
+        bucketCountsMerged[bucket] = (bucketCountsMerged[bucket] ?? 0) + count;
+      }
+    }
+
+    // Reembaralhar o conjunto combinado (quando ha mais de uma operacao) e renumerar posicoes.
+    const combinedRng = mulberry32(seedFromString(effectiveSessionId));
+    const finalQuestions = seededShuffle(allQuestions, combinedRng)
+      .map((q, idx) => ({ ...q, position: idx + 1 }));
 
     // Upsert da sessao com payload persistido
     const { error: upsertErr } = await supabase
@@ -186,13 +269,13 @@ Deno.serve(async (req: Request) => {
         child_id,
         challenge_date,
         module_id,
-        questions_payload: questions,
+        questions_payload: finalQuestions,
         rules_version: getRulesVersion(),
-        selection_metadata: metadata,
+        selection_metadata: { bucketCounts: bucketCountsMerged, operations: sessionOperations },
         timer_seconds,
         multiplication_max: 10,
         status: 'in_progress',
-        total_questions: rules.session.questionsPerChallenge,
+        total_questions: questionCount,
         is_retroactive: diffDays > 0,
         question_seed: null, // legacy — deprecado na Phase 2.5
       }, { onConflict: 'id' });
@@ -205,7 +288,7 @@ Deno.serve(async (req: Request) => {
     return jsonOk({
       sessionId: effectiveSessionId,
       status: 'new',
-      questions,
+      questions: finalQuestions,
       rulesVersion: getRulesVersion(),
     });
 

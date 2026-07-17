@@ -347,6 +347,12 @@
   },
   "challenge": {
     "retestLabel": "🔁 On révise !",
+    "pickOperationTitle": "Qu'allons-nous pratiquer aujourd'hui ?",
+    "category": "Table de Multiplication",
+    "categoryMultiplication": "Table de Multiplication",
+    "categoryAddition": "Table d'Addition",
+    "categorySubtraction": "Table de Soustraction",
+    "categoryDivision": "Table de Division",
     "completed": {
       "title": "Défi terminé !",
       "subtitle": "Incroyable ! Tu as terminé le défi d'aujourd'hui. Milo est fier !",
@@ -427,6 +433,16 @@
       "registeredSince": "Membre depuis",
       "lastAccess": "Dernier accès",
       "gameSettings": "Paramètres du jeu",
+      "operationsLabel": "Opérations",
+      "operationsHint": "Quelles tables l'enfant pratique",
+      "operationNames": {
+        "multiplication": "Multiplication",
+        "addition": "Addition",
+        "subtraction": "Soustraction",
+        "division": "Division"
+      },
+      "mixOperationsLabel": "Mélanger les opérations dans le même défi",
+      "mixOperationsHint": "Un seul défi combine des questions de toutes les opérations actives",
       "questionsLabel": "Nombre de questions",
       "questionsHint": "Combien de questions par défi",
       "timerLabel": "Temps de réponse",

@@ -265,12 +265,12 @@ Deno.serve(async (req: Request) => {
     // ── 4. Buscar respostas corretas do catalogo ───────────────────────────
     const factIds = payload.map(p => p.fact_id);
     const { data: facts, error: factErr } = await supabase
-      .from('multiplication_facts')
+      .from('arithmetic_facts')
       .select('id, answer, fact_group_id')
       .in('id', factIds);
 
     if (factErr || !facts) {
-      return jsonError(500, 'FACTS_FETCH_FAILED', 'Erro ao buscar multiplication_facts.');
+      return jsonError(500, 'FACTS_FETCH_FAILED', 'Erro ao buscar arithmetic_facts.');
     }
 
     const factAnswerMap = new Map(facts.map(f => [f.id, f.answer]));
@@ -330,7 +330,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const correctCount = correctByPosition.size;
-    const isPerfect = correctCount === rules.session.questionsPerChallenge;
+    // "Perfeito" e por payload desta sessao (session.total_questions), nao pela regra global —
+    // question_count e configuravel por crianca desde a Fase C, session.total_questions ja
+    // reflecte o valor real usado para gerar o payload.
+    const isPerfect = correctCount === (session.total_questions ?? rules.session.questionsPerChallenge);
 
     // ── 6. Computar XP ─────────────────────────────────────────────────────
     const answerXp = correctCount * XP_PER_CORRECT;

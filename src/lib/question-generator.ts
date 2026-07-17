@@ -15,7 +15,7 @@
  */
 
 import { CHALLENGE } from '@/constants/config';
-import type { MultiplicationRange } from '@/constants/config';
+import type { MultiplicationRange, ModuleId } from '@/constants/config';
 
 export interface Question {
   index: number;        // 0–19, absolute position in session
@@ -24,6 +24,8 @@ export interface Question {
   correct_answer: number;
   /** Phase 2.5+: ID do catálogo quando questão vem do servidor (e.g. 'fact_7x8') */
   fact_id?: string;
+  /** Phase E+: operação desta questão (mistura de operações no mesmo desafio) */
+  operation?: ModuleId;
 }
 
 // ─── PRNG ─────────────────────────────────────────────────────────────────────

@@ -1,11 +1,14 @@
 import type { AdaptiveRules, MasteryState } from './adaptive-rules.ts';
 
+export type Operation = 'multiplication' | 'addition' | 'subtraction' | 'division';
+
 export interface Fact {
   id: string;
+  operation: Operation;
   operand_a: number;
   operand_b: number;
   answer: number;
-  fact_group_id: string;
+  fact_group_id: string | null;
   base_difficulty: number;
 }
 
@@ -19,6 +22,7 @@ export interface MasteryRow {
 export interface SelectedQuestion {
   position: number;
   fact_id: string;
+  operation: Operation;
   operand_a: number;
   operand_b: number;
   bucket: MasteryState;
@@ -171,6 +175,7 @@ export function selectQuestions(input: SelectInput): {
   const questions: SelectedQuestion[] = shuffled.map((f, idx) => ({
     position: idx + 1,
     fact_id: f.id,
+    operation: f.operation,
     operand_a: f.operand_a,
     operand_b: f.operand_b,
     bucket: stateOf(f, masteryMap),

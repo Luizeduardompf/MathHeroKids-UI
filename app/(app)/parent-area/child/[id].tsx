@@ -14,7 +14,7 @@ import { childService } from '@/services/child.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { colors, fontFamily, radius, shadows, space } from '@/theme';
-import { TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT_OPTIONS, type TimerOption, type MultiplicationRange, type QuestionCountOption } from '@/constants/config';
+import { TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT_OPTIONS, OPERATIONS, type TimerOption, type MultiplicationRange, type QuestionCountOption, type ModuleId } from '@/constants/config';
 import type { AvatarId } from '@/constants/config';
 import type { ChildProfile } from '@/types';
 
@@ -84,6 +84,8 @@ export default function EditarCriancaScreen() {
   const [timerAuto, setTimerAuto] = useState(false);
   const [multiMax, setMultiMax] = useState<MultiplicationRange>(10);
   const [questionCount, setQuestionCount] = useState<QuestionCountOption>(20);
+  const [enabledOperations, setEnabledOperations] = useState<ModuleId[]>(['multiplication']);
+  const [mixOperations, setMixOperations] = useState(false);
   const [socialEnabled, setSocialEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,9 +111,21 @@ export default function EditarCriancaScreen() {
       setTimerAuto(found.timer_auto ?? false);
       if (found.multiplication_max !== undefined) setMultiMax(found.multiplication_max as MultiplicationRange);
       if (found.question_count !== undefined) setQuestionCount(found.question_count as QuestionCountOption);
+      if (found.enabled_operations?.length) setEnabledOperations(found.enabled_operations);
+      setMixOperations(found.mix_operations ?? false);
       setSocialEnabled(found.social_enabled ?? true);
     }).catch(() => setLoadError('Erro ao carregar perfil.')); // i18n-ignore — internal error state
   }, [id, parentId]);
+
+  function toggleOperation(op: ModuleId) {
+    setEnabledOperations((prev) => {
+      if (prev.includes(op)) {
+        if (prev.length === 1) return prev; // pelo menos uma tem de ficar activa
+        return prev.filter((o) => o !== op);
+      }
+      return [...prev, op];
+    });
+  }
 
   function validate(): string | null {
     if (!name.trim()) return t('errors.validation.required');
@@ -139,6 +153,8 @@ export default function EditarCriancaScreen() {
         timer_auto: timerAuto,
         multiplication_max: multiMax,
         question_count: questionCount,
+        enabled_operations: enabledOperations,
+        mix_operations: mixOperations,
         social_enabled: socialEnabled,
       });
       // Keep store in sync if editing the active child
@@ -357,6 +373,48 @@ export default function EditarCriancaScreen() {
               </Pressable>
             ))}
           </View>
+        </View>
+
+        {/* Operations */}
+        <View style={styles.settingCard}>
+          <View style={styles.settingHeader}>
+            <View style={styles.settingIcon}>
+              <Ionicons name="apps-outline" size={18} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.child.operationsLabel')}</Text>
+              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.operationsHint')}</Text>
+            </View>
+          </View>
+          <View style={styles.optionRow}>
+            {OPERATIONS.map((op) => {
+              const active = enabledOperations.includes(op);
+              return (
+                <Pressable
+                  key={op}
+                  style={[styles.optionBtn, active && styles.optionBtnActive]}
+                  onPress={() => toggleOperation(op)}
+                >
+                  <RNText style={[styles.optionText, active && styles.optionTextActive]}>
+                    {t(`parentArea.child.operationNames.${op}`)}
+                  </RNText>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Pressable
+            style={[styles.autoTimerRow, enabledOperations.length < 2 && { opacity: 0.4 }]}
+            disabled={enabledOperations.length < 2}
+            onPress={() => setMixOperations((v) => !v)}
+          >
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.child.mixOperationsLabel')}</Text>
+              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.mixOperationsHint')}</Text>
+            </View>
+            <View style={[styles.toggle, mixOperations && styles.toggleOn]}>
+              <View style={[styles.toggleThumb, mixOperations && styles.toggleThumbOn]} />
+            </View>
+          </Pressable>
         </View>
 
         {/* Social enabled */}

@@ -99,7 +99,7 @@ export async function applyCommutativity(input: {
 
   // Buscar o fact irmaoo no mesmo group_id com operandos invertidos
   const { data: facts } = await input.supabase
-    .from('multiplication_facts')
+    .from('arithmetic_facts')
     .select('id, operand_a, operand_b')
     .eq('fact_group_id', input.factGroupId)
     .neq('id', input.factId);

@@ -1,4 +1,5 @@
 export * from './database.types';
+import type { ModuleId } from '@/constants/config';
 
 // ─── Utility Types ────────────────────────────────────────────────────────────
 
@@ -40,8 +41,9 @@ export type MasteryState = 'NEW' | 'LEARNING' | 'REVIEWING' | 'MASTERED' | 'WEAK
 
 /** Questao retornada pelo servidor em start_challenge (Phase 2.5+) */
 export interface ChallengeQuestion {
-  position: number;      // 1..20
+  position: number;      // 1..N
   fact_id: string;       // e.g. 'fact_7x8'
+  operation: ModuleId;
   operand_a: number;
   operand_b: number;
   bucket: MasteryState;

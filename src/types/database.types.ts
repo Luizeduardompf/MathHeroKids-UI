@@ -45,6 +45,8 @@ export interface ChildProfile {
   multiplication_max: MultiplicationRange;
   social_enabled: boolean;
   question_count: QuestionCountOption;
+  enabled_operations: ModuleId[];
+  mix_operations: boolean;
   // Management
   is_active: boolean;
   sort_order: number;

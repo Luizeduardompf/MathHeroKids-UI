@@ -100,8 +100,33 @@ export function getLevelXpCeil(level: number): number {
 
 export const MODULE_ID = {
   MULTIPLICATION: 'multiplication',
-  DIVISION: 'division',       // future
-  ADDITION: 'addition',       // future
-  SUBTRACTION: 'subtraction', // future
+  DIVISION: 'division',
+  ADDITION: 'addition',
+  SUBTRACTION: 'subtraction',
 } as const;
 export type ModuleId = (typeof MODULE_ID)[keyof typeof MODULE_ID];
+export const OPERATIONS: ModuleId[] = ['multiplication', 'addition', 'subtraction', 'division'];
+
+export const OPERATION_SYMBOLS: Record<ModuleId, string> = {
+  multiplication: '×',
+  addition: '+',
+  subtraction: '−',
+  division: '÷',
+};
+
+export const OPERATION_CATEGORY_KEYS: Record<ModuleId, string> = {
+  multiplication: 'challenge.categoryMultiplication',
+  addition: 'challenge.categoryAddition',
+  subtraction: 'challenge.categorySubtraction',
+  division: 'challenge.categoryDivision',
+};
+
+/** Calcula a resposta correta a partir da operação — usado só para feedback local imediato; a EF é a fonte autoritativa. */
+export function computeAnswer(operation: ModuleId, operandA: number, operandB: number): number {
+  switch (operation) {
+    case 'multiplication': return operandA * operandB;
+    case 'addition': return operandA + operandB;
+    case 'subtraction': return operandA - operandB;
+    case 'division': return operandA / operandB;
+  }
+}
