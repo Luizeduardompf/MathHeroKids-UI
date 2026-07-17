@@ -286,3 +286,20 @@ realmente gravou:
 vir do resultado confirmado do servidor, ou estar claramente rotulado como provisório/em curso — nunca
 um valor calculado no cliente apresentado como se já fosse definitivo. Ver também memória global
 `feedback-xp-realtime-truth`.
+
+---
+
+**Cuidado com `useEffect` de init que tem `phase` (ou qualquer campo que `reset()` também mexe) na
+dependency array E chama `storeActions.reset()` dentro do próprio handler.** (sessão 13, mesmo dia)
+O fix do `ALREADY_COMPLETED` acima introduziu um loop infinito real (app travava): `handleComplete()`
+já chamava `storeActions.reset()` no sucesso, antes de navegar para casa — isso devolve `phase` a
+`'idle'`. O `useEffect` de `init()` em `[date].tsx` só tinha a guarda `phase === 'idle'`; se o
+`router.replace` ainda não tinha desmontado o ecrã nesse instante, o efeito reentrava em `init()` para
+a MESMA data — que agora dava `409 ALREADY_COMPLETED`, cujo catch chamava `reset()` outra vez → `phase`
+volta a `'idle'` → reentra outra vez → `Alert.alert()` empilhando-se mais depressa do que dava para
+tocar OK, até travar. Fix: `initedDateRef` (ref local, não a store global) marca a data já tratada
+(sucesso OU erro terminal tipo `ALREADY_COMPLETED`) nesta instância do ecrã, e o efeito ignora
+reentradas para a mesma data independentemente de `phase` oscilar — sem bloquear o retry genuíno
+(offline/500, que não marca a ref). **Regra: qualquer efeito de init que dependa de um campo que
+`reset()` também zera precisa de uma guarda própria (ref local) contra reentrada, não pode confiar só
+no valor desse campo.**
