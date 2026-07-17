@@ -30,7 +30,7 @@ import { withDelay } from 'react-native-reanimated'; // eslint-disable-line
 import { Ionicons } from '@expo/vector-icons';
 import { useShallow } from 'zustand/react/shallow';
 
-import { ConfirmDialog, Text } from '@/components/ui';
+import { Text } from '@/components/ui';
 import { colors, fontFamily, radius, space, shadows } from '@/theme';
 import { CorrectOverlay } from '@/components/challenge/CorrectOverlay';
 import { CompletedScreen } from '@/components/challenge/CompletedScreen';
@@ -700,8 +700,6 @@ export default function ChallengeScreen() {
   const uniqueCorrect = useChallengeStore(selectUniqueCorrectCount);
 
   const [inputDigits, setInputDigits] = useState<number[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showExitModal, setShowExitModal] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
 
   // Phase 3 — celebrações pós-challenge
@@ -714,6 +712,11 @@ export default function ChallengeScreen() {
     Array<{ type: 'trophy'; data: Trophy } | { type: 'achievement'; data: Achievement }>
   >([]);
   const pendingNavRef = useRef<(() => void) | null>(null);
+  // Coordena o fim da animação do troféu (3s) com o fim da submissão real —
+  // só esconde a tela de troféu quando AMBOS terminarem, para nunca voltar a
+  // mostrar a tela "Desafio concluído!" por trás enquanto a rede ainda responde.
+  const celebrationTimerDoneRef = useRef(false);
+  const submissionDoneRef = useRef(false);
   // Data já tratada (sessão iniciada ou confirmada como já concluída) nesta
   // instância do ecrã. Impede reentrar em init() quando handleComplete() ou o
   // catch de ALREADY_COMPLETED chamam storeActions.reset() — isso devolve
@@ -864,9 +867,17 @@ export default function ChallengeScreen() {
 
   // ─── Complete ────────────────────────────────────────────────────────────
 
+  // Só esconde a animação do troféu quando ela própria já correu os 3s E a
+  // submissão ao servidor já terminou — evita voltar a mostrar "Desafio
+  // concluído!" por baixo enquanto o pedido de rede ainda está pendente.
+  const dismissCelebrationIfReady = useCallback(() => {
+    if (celebrationTimerDoneRef.current && submissionDoneRef.current) {
+      setShowCelebration(false);
+    }
+  }, []);
+
   const handleComplete = useCallback(async () => {
     if (!child || !sessionId) return;
-    setIsSubmitting(true);
     storeActions.setPhase('submitting');
 
     // Guardar completion local — garante que o calendário mostra o estado correcto
@@ -882,10 +893,18 @@ export default function ChallengeScreen() {
         result.xp_total,
         result.new_level ?? child.level,
       );
-      storeActions.reset();
 
       // ── Phase 3: mostrar celebrações antes de navegar ──────────────────
-      const navigate = () => router.replace('/(app)/(tabs)/');
+      // reset() só corre aqui dentro, mesmo antes de navegar — se corresse logo
+      // após o sucesso do pedido, phase voltava a 'idle' a meio da animação do
+      // troféu/modal de level-up/trophy, e o ecrã "if (phase === 'idle' ...)"
+      // (que vem antes de showCelebration/levelUpData/earnedItems no render)
+      // ficava a mostrar o spinner para sempre — travamento logo após o
+      // troféu, sem nunca chegar a navegar.
+      const navigate = () => {
+        storeActions.reset();
+        router.replace('/(app)/(tabs)/');
+      };
 
       const items: Array<{ type: 'trophy'; data: Trophy } | { type: 'achievement'; data: Achievement }> = [
         ...(result.trophies_earned ?? []).map(t => ({ type: 'trophy' as const, data: t })),
@@ -909,13 +928,16 @@ export default function ChallengeScreen() {
       } else {
         navigate();
       }
+
+      submissionDoneRef.current = true;
+      dismissCelebrationIfReady();
     } catch (e) {
+      submissionDoneRef.current = true;
+      setShowCelebration(false);
       storeActions.setPhase('error');
       Alert.alert(t('common.error'), (e as Error).message);
-    } finally {
-      setIsSubmitting(false);
     }
-  }, [child, sessionId, challengeDate, moduleId, allAnswers, uniqueCorrect, router, t, storeActions]);
+  }, [child, sessionId, challengeDate, moduleId, allAnswers, uniqueCorrect, router, t, storeActions, dismissCelebrationIfReady]);
 
   // ─── Loading ─────────────────────────────────────────────────────────────
 
@@ -991,9 +1013,10 @@ export default function ChallengeScreen() {
   if (showCelebration) {
     return (
       <CelebrationTransition
+        isRetroactive={isRetroactive}
         onComplete={() => {
-          setShowCelebration(false);
-          void handleComplete();
+          celebrationTimerDoneRef.current = true;
+          dismissCelebrationIfReady();
         }}
       />
     );
@@ -1001,15 +1024,21 @@ export default function ChallengeScreen() {
 
   // ─── Completed ────────────────────────────────────────────────────────────
 
-  if (phase === 'completed' || phase === 'submitting') {
-    const totalXp = sessionXp + CHALLENGE.XP_COMPLETION_BONUS +
-      (uniqueCorrect === totalQuestions ? CHALLENGE.XP_PERFECT_BONUS : 0);
+  if (phase === 'completed') {
+    const perfectXp = uniqueCorrect === totalQuestions ? CHALLENGE.XP_PERFECT_BONUS : 0;
+    const totalXp = sessionXp + CHALLENGE.XP_COMPLETION_BONUS + perfectXp;
     return (
       <CompletedScreen
         xpOverride={totalXp}
+        xpBreakdown={{ answers: sessionXp, bonus: CHALLENGE.XP_COMPLETION_BONUS, perfect: perfectXp }}
         questionsCorrect={uniqueCorrect}
-        onContinue={() => setShowCelebration(true)}
-        isLoading={isSubmitting}
+        isRetroactive={isRetroactive}
+        onContinue={() => {
+          celebrationTimerDoneRef.current = false;
+          submissionDoneRef.current = false;
+          setShowCelebration(true);
+          void handleComplete();
+        }}
       />
     );
   }
@@ -1118,22 +1147,9 @@ export default function ChallengeScreen() {
           )}
         </View>
       )}
-      <ConfirmDialog
-        visible={showExitModal}
-        title={t('challenge.exitTitle')}
-        message={sessionXp > 0 ? t('challenge.exitMessageWithXp', { xp: sessionXp }) : t('challenge.exitMessage')}
-        primaryLabel={t('challenge.exitConfirm')}
-        primaryVariant="primary"
-        onPrimary={() => setShowExitModal(false)}
-        confirmLabel={t('challenge.exitLeave')}
-        confirmVariant="neutral"
-        onConfirm={() => { setShowExitModal(false); storeActions.reset(); router.back(); }}
-        layout="stack"
-      />
-
       {/* Header: [X] [Questão X de 20 + progress] [⏰ timer] */}
       <View style={gs.header}>
-        <Pressable onPress={() => setShowExitModal(true)} style={gs.exitBtn} accessibilityLabel={t('challenge.exitChallengeLabel')}>
+        <Pressable onPress={() => { storeActions.reset(); router.back(); }} style={gs.exitBtn} accessibilityLabel={t('challenge.exitChallengeLabel')}>
           <View style={gs.exitBtnCircle}>
             <Ionicons name="close" size={22} color="#4B5563" />
           </View>

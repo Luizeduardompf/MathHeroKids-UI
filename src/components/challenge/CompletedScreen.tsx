@@ -140,14 +140,18 @@ const cs = StyleSheet.create({
 
 export function CompletedScreen({
   xpOverride,
+  xpBreakdown,
   questionsCorrect,
   onContinue,
   isLoading,
+  isRetroactive,
 }: {
   xpOverride?: number;
+  xpBreakdown?: { answers: number; bonus: number; perfect: number };
   questionsCorrect?: number;
   onContinue: () => void;
   isLoading?: boolean;
+  isRetroactive?: boolean;
 }) {
   const { t } = useTranslation();
   const total = useChallengeStore.getState().totalQuestions || CHALLENGE.TOTAL_QUESTIONS;
@@ -156,9 +160,12 @@ export function CompletedScreen({
   const pct   = Math.min(100, Math.round((qs / total) * 100));
 
   // ── Shared values ──────────────────────────────────────────────────────────
-  const badgeY      = useSharedValue(-30);
-  const badgeScale  = useSharedValue(0.7);
+  // Badge entra em zoom-out: nasce grande (2.6x) e encolhe rápido até encaixar
+  // no lugar, com leve overshoot elástico — depois pulsa por 2s para chamar atenção.
+  const badgeScale  = useSharedValue(2.6);
   const badgeOp     = useSharedValue(0);
+  const ringScale   = useSharedValue(1);
+  const ringOp      = useSharedValue(0);
 
   const miloScale   = useSharedValue(0);
   const miloRot     = useSharedValue(-25);
@@ -181,10 +188,39 @@ export function CompletedScreen({
   useEffect(() => {
     playSound('complete');
 
-    // XP badge (100ms)
-    badgeY.value     = withDelay(100, withSpring(0, { stiffness: 320, damping: 18 }));
-    badgeScale.value = withDelay(100, withSpring(1, { stiffness: 320, damping: 18 }));
-    badgeOp.value    = withDelay(100, withTiming(1, { duration: 180 }));
+    // XP badge (100ms) — zoom-out rápido (2.6x → overshoot 1.15x → encaixa em 1x),
+    // depois pulsa 4x (2s totais) para não deixar o bónus passar despercebido.
+    badgeOp.value    = withDelay(100, withTiming(1, { duration: 120 }));
+    badgeScale.value = withDelay(100, withSequence(
+      withTiming(1.15, { duration: 200, easing: Easing.out(Easing.exp) }),
+      withSpring(1, { stiffness: 340, damping: 11 }),
+      withDelay(150, withRepeat(
+        withSequence(
+          withTiming(1.08, { duration: 250, easing: Easing.inOut(Easing.quad) }),
+          withTiming(1,    { duration: 250, easing: Easing.inOut(Easing.quad) }),
+        ),
+        4, // 4 × 500ms = 2s de pulso
+        false,
+      )),
+    ));
+
+    // Anel de destaque atrás do badge — "ping" sincronizado com cada pulso
+    ringOp.value    = withDelay(800, withRepeat(
+      withSequence(
+        withTiming(0.45, { duration: 40 }),
+        withTiming(0,    { duration: 460, easing: Easing.out(Easing.quad) }),
+      ),
+      4,
+      false,
+    ));
+    ringScale.value = withDelay(800, withRepeat(
+      withSequence(
+        withTiming(1,   { duration: 0 }),
+        withTiming(1.6, { duration: 500, easing: Easing.out(Easing.quad) }),
+      ),
+      4,
+      false,
+    ));
 
     // Milo entrance (200ms)
     miloScale.value = withDelay(200, withSpring(1, { stiffness: 200, damping: 12 }));
@@ -225,7 +261,14 @@ export function CompletedScreen({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const badgeAnim = useAnimatedStyle(() => ({
     opacity:   badgeOp.value,
-    transform: [{ translateY: badgeY.value }, { scale: badgeScale.value }],
+    transform: [{ scale: badgeScale.value }],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  })) as any;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ringAnim = useAnimatedStyle(() => ({
+    opacity:   ringOp.value,
+    transform: [{ scale: ringScale.value }],
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   })) as any;
 
@@ -289,11 +332,14 @@ export function CompletedScreen({
     >
       <Confetti />
 
-      {/* XP badge — top right */}
-      <Animated.View style={[s.xpBadge, badgeAnim]}>
-        <Ionicons name="flash" size={18} color="#fff" style={{ marginRight: 4 }} />
-        <Text style={s.xpBadgeText}>+{xp} XP</Text>
-      </Animated.View>
+      {/* XP badge — top right, com anel de destaque pulsante atrás */}
+      <View style={s.xpBadgeWrapper}>
+        <Animated.View style={[s.xpBadgeRing, ringAnim]} pointerEvents="none" />
+        <Animated.View style={[s.xpBadge, badgeAnim]}>
+          <Ionicons name="flash" size={18} color="#fff" style={{ marginRight: 4 }} />
+          <Text style={s.xpBadgeText}>+{xp} XP</Text>
+        </Animated.View>
+      </View>
 
       {/* Center content */}
       <View style={s.content}>
@@ -319,8 +365,34 @@ export function CompletedScreen({
 
         {/* Subtitle */}
         <Animated.View style={subAnim}>
-          <Text style={s.subtitle}>{t('challenge.completed.subtitle')}</Text>
+          <Text style={s.subtitle}>
+            {t(isRetroactive ? 'challenge.completed.subtitlePast' : 'challenge.completed.subtitle')}
+          </Text>
         </Animated.View>
+
+        {/* XP breakdown — explica de onde vem o total, o bónus de conclusão
+            não deve ficar oculto (ver conversa com o pai sobre 4/5 = 12 XP) */}
+        {xpBreakdown && (
+          <Animated.View style={[s.breakdownRow, progressSectionAnim]}>
+            <View style={s.breakdownChip}>
+              <Text style={s.breakdownChipText}>
+                {t('challenge.completed.xpBreakdown.answers', { xp: xpBreakdown.answers })}
+              </Text>
+            </View>
+            <View style={s.breakdownChip}>
+              <Text style={s.breakdownChipText}>
+                {t('challenge.completed.xpBreakdown.bonus', { xp: xpBreakdown.bonus })}
+              </Text>
+            </View>
+            {xpBreakdown.perfect > 0 && (
+              <View style={[s.breakdownChip, s.breakdownChipPerfect]}>
+                <Text style={s.breakdownChipText}>
+                  {t('challenge.completed.xpBreakdown.perfect', { xp: xpBreakdown.perfect })}
+                </Text>
+              </View>
+            )}
+          </Animated.View>
+        )}
 
         {/* Progress */}
         <Animated.View style={[s.progressSection, progressSectionAnim]}>
@@ -365,8 +437,22 @@ const s = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  xpBadge: {
+  xpBadgeWrapper: {
     alignSelf: 'flex-end',
+    position: 'relative',
+  },
+  xpBadgeRing: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 999,
+    borderWidth: 3,
+    borderColor: '#fff',
+    zIndex: 9,
+  },
+  xpBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.18)',
@@ -447,6 +533,28 @@ const s = StyleSheet.create({
     lineHeight: 24,
     marginTop: 10,
     maxWidth: 300,
+  },
+
+  breakdownRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 14,
+  },
+  breakdownChip: {
+    backgroundColor: 'rgba(0,0,0,0.16)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  breakdownChipPerfect: {
+    backgroundColor: 'rgba(255,255,255,0.28)',
+  },
+  breakdownChipText: {
+    fontFamily: fontFamily.bold,
+    fontSize: 12,
+    color: '#fff',
   },
 
   progressSection: {

@@ -343,7 +343,7 @@ const tc = StyleSheet.create({
 
 // ─── CelebrationTransition ────────────────────────────────────────────────────
 
-export function CelebrationTransition({ onComplete }: { onComplete: () => void }) {
+export function CelebrationTransition({ onComplete, isRetroactive }: { onComplete: () => void; isRetroactive?: boolean }) {
   const { t } = useTranslation();
 
   // Auto-advance after 3s
@@ -429,7 +429,9 @@ export function CelebrationTransition({ onComplete }: { onComplete: () => void }
         </Animated.View>
 
         <Animated.View style={subAnim}>
-          <Text style={cs.subtitle}>{t('challenge.celebration.subtitle')}</Text>
+          <Text style={cs.subtitle}>
+            {t(isRetroactive ? 'challenge.celebration.subtitlePast' : 'challenge.celebration.subtitle')}
+          </Text>
         </Animated.View>
       </View>
     </View>
