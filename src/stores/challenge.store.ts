@@ -224,7 +224,8 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
     const q25 = Math.floor(total * 0.25);
     const q50 = Math.floor(total * 0.5);
     const q75 = Math.floor(total * 0.75);
-    const isMilestone = (nextIndex === q25 || nextIndex === q50 || nextIndex === q75) && nextIndex > 0 && nextIndex < total;
+    const isMilestone = total >= 10
+      && (nextIndex === q25 || nextIndex === q50 || nextIndex === q75) && nextIndex > 0 && nextIndex < total;
     const isLast = nextIndex >= total;
 
     if (!isCorrect) {
@@ -327,7 +328,8 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
     const q25 = Math.floor(state.totalQuestions * 0.25);
     const q50 = Math.floor(state.totalQuestions * 0.5);
     const q75 = Math.floor(state.totalQuestions * 0.75);
-    const isMilestone = (nextIndex === q25 || nextIndex === q50 || nextIndex === q75) && nextIndex > 0 && nextIndex < state.totalQuestions;
+    const isMilestone = state.totalQuestions >= 10
+      && (nextIndex === q25 || nextIndex === q50 || nextIndex === q75) && nextIndex > 0 && nextIndex < state.totalQuestions;
 
     set({
       currentQuestionIndex: nextIndex,
