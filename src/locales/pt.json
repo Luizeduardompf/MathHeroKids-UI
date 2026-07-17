@@ -675,7 +675,16 @@
       "tablesLabel": "Tabuadas até",
       "tablesHint": "Limite máximo das multiplicações",
       "socialLabel": "Funcionalidades sociais",
-      "socialHint": "Amigos, ranking e chat"
+      "socialHint": "Amigos, ranking e chat",
+      "dangerZoneTitle": "Zona de perigo",
+      "dangerZoneHint": "Esta ação é permanente e não pode ser desfeita.",
+      "deleteBtn": "Eliminar filho definitivamente",
+      "deleteWarning": "Isto vai eliminar para sempre o perfil de {{name}} e todos os dados associados: progresso, XP, nível, troféus, conquistas, histórico de desafios, amigos e mensagens. Não será possível recuperar depois.",
+      "deleteConfirmLabel": "Escreve @{{username}} para confirmar",
+      "deleteConfirmPlaceholder": "@username",
+      "deleteConfirmBtn": "Eliminar definitivamente",
+      "deleteCancelBtn": "Cancelar",
+      "deleteMismatch": "O username não corresponde."
     },
     "editProfile": "Editar perfil",
     "editProfileSub": "Dados do responsável",

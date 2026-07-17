@@ -453,7 +453,16 @@
       "tablesLabel": "Tablas de multiplicar hasta",
       "tablesHint": "Límite máximo de multiplicaciones",
       "socialLabel": "Funciones sociales",
-      "socialHint": "Amigos, ranking y chat"
+      "socialHint": "Amigos, ranking y chat",
+      "dangerZoneTitle": "Zona de peligro",
+      "dangerZoneHint": "Esta acción es permanente y no se puede deshacer.",
+      "deleteBtn": "Eliminar hijo definitivamente",
+      "deleteWarning": "Esto eliminará para siempre el perfil de {{name}} y todos los datos asociados: progreso, XP, nivel, trofeos, logros, historial de desafíos, amigos y mensajes. No se podrá recuperar después.",
+      "deleteConfirmLabel": "Escribe @{{username}} para confirmar",
+      "deleteConfirmPlaceholder": "@username",
+      "deleteConfirmBtn": "Eliminar definitivamente",
+      "deleteCancelBtn": "Cancelar",
+      "deleteMismatch": "El nombre de usuario no coincide."
     },
     "controls": {
       "title": "Control parental"

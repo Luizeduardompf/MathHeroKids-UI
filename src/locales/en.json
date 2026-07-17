@@ -668,7 +668,16 @@
       "tablesLabel": "Times tables up to",
       "tablesHint": "Maximum multiplication limit",
       "socialLabel": "Social features",
-      "socialHint": "Friends, ranking and chat"
+      "socialHint": "Friends, ranking and chat",
+      "dangerZoneTitle": "Danger zone",
+      "dangerZoneHint": "This action is permanent and cannot be undone.",
+      "deleteBtn": "Permanently delete child",
+      "deleteWarning": "This will permanently delete {{name}}'s profile and all associated data: progress, XP, level, trophies, achievements, challenge history, friends and messages. It cannot be recovered afterwards.",
+      "deleteConfirmLabel": "Type @{{username}} to confirm",
+      "deleteConfirmPlaceholder": "@username",
+      "deleteConfirmBtn": "Delete permanently",
+      "deleteCancelBtn": "Cancel",
+      "deleteMismatch": "The username doesn't match."
     },
     "editProfile": "Edit profile",
     "editProfileSub": "Parent's data",

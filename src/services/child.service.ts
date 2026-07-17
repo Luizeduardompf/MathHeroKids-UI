@@ -152,6 +152,33 @@ export const childService = {
   },
 
   /**
+   * Elimina definitivamente um child_profile e todos os dados relacionados
+   * (challenges, XP, streak, calendário, troféus, achievements, amizades,
+   * mensagens, mastery) via Edge Function `delete_child` (service role,
+   * ON DELETE CASCADE nas foreign keys). Irreversível.
+   */
+  async deleteChild(childId: string): Promise<void> {
+    const { error } = await supabase.functions.invoke('delete_child', {
+      body: { child_id: childId },
+    });
+
+    if (!error) return;
+
+    let message = 'Não foi possível eliminar o perfil. Tente novamente.'; // i18n-ignore — traduzido na UI layer
+    try {
+      const ctx = (error as { context?: Response }).context;
+      if (ctx) {
+        const body = await ctx.clone().json() as { error?: string; message?: string };
+        if (body.error === 'FORBIDDEN') message = 'Este perfil não pertence à tua conta.';
+        else if (body.error === 'CHILD_NOT_FOUND') message = 'Perfil não encontrado.';
+        else if (body.message) message = body.message;
+      }
+    } catch { /* usar mensagem default */ }
+
+    throw new Error(message);
+  },
+
+  /**
    * Check if a username is available (case-insensitive).
    * Returns true if available.
    */

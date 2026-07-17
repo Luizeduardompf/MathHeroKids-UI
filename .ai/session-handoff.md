@@ -4,19 +4,60 @@
 
 ---
 
-## Estado actual — 2026-07-17 (sessão 13)
+## Estado actual — 2026-07-17 (sessão 14)
 
 ### 🟢 Em curso
 ```
-ESTADO: LIVRE — redesenho de XP + 3 bugs de "XP não reflete a realidade" corrigidos e pushed
-(último commit desta sessão: 266327f, depois só docs/memória).
+ESTADO: LIVRE — feature "eliminar filho definitivamente" (parent-area) implementada, deployada e a
+ser commitada nesta sessão.
 DÍVIDA: expo-router 5→6 desalinhado com SDK 54.
 DÍVIDA: 3 erros TypeScript pré-existentes (friends.tsx: Image, social_enabled; ranking.tsx: social_enabled).
-NOTA: working tree continua a ter trabalho social/sons em curso doutra sessão, não tocado —
-app.json, _layout.tsx, vários components/challenge/*, social.service.ts, src/components/social/,
-sound.service.ts, assets/sounds/*.mp3, scripts/, src/constants/version.ts — por commitar por quem
-estiver a fazer esse trabalho.
+NÃO TESTADO NO SIMULATOR/DEVICE — só validação estática (type-check limpo nos ficheiros tocados).
+Recomendado antes de fechar: testar o fluxo completo (parent-area → editar filho → zona de perigo →
+escrever @username → confirmar → verificar que a criança desaparece da lista e, se era a activa, que
+o app volta ao seletor de perfis).
 ```
+
+---
+
+### ✅ Concluído (sessão 14 — 2026-07-17) — Eliminar filho definitivamente (parent-area)
+
+**Pedido do user:** opção nas definições dos pais para apagar um filho de forma definitiva, sem
+deixar dados órfãos.
+
+**Descoberta:** praticamente todas as FKs para `child_profiles.id` já tinham `ON DELETE CASCADE`
+(challenge_sessions, challenge_answers, child_xp_ledger, calendar_days, child_trophies,
+child_achievements, child_level_rewards, friendships, friend_requests, messages, child_fact_mastery —
+ver `backend/migrations/001_initial_schema.sql`). Não havia policy RLS de `DELETE` em `child_profiles`
+(de propósito — só `service_role` pode apagar), por isso o delete **tem** de passar por Edge Function.
+
+**`backend/functions/delete_child/index.ts`** (novo, copiado para `supabase/functions/` e deployado
+com `--use-api`): recebe `{ child_id }`, autentica o parent via `Authorization` header
+(`supabase.auth.getUser()`), confirma com `supabaseAdmin` que `child_profiles.parent_id === user.id`
+(evita um pai apagar filho de outra conta só por saber o id), depois `DELETE FROM child_profiles WHERE
+id = child_id` com service role — cascade trata do resto. Mesmo padrão de auth que `verify_parent_pin`.
+
+**`src/services/child.service.ts`**: `deleteChild(childId)` novo — chama a EF via
+`supabase.functions.invoke`, mesmo padrão de erro de `cancelFriendRequest` em `social.service.ts`.
+
+**`app/(app)/parent-area/child/[id].tsx`**: secção "Zona de perigo" no fundo do ecrã (depois das
+stats). Fluxo: botão vermelho → `Alert.alert` de confirmação → caixa inline pedindo para escrever
+`@username` exacto → botão "Eliminar definitivamente" (disabled até bater) → chama `deleteChild` →
+invalida query `['children', parentId]` → se era o `activeChild`, `clearActiveChild()` (o guard de
+`(app)/_layout.tsx` não redirecciona porque `parent-area` está em `PARENT_ONLY_ROUTES`) → `router.back()`.
+
+**i18n:** chaves novas em `parentArea.child.*` (dangerZoneTitle, dangerZoneHint, deleteBtn,
+deleteWarning, deleteConfirmLabel, deleteConfirmPlaceholder, deleteConfirmBtn, deleteCancelBtn,
+deleteMismatch) traduzidas em pt/en/es/fr.
+
+**Nota separada (não mexida):** `es.json`/`fr.json` já tinham um buraco pré-existente de ~16 chaves
+em `parentArea` (changePassword, pinSection, removePinBtn, etc. só existem em pt/en) — fora do
+âmbito deste pedido, mas fica registado para uma futura sessão de i18n audit.
+
+**Validação:** `npx tsc --noEmit` limpo nos ficheiros tocados (os 3 erros restantes são pré-existentes,
+confirmados via `git log` que não vêm desta sessão). ESLint não corre neste ambiente (erro de config
+`ajv` pré-existente). Deploy da EF confirmado com sucesso (`supabase functions deploy delete_child
+--use-api`).
 
 ---
 

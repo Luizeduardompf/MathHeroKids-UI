@@ -1,10 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text as RNText, View } from 'react-native';
+// @ts-expect-error RN 0.85 quirk — Alert present at runtime
+import { Alert } from 'react-native'; // eslint-disable-line
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { AvatarPicker, Button, Input, Text } from '@/components/ui';
 import { childService } from '@/services/child.service';
@@ -62,10 +65,12 @@ function formatDateForDisplay(isoDate: string | null): string {
 export default function EditarCriancaScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
   const parentId = useAuthStore(selectParentId);
   const activeChild = useProfileStore(selectActiveChild);
   const setActiveChild = useProfileStore((s) => s.setActiveChild);
+  const clearActiveChild = useProfileStore((s) => s.clearActiveChild);
 
   const [child, setChild] = useState<ChildProfile | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -80,6 +85,12 @@ export default function EditarCriancaScreen() {
   const [socialEnabled, setSocialEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Delete flow
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Load child by ID
   useEffect(() => {
@@ -132,6 +143,41 @@ export default function EditarCriancaScreen() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleDeleteConfirm() {
+    if (!child) return;
+    if (deleteConfirmText.trim().toLowerCase() !== `@${child.username}`.toLowerCase()) {
+      setDeleteError(t('parentArea.child.deleteMismatch'));
+      return;
+    }
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await childService.deleteChild(child.id);
+      await queryClient.invalidateQueries({ queryKey: ['children', parentId] });
+      if (activeChild?.id === child.id) clearActiveChild();
+      router.back();
+    } catch (e) {
+      setDeleteError((e as Error).message);
+      setDeleting(false);
+    }
+  }
+
+  function handleDeletePress() {
+    if (!child) return;
+    Alert.alert(
+      t('parentArea.child.deleteBtn'),
+      t('parentArea.child.deleteWarning', { name: child.display_name }),
+      [
+        { text: t('parentArea.child.deleteCancelBtn'), style: 'cancel' },
+        {
+          text: t('parentArea.child.deleteBtn'),
+          style: 'destructive',
+          onPress: () => { setDeleteConfirmText(''); setDeleteError(null); setShowDeleteConfirm(true); },
+        },
+      ],
+    );
   }
 
   // ── Loading / error state ─────────────────────────────────────────────────
@@ -308,6 +354,56 @@ export default function EditarCriancaScreen() {
             </RNText>
           </View>
         </View>
+
+        {/* ── Danger zone ─────────────────────────────────────────── */}
+        <View style={styles.dangerZone}>
+          <Text variant="label" color={colors.error}>{t('parentArea.child.dangerZoneTitle')}</Text>
+          <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.dangerZoneHint')}</Text>
+
+          {!showDeleteConfirm ? (
+            <Button
+              label={t('parentArea.child.deleteBtn')}
+              onPress={handleDeletePress}
+              variant="destructive"
+              style={styles.deleteBtn}
+            />
+          ) : (
+            <View style={styles.deleteConfirmBox}>
+              <Text variant="bodySmall" color={colors.error}>
+                {t('parentArea.child.deleteWarning', { name: child.display_name })}
+              </Text>
+              <Input
+                label={t('parentArea.child.deleteConfirmLabel', { username: child.username })}
+                placeholder={t('parentArea.child.deleteConfirmPlaceholder')}
+                value={deleteConfirmText}
+                onChangeText={(v: string) => { setDeleteConfirmText(v); setDeleteError(null); }}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {deleteError ? (
+                <Text variant="bodySmall" color={colors.error}>{deleteError}</Text>
+              ) : null}
+              <View style={styles.deleteConfirmActions}>
+                <Button
+                  label={t('parentArea.child.deleteCancelBtn')}
+                  variant="secondary"
+                  fullWidth={false}
+                  onPress={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  style={styles.deleteConfirmActionBtn}
+                />
+                <Button
+                  label={t('parentArea.child.deleteConfirmBtn')}
+                  variant="destructive"
+                  fullWidth={false}
+                  onPress={handleDeleteConfirm}
+                  loading={deleting}
+                  style={styles.deleteConfirmActionBtn}
+                />
+              </View>
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -346,6 +442,21 @@ const styles = StyleSheet.create({
   avatarGrid: { marginBottom: space.md },
   form: { gap: space.md },
   saveBtn: { marginTop: space.sm },
+
+  // ── Danger zone ──────────────────────────────────────────────────────────────
+  dangerZone: {
+    marginTop: space.md,
+    padding: space.md,
+    borderRadius: radius.xl,
+    borderWidth: 1.5,
+    borderColor: `${colors.error}40`,
+    backgroundColor: `${colors.error}0D`,
+    gap: 6,
+  },
+  deleteBtn: { marginTop: space.sm },
+  deleteConfirmBox: { marginTop: space.sm, gap: space.sm },
+  deleteConfirmActions: { flexDirection: 'row', gap: space.sm, marginTop: 4 },
+  deleteConfirmActionBtn: { flex: 1 },
 
   // ── Game settings ────────────────────────────────────────────────────────────
   settingCard: {
