@@ -148,8 +148,10 @@
     "exitTitle": "Leave challenge?",
     "exitChallengeLabel": "Leave challenge",
     "exitMessage": "Your progress on this question won't be saved.",
+    "exitMessageWithXp": "If you leave now, you'll lose the {{xp}} XP you've earned this session. Are you sure?",
     "exitConfirm": "Continue",
     "exitLeave": "Leave",
+    "sessionXp": "XP this session: {{xp}}",
     "correct": "Correct!",
     "xpEarned": "+{{xp}} XP",
     "wrong": {

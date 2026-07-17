@@ -148,8 +148,10 @@
     "exitTitle": "Sair do desafio?",
     "exitChallengeLabel": "Sair do desafio",
     "exitMessage": "Seu progresso desta questão não será salvo.",
+    "exitMessageWithXp": "Se sair agora, vai perder os {{xp}} XP que já ganhou nesta sessão. Tem certeza?",
     "exitConfirm": "Continuar",
     "exitLeave": "Sair",
+    "sessionXp": "XP desta sessão: {{xp}}",
     "correct": "Acertou!",
     "xpEarned": "+{{xp}} XP",
     "wrong": {

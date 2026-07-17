@@ -148,8 +148,10 @@
     "exitTitle": "¿Salir del desafío?",
     "exitChallengeLabel": "Salir del desafío",
     "exitMessage": "Tu progreso en esta pregunta no se guardará.",
+    "exitMessageWithXp": "Si sales ahora, perderás los {{xp}} XP que ya ganaste en esta sesión. ¿Estás seguro?",
     "exitConfirm": "Continuar",
     "exitLeave": "Salir",
+    "sessionXp": "XP de esta sesión: {{xp}}",
     "correct": "¡Correcto!",
     "xpEarned": "+{{xp}} XP",
     "wrong": {

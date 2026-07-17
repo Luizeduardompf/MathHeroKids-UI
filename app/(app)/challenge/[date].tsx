@@ -1083,10 +1083,17 @@ export default function ChallengeScreen() {
           <Text style={gs.retroBannerText}>{t('challenge.retroactive.xpOnly')}</Text>
         </View>
       )}
+      {/* XP desta sessão — provisório, só é gravado no saldo geral ao concluir */}
+      {sessionXp > 0 && (
+        <View style={gs.sessionXpBanner}>
+          <Ionicons name="flash" size={14} color="#1E40AF" />
+          <Text style={gs.sessionXpBannerText}>{t('challenge.sessionXp', { xp: sessionXp })}</Text>
+        </View>
+      )}
       <ConfirmDialog
         visible={showExitModal}
         title={t('challenge.exitTitle')}
-        message={t('challenge.exitMessage')}
+        message={sessionXp > 0 ? t('challenge.exitMessageWithXp', { xp: sessionXp }) : t('challenge.exitMessage')}
         primaryLabel={t('challenge.exitConfirm')}
         primaryVariant="primary"
         onPrimary={() => setShowExitModal(false)}
@@ -1355,6 +1362,24 @@ const gs = StyleSheet.create({
     fontFamily: fontFamily.semiBold,
     fontSize: 12,
     color: '#92400E',
+  },
+
+  // XP acumulado nesta sessão — provisório, distinto do saldo geral
+  sessionXpBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#DBEAFE',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    alignSelf: 'center',
+    marginBottom: 8,
+  },
+  sessionXpBannerText: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 12,
+    color: '#1E40AF',
   },
 
   // header: flex items-center gap-3 px-4 pt-safe
