@@ -419,8 +419,8 @@
       "dangerZoneHint": "Cette action est permanente et ne peut pas être annulée.",
       "deleteBtn": "Supprimer l'enfant définitivement",
       "deleteWarning": "Ceci supprimera définitivement le profil de {{name}} et toutes les données associées : progression, XP, niveau, trophées, succès, historique des défis, amis et messages. Impossible de récupérer ensuite.",
-      "deleteConfirmLabel": "Tape @{{username}} pour confirmer",
-      "deleteConfirmPlaceholder": "@username",
+      "deleteConfirmLabel": "Tape {{username}} pour confirmer",
+      "deleteConfirmPlaceholder": "username",
       "deleteConfirmBtn": "Supprimer définitivement",
       "deleteCancelBtn": "Annuler",
       "deleteMismatch": "Le nom d'utilisateur ne correspond pas."

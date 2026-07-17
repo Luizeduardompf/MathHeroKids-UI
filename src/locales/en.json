@@ -673,8 +673,8 @@
       "dangerZoneHint": "This action is permanent and cannot be undone.",
       "deleteBtn": "Permanently delete child",
       "deleteWarning": "This will permanently delete {{name}}'s profile and all associated data: progress, XP, level, trophies, achievements, challenge history, friends and messages. It cannot be recovered afterwards.",
-      "deleteConfirmLabel": "Type @{{username}} to confirm",
-      "deleteConfirmPlaceholder": "@username",
+      "deleteConfirmLabel": "Type {{username}} to confirm",
+      "deleteConfirmPlaceholder": "username",
       "deleteConfirmBtn": "Delete permanently",
       "deleteCancelBtn": "Cancel",
       "deleteMismatch": "The username doesn't match."

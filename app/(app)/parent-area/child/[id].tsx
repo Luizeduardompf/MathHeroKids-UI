@@ -147,7 +147,7 @@ export default function EditarCriancaScreen() {
 
   async function handleDeleteConfirm() {
     if (!child) return;
-    if (deleteConfirmText.trim().toLowerCase() !== `@${child.username}`.toLowerCase()) {
+    if (deleteConfirmText.trim().toLowerCase() !== child.username.toLowerCase()) {
       setDeleteError(t('parentArea.child.deleteMismatch'));
       return;
     }
