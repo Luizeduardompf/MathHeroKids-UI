@@ -244,6 +244,13 @@ Consultar `docs/implementation-phases.md` para o roadmap completo.
 - Fluxo pós-login: parent seleciona filho → `profileStore.setActiveChild()` → navega para `(app)`
 - `activeChild` persiste via Zustand persist + AsyncStorage (sobrevive restart)
 - PIN parental: bcrypt via Edge Function `verify_parent_pin` — **nunca client-side**
+- ⚠️ **`mailer_autoconfirm: true`** activado no projecto Supabase (2026-07-17) — signup confirma a
+  conta na hora, sem email de confirmação. Motivo: sem SMTP próprio configurado, o mailer interno do
+  Supabase limita a 2 emails/hora (`rate_limit_email_sent`), o que bloqueava qualquer registo real.
+  Trade-off aceite para o MVP: qualquer email pode registar-se sem provar que é dono dele. **Antes de
+  ir para produção com pais desconhecidos, reconsiderar** — configurar SMTP próprio (Resend/SendGrid/
+  Postmark) e voltar a exigir confirmação (`PATCH /v1/projects/{ref}/config/auth` com
+  `mailer_autoconfirm: false`).
 
 ### XP / Gamificação ⚠️ CRÍTICO
 - XP, level, streak, trophies, achievements são **SEMPRE mutados por Edge Functions**

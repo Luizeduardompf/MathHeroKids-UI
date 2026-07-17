@@ -8,8 +8,7 @@
 
 ### 🟢 Em curso
 ```
-ESTADO: LIVRE — Supabase recriado do zero e validado E2E. Backend 100% funcional.
-PENDENTE: reinstalar a app no iPhone (npx expo run:ios) para apanhar o .env novo. A instalada aponta para o projecto morto.
+ESTADO: LIVRE — Supabase recriado e validado E2E, app reinstalada e testada em 2 iPhones físicos.
 DÍVIDA: expo-router 5→6 desalinhado com SDK 54.
 DÍVIDA: 3 erros TypeScript pré-existentes (friends.tsx: Image, social_enabled; ranking.tsx: social_enabled).
 ```
@@ -55,7 +54,35 @@ contava 0 e `daily1`/`firstChallenge`/`perfect1`/`firstPerfect` nunca disparavam
 **Conta de teste:** `teste.mathhero@gmail.com` / `Teste1234!` · criança `Testinho`/`testinho`.
 Nota: Supabase rejeita domínios `.dev` no signup; confirmar email via admin API `{"email_confirm":true}`.
 
-**Próximo passo:** reinstalar no iPhone — `npx expo run:ios --device 00008140-001A45E80CEA801C --configuration Release --no-bundler` (build caduca ~23 Jul).
+**7. Reinstalação em 2 iPhones físicos** (2026-07-16/17) — ambos confirmados a funcionar:
+- **iPhone 16 Pro** (Luiz, UDID `00008140-001A45E80CEA801C`) — reinstalado com sucesso.
+- **iPhone 13** (Luana, UDID `00008110-00143041148A801E`) — primeiro deploy neste device: falhou com
+  `Provisioning profile ... doesn't include the currently selected device` (perfil ainda não conhecia
+  o UDID). Fix: `xcodebuild -workspace ios/MathHeroKids.xcworkspace -scheme MathHeroKids -configuration
+  Release -destination "id=<UDID>" -allowProvisioningUpdates build` — regista o device e regenera o
+  perfil. Depois o `expo run:ios` normal passou a funcionar.
+- ⚠️ **Xcode aberto bloqueou builds da CLI duas vezes** — ficavam presos indefinidamente (CPU parada)
+  até fechar o Xcode. Fechar sempre o Xcode antes de correr `expo run:ios` por linha de comandos.
+- ⚠️ Um `xcodebuild` de Debug para o simulador ficou preso a segurar
+  `DerivedData/.../XCBuildData/build.db`, bloqueando o build do device físico com
+  `database is locked`. Fix: `ps aux | grep xcodebuild`, matar o processo com CPU parada há minutos.
+- ⚠️ Um build em background morreu **em silêncio, sem notificação**, depois de ~9h — provavelmente o
+  Mac dormiu a meio da noite. Sempre confirmar `ps aux` antes de assumir que um build ainda corre.
+
+**8. Registo real bloqueado por rate limit — corrigido:** signup de `luizeduardompf@gmail.com` (conta
+real, não a de teste) deu 429 `over_email_send_rate_limit`. Causa: projecto novo usa o mailer interno
+do Supabase (sem SMTP próprio), limite de 2 emails/hora. A conta não chegou a ser criada (bloqueado
+antes disso). Fix aplicado: `mailer_autoconfirm: true` no config de auth do projecto — signup confirma
+na hora, sem depender de email. Decisão do user, documentada em `CLAUDE.md` (secção Auth) — reconsiderar
+se for para produção com pais desconhecidos (SMTP próprio + voltar a exigir confirmação).
+
+**9. Wireless debugging confirmado** — depois da 1ª instalação por cabo em cada device, o Xcode guarda
+"Connect via network" automaticamente (ícone de globo 🌐 em Window → Devices and Simulators). Reinstalações
+seguintes **não precisam de cabo** — confirmado no iPhone 16 Pro (`devicectl` mostra `connected` com o
+cabo desligado). Detalhe completo em `.ai/project-mathhero.md` (secção "Como testar").
+
+**Próximo passo:** nenhum pendente — ambiente estável. Builds caducam por device: iPhone 16 Pro ~23 Jul,
+iPhone 13 da Luana uns dias depois (instalado mais tarde).
 
 ---
 
