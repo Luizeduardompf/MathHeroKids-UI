@@ -18,7 +18,13 @@ insert into public.level_thresholds (level, xp_required, name_key) values
   (14, 10300, 'levels.mago'),
   (15, 11000, 'levels.mestre_numeros'),
   (20, 15000, 'levels.lenda'),
-  (50, 60000, 'levels.lenda_matematica')
+  (50, 60000, 'levels.lenda_matematica'),
+  (55, 72000, 'levels.campeao'),
+  (60, 85000, 'levels.campeao_supremo'),
+  (70, 105000, 'levels.mestre_absoluto'),
+  (80, 130000, 'levels.genio'),
+  (90, 160000, 'levels.genio_supremo'),
+  (100, 200000, 'levels.imortal')
 on conflict (level) do update set
   xp_required = excluded.xp_required,
   name_key = excluded.name_key;

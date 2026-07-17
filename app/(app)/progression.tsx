@@ -15,7 +15,7 @@ import { Card, ProgressBar, Text } from '@/components/ui';
 import { AuthScreen } from '@/components/layout/AuthScreen';
 import { MiloMessage } from '@/components/milo/MiloMessage';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
-import { LEVEL_THRESHOLDS } from '@/constants/config';
+import { LEVEL_THRESHOLDS, getLevelXpCeil } from '@/constants/config';
 import { colors, fontFamily, radius, space } from '@/theme';
 import type { IoniconsName } from '@/components/ui';
 

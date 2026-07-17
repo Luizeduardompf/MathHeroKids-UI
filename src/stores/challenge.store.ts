@@ -123,7 +123,7 @@ export const selectSessionXp = (s: ChallengeState): number => {
       .filter((a) => a.child_answer !== null && a.child_answer === a.operand_a * a.operand_b)
       .map((a) => a.question_index),
   );
-  return correct.size * 10;
+  return correct.size * CHALLENGE.XP_PER_CORRECT_ANSWER;
 };
 
 export const selectUniqueCorrectCount = (s: ChallengeState): number => {

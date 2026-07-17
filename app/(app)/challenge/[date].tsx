@@ -936,7 +936,7 @@ export default function ChallengeScreen() {
   // ─── Correct overlay — CorrectOverlay com confetti animado ─────────────────
 
   if (phase === 'correct') {
-    return <CorrectOverlay xpGain={10} />;
+    return <CorrectOverlay xpGain={CHALLENGE.XP_PER_CORRECT_ANSWER} />;
   }
 
   // ─── Milestone — full screen colored with Milo ────────────────────────────
@@ -971,7 +971,8 @@ export default function ChallengeScreen() {
   // ─── Completed ────────────────────────────────────────────────────────────
 
   if (phase === 'completed' || phase === 'submitting') {
-    const totalXp = sessionXp + 200 + (uniqueCorrect === totalQuestions ? 100 : 0);
+    const totalXp = sessionXp + CHALLENGE.XP_COMPLETION_BONUS +
+      (uniqueCorrect === totalQuestions ? CHALLENGE.XP_PERFECT_BONUS : 0);
     return (
       <CompletedScreen
         xpOverride={totalXp}

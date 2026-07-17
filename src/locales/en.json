@@ -120,7 +120,7 @@
       "continue": "Continue Challenge",
       "start": "Start Challenge",
       "questions": "{{current}} / {{total}} questions",
-      "xpReward": "+150 XP"
+      "xpReward": "+{{xp}} XP"
     },
     "recentTrophies": "Recent trophies",
     "trophy": {
@@ -286,6 +286,10 @@
     "mutualFriends_other": "{{count}} mutual friends",
     "accept": "Accept",
     "reject": "Reject",
+    "alert": {
+      "newMessage": "New message from {{name}}",
+      "newFriendRequest": "{{name}} wants to be your friend!"
+    },
     "add": {
       "title": "Add friend",
       "searchPlaceholder": "Enter username",
@@ -335,7 +339,8 @@
     "blockedUsers": "Blocked users",
     "chat": {
       "friendLabel": "Friend",
-      "emptyTitle": "Start the conversation!"
+      "emptyTitle": "Start the conversation!",
+      "errorSendFailed": "Could not send the message. Please try again."
     },
     "notifications": {
       "empty": "No notifications",
@@ -738,7 +743,13 @@
     "mago": "Wizard",
     "mestre_numeros": "Number Master",
     "lenda": "Math Legend",
-    "lenda_matematica": "Math Legend"
+    "lenda_matematica": "Math Legend",
+    "campeao": "Champion",
+    "campeao_supremo": "Supreme Champion",
+    "mestre_absoluto": "Absolute Master",
+    "genio": "Math Genius",
+    "genio_supremo": "Supreme Genius",
+    "imortal": "Math Immortal"
   },
   "rewards": {
     "frame_star": {

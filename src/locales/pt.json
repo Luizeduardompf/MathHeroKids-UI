@@ -120,7 +120,7 @@
       "continue": "Continuar Desafio",
       "start": "Iniciar Desafio",
       "questions": "{{current}} / {{total}} questões",
-      "xpReward": "+150 XP"
+      "xpReward": "+{{xp}} XP"
     },
     "recentTrophies": "Troféus recentes",
     "trophy": {
@@ -293,6 +293,10 @@
     "mutualFriends_other": "{{count}} amigos em comum",
     "accept": "Aceitar",
     "reject": "Rejeitar",
+    "alert": {
+      "newMessage": "Nova mensagem de {{name}}",
+      "newFriendRequest": "{{name}} quer ser teu amigo!"
+    },
     "add": {
       "title": "Adicionar amigo",
       "searchPlaceholder": "Digite o nome de usuário",
@@ -342,7 +346,8 @@
     "blockedUsers": "Utilizadores bloqueados",
     "chat": {
       "friendLabel": "Amigo",
-      "emptyTitle": "Começa a conversa!"
+      "emptyTitle": "Começa a conversa!",
+      "errorSendFailed": "Não foi possível enviar a mensagem. Tenta novamente."
     },
     "notifications": {
       "empty": "Sem notificações",
@@ -745,7 +750,13 @@
     "mago": "Mago",
     "mestre_numeros": "Mestre dos Números",
     "lenda": "Lenda Matemática",
-    "lenda_matematica": "Lenda Matemática"
+    "lenda_matematica": "Lenda Matemática",
+    "campeao": "Campeão",
+    "campeao_supremo": "Campeão Supremo",
+    "mestre_absoluto": "Mestre Absoluto",
+    "genio": "Gênio da Matemática",
+    "genio_supremo": "Gênio Supremo",
+    "imortal": "Imortal da Matemática"
   },
   "rewards": {
     "frame_star": {

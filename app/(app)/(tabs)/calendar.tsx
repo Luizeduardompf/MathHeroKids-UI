@@ -29,7 +29,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Avatar, ProgressBar, Text } from '@/components/ui';
 import { MiloMessage } from '@/components/milo/MiloMessage';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
-import { LEVEL_THRESHOLDS } from '@/constants/config';
+import { getLevelXpFloor, getLevelXpCeil } from '@/constants/config';
 import { supabase } from '@/lib/supabase';
 import { challengeService, type LocalCompletion } from '@/services/challenge.service';
 import { colors, fontFamily, radius, shadows } from '@/theme';
@@ -39,19 +39,6 @@ import type { CalendarDay } from '@/types';
 
 const MONTHS_TO_SHOW = 4;
 const DAY_SIZE       = 44;
-
-// ─── XP helpers ───────────────────────────────────────────────────────────────
-
-function getXpFloor(level: number): number {
-  return LEVEL_THRESHOLDS.find((t) => t.level === level)?.xpRequired ?? 0;
-}
-function getXpCeil(level: number): number {
-  return (
-    LEVEL_THRESHOLDS.find((t) => t.level === level + 1)?.xpRequired ??
-    LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]?.xpRequired ??
-    99999
-  );
-}
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -627,8 +614,8 @@ export default function CalendarioScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [calDays, sessions, localComps, months]);
 
-  const xpFloor    = getXpFloor(child.level);
-  const xpCeil     = getXpCeil(child.level);
+  const xpFloor    = getLevelXpFloor(child.level);
+  const xpCeil     = getLevelXpCeil(child.level);
   const xpProgress = xpCeil > xpFloor ? (child.xp_total - xpFloor) / (xpCeil - xpFloor) : 1;
 
   return (

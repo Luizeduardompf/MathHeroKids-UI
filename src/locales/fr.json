@@ -120,7 +120,7 @@
       "continue": "Continuer le défi",
       "start": "Commencer le défi",
       "questions": "{{current}} / {{total}} questions",
-      "xpReward": "+150 XP"
+      "xpReward": "+{{xp}} XP"
     },
     "recentTrophies": "Trophées récents",
     "trophy": {
@@ -214,6 +214,10 @@
     "mutualFriends_other": "{{count}} amis en commun",
     "accept": "Accepter",
     "reject": "Refuser",
+    "alert": {
+      "newMessage": "Nouveau message de {{name}}",
+      "newFriendRequest": "{{name}} veut être ton ami !"
+    },
     "emptyRanking": "Pas encore de classement",
     "emptyRankingDesc": "Ajoute des amis et relève des défis pour apparaître dans le classement !",
     "noFriends": "Pas encore d'amis",
@@ -262,7 +266,8 @@
     "blockedUsers": "Utilisateurs bloqués",
     "chat": {
       "friendLabel": "Ami(e)",
-      "emptyTitle": "Commencez la conversation !"
+      "emptyTitle": "Commencez la conversation !",
+      "errorSendFailed": "Impossible d'envoyer le message. Réessaie."
     },
     "notifications": {
       "empty": "Aucune notification",

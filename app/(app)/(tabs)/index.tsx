@@ -15,7 +15,7 @@ import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { childService } from '@/services/child.service';
 import { challengeService } from '@/services/challenge.service';
 import { supabase } from '@/lib/supabase';
-import { LEVEL_THRESHOLDS, CHALLENGE } from '@/constants/config';
+import { CHALLENGE, getLevelXpFloor, getLevelXpCeil } from '@/constants/config';
 import { colors, fontFamily, radius, space } from '@/theme';
 import type { ChildProfile } from '@/types';
 
@@ -100,20 +100,6 @@ async function fetchStats(childId: string): Promise<ChildStats> {
   };
 }
 
-/** XP required for the next level, or last threshold if max level. */
-function getXpNextLevel(level: number): number {
-  const next = LEVEL_THRESHOLDS.find((t) => t.level === level + 1);
-  if (next) return next.xpRequired;
-  const last = LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
-  return last?.xpRequired ?? 99999;
-}
-
-/** XP at the start of the current level (floor for progress calculation). */
-function getXpFloor(level: number): number {
-  const current = LEVEL_THRESHOLDS.find((t) => t.level === level);
-  return current?.xpRequired ?? 0;
-}
-
 export default function HomeScreen() {
   const { t } = useTranslation();
   const router   = useRouter();
@@ -143,8 +129,8 @@ export default function HomeScreen() {
 
   if (!child) return null;
 
-  const xpFloor    = getXpFloor(child.level);
-  const xpCeil     = getXpNextLevel(child.level);
+  const xpFloor    = getLevelXpFloor(child.level);
+  const xpCeil     = getLevelXpCeil(child.level);
   const xpProgress = xpCeil > xpFloor ? (child.xp_total - xpFloor) / (xpCeil - xpFloor) : 1;
   const todayDate  = new Date().toISOString().split('T')[0]!;
 
@@ -369,7 +355,12 @@ export default function HomeScreen() {
               style={styles.challengeStatusBadge}
             />
             <View style={styles.xpBadge}>
-              <Text variant="caption" style={styles.xpBadgeText}>{t('home.challenge.xpReward')}</Text>
+              <Text variant="caption" style={styles.xpBadgeText}>
+                {t('home.challenge.xpReward', {
+                  xp: CHALLENGE.XP_PER_CORRECT_ANSWER * CHALLENGE.TOTAL_QUESTIONS
+                    + CHALLENGE.XP_COMPLETION_BONUS + CHALLENGE.XP_PERFECT_BONUS,
+                })}
+              </Text>
             </View>
           </View>
           <Text variant="caption" color="rgba(255,255,255,0.70)" style={{ marginTop: space.sm }}>

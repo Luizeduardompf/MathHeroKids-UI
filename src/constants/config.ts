@@ -7,14 +7,11 @@ export const CHALLENGE = {
   TOTAL_QUESTIONS: 5, // DEV: reduzido para testes rápidos (produção: 20)
   QUESTIONS_PER_BLOCK: 5,
   BLOCKS_PER_SESSION: 1, // DEV: 1 bloco de 5 (produção: 4)
-  XP_PER_CORRECT_ANSWER: 10,
-  XP_COMPLETION_BONUS: 200,
-  MILESTONE_XP: {
-    5: 60,
-    10: 100,
-    15: 150,
-    20: 200,
-  } as Record<number, number>,
+  // Valores de exibição apenas — a fonte autoritativa dos ganhos é a Edge
+  // Function complete_challenge (backend/functions/complete_challenge/index.ts).
+  XP_PER_CORRECT_ANSWER: 2,
+  XP_COMPLETION_BONUS: 4,
+  XP_PERFECT_BONUS: 10,
   RETROACTIVE_WINDOW_DAYS: 7,
 } as const;
 
@@ -62,7 +59,25 @@ export const LEVEL_THRESHOLDS: Array<{ level: number; xpRequired: number; nameKe
   { level: 15, xpRequired: 11000, nameKey: 'levels.mestre_numeros' },
   { level: 20, xpRequired: 15000, nameKey: 'levels.lenda' },
   { level: 50, xpRequired: 60000, nameKey: 'levels.lenda_matematica' },
+  { level: 55, xpRequired: 72000, nameKey: 'levels.campeao' },
+  { level: 60, xpRequired: 85000, nameKey: 'levels.campeao_supremo' },
+  { level: 70, xpRequired: 105000, nameKey: 'levels.mestre_absoluto' },
+  { level: 80, xpRequired: 130000, nameKey: 'levels.genio' },
+  { level: 90, xpRequired: 160000, nameKey: 'levels.genio_supremo' },
+  { level: 100, xpRequired: 200000, nameKey: 'levels.imortal' },
 ];
+
+/** XP no início do nível atual (piso para cálculo de progresso). */
+export function getLevelXpFloor(level: number): number {
+  return LEVEL_THRESHOLDS.find((t) => t.level === level)?.xpRequired ?? 0;
+}
+
+/** XP necessário para o próximo threshold da tabela (tabela é esparsa — nem todo nível tem entrada). */
+export function getLevelXpCeil(level: number): number {
+  const next = LEVEL_THRESHOLDS.find((t) => t.level > level);
+  if (next) return next.xpRequired;
+  return LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]?.xpRequired ?? 0;
+}
 
 export const MODULE_ID = {
   MULTIPLICATION: 'multiplication',

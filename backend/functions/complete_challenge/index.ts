@@ -21,9 +21,11 @@ import { getRules } from '../_shared/adaptive-rules.ts';
 import { updateMastery, applyCommutativity } from '../_shared/mastery.ts';
 
 // ─── XP Constants ─────────────────────────────────────────────────────────────
-const XP_PER_CORRECT = 10;
-const XP_COMPLETION_BONUS = 20;
-const XP_PERFECT_BONUS = 50;
+// Reduzido ~5x (2026-07-17) para alongar a curva e evitar totais exorbitantes
+// no longo prazo. Ver .ai/session-handoff.md para o racional.
+const XP_PER_CORRECT = 2;
+const XP_COMPLETION_BONUS = 4;
+const XP_PERFECT_BONUS = 10;
 
 // ─── Level thresholds (fallback — fonte autoritativa: tabela level_thresholds) ──
 const LEVEL_THRESHOLDS_FALLBACK = [
@@ -44,6 +46,12 @@ const LEVEL_THRESHOLDS_FALLBACK = [
   { level: 15, xp_required: 11000 },
   { level: 20, xp_required: 15000 },
   { level: 50, xp_required: 60000 },
+  { level: 55, xp_required: 72000 },
+  { level: 60, xp_required: 85000 },
+  { level: 70, xp_required: 105000 },
+  { level: 80, xp_required: 130000 },
+  { level: 90, xp_required: 160000 },
+  { level: 100, xp_required: 200000 },
 ];
 
 function computeLevelFromThresholds(
