@@ -30,6 +30,8 @@ import { Easing } from 'react-native-reanimated'; // eslint-disable-line
 import { Text } from '@/components/ui';
 import { fontFamily } from '@/theme';
 import { playSound } from '@/services/sound.service';
+import { OPERATION_SYMBOLS, MODULE_ID } from '@/constants/config';
+import type { ModuleId } from '@/constants/config';
 
 // ─── MiloBubble ───────────────────────────────────────────────────────────────
 // Port do zip: components/milo-bubble.tsx
@@ -239,9 +241,9 @@ export function TimeExpiredScreen({ onRetry, onGoHome }: { onRetry: () => void; 
 
 // ─── WrongAnswerScreen ────────────────────────────────────────────────────────
 
-export function WrongAnswerScreen({ operandA, operandB, correctAnswer, userAnswer, onContinue, onRetry }: {
+export function WrongAnswerScreen({ operandA, operandB, correctAnswer, userAnswer, operation, onContinue, onRetry }: {
   operandA: number; operandB: number; correctAnswer: number;
-  userAnswer: number | null; onContinue: () => void; onRetry: () => void;
+  userAnswer: number | null; operation?: ModuleId; onContinue: () => void; onRetry: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -267,7 +269,7 @@ export function WrongAnswerScreen({ operandA, operandB, correctAnswer, userAnswe
         <View style={wa.card}>
           <View style={wa.eqRow}>
             <Text style={wa.num}>{operandA}</Text>
-            <Text style={wa.op}>×</Text>
+            <Text style={wa.op}>{OPERATION_SYMBOLS[operation ?? MODULE_ID.MULTIPLICATION]}</Text>
             <Text style={wa.num}>{operandB}</Text>
             <Text style={wa.op}>=</Text>
             <Text style={wa.correct}>{correctAnswer}</Text>

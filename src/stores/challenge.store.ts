@@ -11,6 +11,7 @@ import { create } from 'zustand';
 import type { Question } from '@/lib/question-generator';
 import type { ChallengeAnswer } from '@/types/database.types';
 import { CHALLENGE } from '@/constants/config';
+import type { ModuleId } from '@/constants/config';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,7 @@ export interface AnswerDraft {
   attempt_number: number;     // 1+ (increments on block retry)
   operand_a: number;
   operand_b: number;
+  correct_answer: number;
   child_answer: number | null; // null = timeout
   time_taken_ms: number | null;
   /** Phase 2.5+: fact_id do catálogo (e.g. 'fact_7x8'). Presente quando questões vêm do servidor. */
@@ -76,7 +78,7 @@ interface ChallengeState {
   lastAnswerCorrect: boolean | null;
   lastCorrectAnswer: number | null;
   lastUserAnswer: number | null;
-  lastAnsweredQuestion: { operand_a: number; operand_b: number; correct_answer: number } | null;
+  lastAnsweredQuestion: { operand_a: number; operand_b: number; correct_answer: number; operation?: ModuleId } | null;
   errorMessage: string | null;
 
   // ─── Actions ────────────────────────────────────────────────────────────────
@@ -135,14 +137,14 @@ export const selectBlockQuestions = (s: ChallengeState): Question[] => {
 };
 
 export const selectBlockCorrectCount = (s: ChallengeState): number =>
-  s.blockAnswers.filter((a) => a.child_answer !== null && a.child_answer === a.operand_a * a.operand_b).length;
+  s.blockAnswers.filter((a) => a.child_answer !== null && a.child_answer === a.correct_answer).length;
 
 export const selectAllAnswers = (s: ChallengeState): AnswerDraft[] => s.answers;
 
 export const selectSessionXp = (s: ChallengeState): number => {
   const correct = new Set(
     s.answers
-      .filter((a) => a.child_answer !== null && a.child_answer === a.operand_a * a.operand_b)
+      .filter((a) => a.child_answer !== null && a.child_answer === a.correct_answer)
       .map((a) => a.question_index),
   );
   return correct.size * CHALLENGE.XP_PER_CORRECT_ANSWER;
@@ -151,7 +153,7 @@ export const selectSessionXp = (s: ChallengeState): number => {
 export const selectUniqueCorrectCount = (s: ChallengeState): number => {
   return new Set(
     s.answers
-      .filter((a) => a.child_answer !== null && a.child_answer === a.operand_a * a.operand_b)
+      .filter((a) => a.child_answer !== null && a.child_answer === a.correct_answer)
       .map((a) => a.question_index),
   ).size;
 };
@@ -178,7 +180,7 @@ const initialState = {
   lastAnswerCorrect: null as boolean | null,
   lastCorrectAnswer: null as number | null,
   lastUserAnswer: null as number | null,
-  lastAnsweredQuestion: null as { operand_a: number; operand_b: number; correct_answer: number } | null,
+  lastAnsweredQuestion: null as { operand_a: number; operand_b: number; correct_answer: number; operation?: ModuleId } | null,
   errorMessage: null as string | null,
 };
 
@@ -231,6 +233,7 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
         attempt_number: state.blockAttempt + 1,
         operand_a: question.operand_a,
         operand_b: question.operand_b,
+        correct_answer: question.correct_answer,
         child_answer: childAnswer,
         time_taken_ms: timeTakenMs,
         ...(question.fact_id != null ? { fact_id: question.fact_id, position: question.index + 1 } : {}),
@@ -247,6 +250,7 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
             operand_a: question.operand_a,
             operand_b: question.operand_b,
             correct_answer: question.correct_answer,
+            operation: question.operation,
           },
           phase: childAnswer === null ? 'timeout' : 'wrong',
         });
@@ -283,6 +287,7 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
       attempt_number: state.blockAttempt,
       operand_a: question.operand_a,
       operand_b: question.operand_b,
+      correct_answer: question.correct_answer,
       child_answer: childAnswer,
       time_taken_ms: timeTakenMs,
       // Phase 2.5+: presentes quando questões vêm do servidor
@@ -315,6 +320,7 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
           operand_a: question.operand_a,
           operand_b: question.operand_b,
           correct_answer: question.correct_answer,
+          operation: question.operation,
         },
         phase: childAnswer === null ? 'timeout' : 'wrong',
       });

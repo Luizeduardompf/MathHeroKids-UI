@@ -1098,6 +1098,7 @@ export default function ChallengeScreen() {
         operandA={q?.operand_a ?? 0}
         operandB={q?.operand_b ?? 0}
         correctAnswer={q?.correct_answer ?? 0}
+        operation={q?.operation}
         userAnswer={lastUserAnswer}
         onContinue={() => storeActions.advanceAfterWrong()}
         onRetry={() => storeActions.retryBlock()}
@@ -1121,7 +1122,7 @@ export default function ChallengeScreen() {
   if (phase === 'block_end') {
     const blockCorrect = useChallengeStore.getState().answers.filter(
       (a) => a.block_number === useChallengeStore.getState().currentBlock &&
-             a.child_answer !== null && a.child_answer === a.operand_a * a.operand_b,
+             a.child_answer !== null && a.child_answer === a.correct_answer,
     ).length;
 
     return (
