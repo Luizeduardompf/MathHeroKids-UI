@@ -81,6 +81,7 @@ export default function EditarCriancaScreen() {
   const [username, setUsername] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [timerSeconds, setTimerSeconds] = useState<TimerOption>(15);
+  const [timerAuto, setTimerAuto] = useState(false);
   const [multiMax, setMultiMax] = useState<MultiplicationRange>(10);
   const [questionCount, setQuestionCount] = useState<QuestionCountOption>(20);
   const [socialEnabled, setSocialEnabled] = useState(true);
@@ -105,6 +106,7 @@ export default function EditarCriancaScreen() {
       setUsername(found.username);
       setBirthDate(formatDateForDisplay(found.birth_date));
       if (found.timer_seconds !== undefined) setTimerSeconds(found.timer_seconds as TimerOption);
+      setTimerAuto(found.timer_auto ?? false);
       if (found.multiplication_max !== undefined) setMultiMax(found.multiplication_max as MultiplicationRange);
       if (found.question_count !== undefined) setQuestionCount(found.question_count as QuestionCountOption);
       setSocialEnabled(found.social_enabled ?? true);
@@ -134,6 +136,7 @@ export default function EditarCriancaScreen() {
         avatar_id: avatar,
         birth_date: birthDate ? parseBirthDate(birthDate) : child.birth_date,
         timer_seconds: timerSeconds,
+        timer_auto: timerAuto,
         multiplication_max: multiMax,
         question_count: questionCount,
         social_enabled: socialEnabled,
@@ -305,10 +308,11 @@ export default function EditarCriancaScreen() {
               <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.timerHint')}</Text>
             </View>
           </View>
-          <View style={styles.optionRow}>
+          <View style={[styles.optionRow, timerAuto && { opacity: 0.4 }]}>
             {TIMER_OPTIONS.map((opt) => (
               <Pressable
                 key={opt}
+                disabled={timerAuto}
                 style={[styles.optionBtn, timerSeconds === opt && styles.optionBtnActive]}
                 onPress={() => setTimerSeconds(opt)}
               >
@@ -318,6 +322,15 @@ export default function EditarCriancaScreen() {
               </Pressable>
             ))}
           </View>
+          <Pressable style={styles.autoTimerRow} onPress={() => setTimerAuto((v) => !v)}>
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.child.timerAutoLabel')}</Text>
+              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.timerAutoHint')}</Text>
+            </View>
+            <View style={[styles.toggle, timerAuto && styles.toggleOn]}>
+              <View style={[styles.toggleThumb, timerAuto && styles.toggleThumbOn]} />
+            </View>
+          </Pressable>
         </View>
 
         {/* Multiplication max */}
@@ -503,6 +516,13 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   optionRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  autoTimerRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingTop: space.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.default,
+    marginTop: space.xs,
+  },
   optionBtn: {
     paddingHorizontal: 14, paddingVertical: 8,
     borderRadius: radius.lg,

@@ -14,7 +14,7 @@ import { supabase } from '@/lib/supabase';
 import type { CompleteChallengeResponse } from '@/types/database.types';
 import type { ChallengeStartResponse } from '@/types';
 import type { AnswerDraft } from '@/stores/challenge.store';
-import type { ModuleId, TimerOption } from '@/constants/config';
+import type { ModuleId } from '@/constants/config';
 
 const LOCAL_COMPLETIONS_KEY  = 'math-hero-local-completions-v1';
 
@@ -38,7 +38,8 @@ export interface StartChallengeParams {
   challengeDate: string;  // YYYY-MM-DD
   moduleId: ModuleId;
   sessionId: string;      // client-generated UUID
-  timerSeconds: TimerOption;
+  /** Valor efectivo (manual ou resolvido por resolveTimerSeconds quando timer_auto=true). */
+  timerSeconds: number;
 }
 
 export interface CompletePayload {

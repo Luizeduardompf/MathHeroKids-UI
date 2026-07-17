@@ -41,6 +41,7 @@ export interface ChildProfile {
   last_challenge_date: string | null; // ISO date
   // Settings
   timer_seconds: TimerOption;
+  timer_auto: boolean;
   multiplication_max: MultiplicationRange;
   social_enabled: boolean;
   question_count: QuestionCountOption;

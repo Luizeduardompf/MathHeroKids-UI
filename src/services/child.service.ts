@@ -18,6 +18,7 @@ export interface UpdateChildInput {
   birth_date?: string | null;
   avatar_id?: AvatarId;
   timer_seconds?: TimerOption;
+  timer_auto?: boolean;
   multiplication_max?: MultiplicationRange;
   social_enabled?: boolean;
   question_count?: QuestionCountOption;

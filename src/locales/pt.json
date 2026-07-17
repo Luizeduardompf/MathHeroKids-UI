@@ -685,6 +685,8 @@
       "questionsHint": "Quantas questões tem cada desafio",
       "timerLabel": "Tempo de resposta",
       "timerHint": "Segundos para responder cada questão",
+      "timerAutoLabel": "Reduzir automaticamente com o nível",
+      "timerAutoHint": "O tempo diminui conforme a criança sobe de nível",
       "tablesLabel": "Tabuadas até",
       "tablesHint": "Limite máximo das multiplicações",
       "socialLabel": "Funcionalidades sociais",

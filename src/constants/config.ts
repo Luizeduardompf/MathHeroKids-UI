@@ -15,9 +15,29 @@ export const CHALLENGE = {
 } as const;
 
 export const TIMER_OPTIONS = [10, 15, 20, 30, 0] as const;
-// 0 = AUTO (ajustado ao nível — ver resolveTimerSeconds)
+// 0 = sem limite de tempo
 export type TimerOption = (typeof TIMER_OPTIONS)[number];
 export const DEFAULT_TIMER = 15 satisfies TimerOption;
+
+/** Patamares do timer automático — desce conforme o nível sobe, para dificultar. */
+const AUTO_TIMER_BANDS: Array<{ minLevel: number; seconds: number }> = [
+  { minLevel: 1, seconds: 20 },
+  { minLevel: 5, seconds: 15 },
+  { minLevel: 10, seconds: 12 },
+  { minLevel: 15, seconds: 10 },
+  { minLevel: 20, seconds: 8 },
+  { minLevel: 30, seconds: 6 },
+];
+
+/** Resolve o tempo de resposta efectivo: manual se timer_auto=false, por nível se true. */
+export function resolveTimerSeconds(level: number, manualSeconds: TimerOption, autoEnabled: boolean): number {
+  if (!autoEnabled) return manualSeconds;
+  let seconds = AUTO_TIMER_BANDS[0]!.seconds;
+  for (const band of AUTO_TIMER_BANDS) {
+    if (level >= band.minLevel) seconds = band.seconds;
+  }
+  return seconds;
+}
 
 // Número de questões por sessão. 0 = AUTO (ajustado ao nível, default = 20)
 export const QUESTION_COUNT_OPTIONS = [5, 10, 15, 20, 25, 0] as const;

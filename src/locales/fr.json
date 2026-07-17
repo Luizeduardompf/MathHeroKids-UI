@@ -431,6 +431,8 @@
       "questionsHint": "Combien de questions par défi",
       "timerLabel": "Temps de réponse",
       "timerHint": "Secondes pour répondre à chaque question",
+      "timerAutoLabel": "Réduire automatiquement avec le niveau",
+      "timerAutoHint": "Le temps diminue à mesure que l'enfant monte de niveau",
       "tablesLabel": "Tables de multiplication jusqu'à",
       "tablesHint": "Limite maximale des multiplications",
       "socialLabel": "Fonctionnalités sociales",

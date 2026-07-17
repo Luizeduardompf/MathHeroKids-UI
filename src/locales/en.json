@@ -680,6 +680,8 @@
       "questionsHint": "How many questions each challenge has",
       "timerLabel": "Response time",
       "timerHint": "Seconds to answer each question",
+      "timerAutoLabel": "Automatically reduce with level",
+      "timerAutoHint": "Time decreases as the child levels up",
       "tablesLabel": "Times tables up to",
       "tablesHint": "Maximum multiplication limit",
       "socialLabel": "Social features",

@@ -55,7 +55,7 @@ import {
 } from '@/stores/challenge.store';
 import { challengeService } from '@/services/challenge.service';
 import { useNetworkStatus } from '@/hooks/use-network-status';
-import { MODULE_ID, CHALLENGE } from '@/constants/config';
+import { MODULE_ID, CHALLENGE, resolveTimerSeconds } from '@/constants/config';
 import { playSound } from '@/services/sound.service';
 
 // ─── Milo celebrate asset ─────────────────────────────────────────────────────
@@ -670,6 +670,9 @@ export default function ChallengeScreen() {
   const isRetroactive = retroactive === '1';
   const child = useProfileStore(selectActiveChild);
   const network = useNetworkStatus();
+  const effectiveTimerSeconds = child
+    ? resolveTimerSeconds(child.level, child.timer_seconds, child.timer_auto)
+    : 15;
 
   const phase = useChallengeStore((s) => s.phase);
   const sessionId = useChallengeStore((s) => s.sessionId);
@@ -766,7 +769,7 @@ export default function ChallengeScreen() {
           challengeDate: date,
           moduleId: MODULE_ID.MULTIPLICATION,
           sessionId: sid,
-          timerSeconds: child.timer_seconds,
+          timerSeconds: effectiveTimerSeconds,
         });
 
         // Mapear ChallengeQuestion[] → Question[] (formato do store)
@@ -785,7 +788,7 @@ export default function ChallengeScreen() {
           challengeDate: date,
           moduleId: MODULE_ID.MULTIPLICATION,
           questions,
-          timerSeconds: child.timer_seconds,
+          timerSeconds: effectiveTimerSeconds,
           totalQuestions: questions.length,
         });
       } catch (e) {
@@ -816,7 +819,7 @@ export default function ChallengeScreen() {
   }, []);
 
   const { remaining, reset: resetTimer } = useTimer(
-    child?.timer_seconds ?? 15,
+    effectiveTimerSeconds,
     phase === 'playing',
     handleTimerExpire,
   );
@@ -1093,7 +1096,7 @@ export default function ChallengeScreen() {
 
   // ─── Gameplay ─────────────────────────────────────────────────────────────
 
-  const timerActive = (child?.timer_seconds ?? 0) > 0;
+  const timerActive = effectiveTimerSeconds > 0;
   // bg-muted = oklch(0.95 0.01 255) — cinza com leve tom azul, visível sobre #EEF1FF
   const timerBg = timerActive && remaining <= 2
     ? '#FEE2E2'                 // brand-red-soft
@@ -1177,7 +1180,7 @@ export default function ChallengeScreen() {
         <View style={[gs.timerChip, { backgroundColor: timerBg }]}>
           <Ionicons name="time-outline" size={15} color={timerColor} />
           <Text style={[gs.timerText, { color: timerColor }]}>
-            {child?.timer_seconds === 0 ? '∞' : `${remaining}s`}
+            {effectiveTimerSeconds === 0 ? '∞' : `${remaining}s`}
           </Text>
         </View>
       </View>
