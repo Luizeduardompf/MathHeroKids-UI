@@ -266,7 +266,7 @@ function MilestoneScreen({
 
         {/* Title */}
         <Text style={msStyles.title}>{t(cfg.titleKey)}</Text>
-        <Text style={msStyles.subtitle}>{t(cfg.subtitleKey)}</Text>
+        <Text style={msStyles.subtitle}>{t(cfg.subtitleKey, { count: qs })}</Text>
 
         {/* Progress */}
         <View style={msStyles.progressSection}>
@@ -1044,9 +1044,14 @@ export default function ChallengeScreen() {
   // ─── Milestone — full screen colored with Milo ────────────────────────────
 
   if (phase === 'milestone') {
+    // Checkpoints são 25%/50%/75% de totalQuestions (ver isMilestone em challenge.store.ts) —
+    // 'q5'/'q10'/'q15' são só os nomes internos do 1º/2º/3º checkpoint, não uma contagem fixa.
+    // O texto real (challenge.milestone.*.subtitle) usa {{count}} = currentQuestionIndex.
+    const q50Threshold = Math.floor(totalQuestions * 0.5);
+    const q75Threshold = Math.floor(totalQuestions * 0.75);
     const mk: MilestoneVariant =
-      currentQuestionIndex <= 5 ? 'q5' :
-      currentQuestionIndex <= 10 ? 'q10' : 'q15';
+      currentQuestionIndex < q50Threshold ? 'q5' :
+      currentQuestionIndex < q75Threshold ? 'q10' : 'q15';
     return (
       <MilestoneScreen
         variant={mk}

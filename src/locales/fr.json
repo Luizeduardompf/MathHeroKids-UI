@@ -367,6 +367,21 @@
       }
     },
     "miloDizLabel": "MILO DIT",
+    "milestone": {
+      "q5": {
+        "title": "Bien joué !",
+        "subtitle": "Tu as déjà terminé {{count}} questions. Continue comme ça !"
+      },
+      "q10": {
+        "title": "Tu es à mi-chemin !",
+        "subtitle": "{{count}} questions terminées. Plus qu'un peu pour l'étoile !"
+      },
+      "q15": {
+        "title": "Il en reste quelques-unes !",
+        "subtitle": "{{count}} questions ! Tu es un vrai héros des maths."
+      },
+      "continue": "Continuer"
+    },
     "retroactive": {
       "title": "Défis",
       "miloMessage": "Le défi d'aujourd'hui est terminé ! Tu veux gagner du XP en faisant les jours passés ?",

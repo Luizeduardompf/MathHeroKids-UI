@@ -191,17 +191,17 @@
     "milestone": {
       "q5": {
         "title": "Mandou bem!",
-        "subtitle": "Você já completou 5 questões. Continue assim!",
+        "subtitle": "Você já completou {{count}} questões. Continue assim!",
         "xp": "+50 XP"
       },
       "q10": {
         "title": "Você está na metade!",
-        "subtitle": "10 questões concluídas. Falta pouco para a estrela!",
+        "subtitle": "{{count}} questões concluídas. Falta pouco para a estrela!",
         "xp": "+100 XP"
       },
       "q15": {
         "title": "Faltam só algumas!",
-        "subtitle": "15 questões! Você é um verdadeiro herói da matemática.",
+        "subtitle": "{{count}} questões! Você é um verdadeiro herói da matemática.",
         "xp": "+150 XP"
       },
       "continue": "Continuar"

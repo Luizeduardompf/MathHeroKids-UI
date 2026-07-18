@@ -190,15 +190,15 @@
     "milestone": {
       "q5": {
         "title": "Well done!",
-        "subtitle": "You've completed 5 questions. Keep it up!"
+        "subtitle": "You've completed {{count}} questions. Keep it up!"
       },
       "q10": {
         "title": "Halfway there!",
-        "subtitle": "10 questions done. Almost at the star!"
+        "subtitle": "{{count}} questions done. Almost at the star!"
       },
       "q15": {
         "title": "Almost done!",
-        "subtitle": "15 questions! You're a true math hero."
+        "subtitle": "{{count}} questions! You're a true math hero."
       },
       "continue": "Continue"
     },

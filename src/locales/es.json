@@ -186,15 +186,15 @@
     "milestone": {
       "q5": {
         "title": "¡Bien hecho!",
-        "subtitle": "Completaste 5 preguntas."
+        "subtitle": "Completaste {{count}} preguntas."
       },
       "q10": {
         "title": "¡A la mitad!",
-        "subtitle": "10 preguntas completadas."
+        "subtitle": "{{count}} preguntas completadas."
       },
       "q15": {
         "title": "¡Casi!",
-        "subtitle": "15 preguntas. ¡Eres un héroe de las matemáticas!"
+        "subtitle": "{{count}} preguntas. ¡Eres un héroe de las matemáticas!"
       },
       "continue": "Continuar"
     },
