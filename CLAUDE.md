@@ -233,10 +233,13 @@ MathHeroKids-UI/
 - `complete_challenge` EF: valida contra payload, atualiza mastery, XP, streak, calendar
 - `recompute_mastery` EF: replay idempotente do histórico
 - App cliente: consome payload server-side, sem geração local, tela offline, `use-network-status`
-- Retest em sessão: erros "continuados" (sem retry de bloco) reaparecem no fim da sessão antes
-  de completar (`retestQueue` em `challenge.store.ts`)
+- Retest **persistente cross-challenge** (`child_fact_retest`, migration 017): erro num fato
+  marca-o (+ par comutativo) para reteste garantido em desafios futuros até acumular acertos
+  em sessões distintas — substitui o antigo `retestQueue` de fim-de-sessão (removido)
 - `question_count`, `timer_auto` (reduz por nível), `enabled_operations`/`mix_operations` são
   configuráveis por criança via parent-area
+- Settings globais do reteste (`retest_correct_threshold`, `retest_percentage`) editáveis em
+  runtime na tela `parent-area/developers.tsx` (`app_config` table)
 - A/B harness: `AB_TEST_ENABLED=true` para testar variantes de `adaptive-rules.json`
 
 ### Pendente (Phase 3+)
@@ -286,8 +289,15 @@ face ao estado actual (multi-operação, ranking realtime) — tratar numa sess�
   divisão não têm par comutativo.
 - `question_count` (0=AUTO) e `timer_auto` (reduz por nível, ver `resolveTimerSeconds`) são
   configuráveis por criança — nunca assumir os valores fixos antigos de `adaptive-rules.json`.
-- Respostas enviadas em batch via `complete_challenge` no fim da sessão. Erros "continuados"
-  (sem retry) reaparecem no fim antes de completar (`retestQueue`).
+- Respostas enviadas em batch via `complete_challenge` no fim da sessão.
+- **Reteste persistente** (`child_fact_retest`, independente de `child_fact_mastery`/`WEAK`):
+  erro em qualquer fato → `a_retestar=true` + streak=0 (par comutativo também, se mult/adição).
+  `start_challenge` reserva `round(question_count × retest_percentage)` vagas para fatos
+  `a_retestar=true` (mais antigos primeiro, até 2x cada) ANTES da seleção adaptativa normal —
+  garantia, não peso probabilístico como o `WEAK`. Acerto em sessão/dia distinto avança o
+  streak; ao atingir `retest_correct_threshold` (limiar global, `app_config`) a flag limpa
+  (`cleared_at` preenchido, linha nunca apagada). Settings editáveis em
+  `parent-area/developers.tsx`. Ver `backend/functions/_shared/retest.ts`.
 - `complete_challenge` valida contra `questions_payload` (não regenera com seed). `is_perfect`
   compara contra `session.total_questions`, não o valor fixo da regra global.
 - Cache local apenas: completions de calendário, activeChild, idioma, tema.

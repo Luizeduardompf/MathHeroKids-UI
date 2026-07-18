@@ -4,47 +4,96 @@
 
 ---
 
-## Estado actual — 2026-07-18 08:55 (sessão 16)
+## Estado actual — 2026-07-18 09:25 (sessão 16)
 
-### 🔴 Em curso
+### 🟢 Em curso
 ```
-ESTADO: EM CURSO — sistema de reteste persistente cross-challenge (child_fact_retest).
-Pedido do user: análise "arquiteto sénior" completa + spec fechado em conversa antes de
-implementar. Tag de segurança: v1.4-pre-retest-system (HEAD=7fda09c antes de qualquer
-alteração desta sessão).
+ESTADO: LIVRE — sistema de reteste persistente cross-challenge (child_fact_retest) completo,
+commitado e pushed para origin/main. Tag de segurança pré-sessão: v1.4-pre-retest-system
+(HEAD=7fda09c, antes de qualquer alteração desta sessão — permite voltar atrás se algo
+aparecer partido).
 
-⚠️ IMPORTANTE: nota-se que outra sessão (não este handoff) fez 5 commits entre 07:54–08:31
-de hoje (86886bb..7fda09c) mexendo na MESMA área (retestQueue, comutatividade em mastery.ts,
-seletor de operação). Reconciliado com o user em chat antes de arrancar: essa sessão já
-tinha terminado, e o spec desta sessão substitui por completo o retestQueue (fim-de-sessão)
-por esta tabela nova — o fix em mastery.ts (932624f, propagação de erro comutativo via WEAK)
-fica como está, é complementar e não é tocado.
-
-Trabalho autónomo enquanto o user está fora — acesso ao Simulator + clipboard concedido via
-request_access no início da sessão (só Simulator, full tier — Terminal/Chrome não pedidos,
-uso Bash directo para tudo).
-
-Roadmap (ver TaskList desta sessão para o detalhe):
-  1. Migration 017 — child_fact_retest + app_config
-  2. _shared/retest.ts (helper)
-  3. start_challenge — reservar vagas de reteste (retest_percentage)
-  4. complete_challenge — gravar outcome (streak/clear/flag+comutativo)
-  5. Client — remover retestQueue de challenge.store.ts + [date].tsx
-  6. Tela Developers (PIN + senha 120380) + settings globais
-  7. Tela Desempenho em child/[id].tsx
-  8. i18n + deploy + validação Simulator
-
-Regras de negócio completas (fechadas em conversa antes de codificar):
-  - Erro em qualquer fact → a_retestar=true, streak=0. Par comutativo (mult/adição) também.
-  - Acerto em sessão/dia distinto → streak++. Erro → streak=0 de novo. Limiar global (default
-    5) → a_retestar=false, cleared_at preenchido, linha nunca apagada.
-  - Máx 2 aparições do mesmo fato por sessão.
-  - Fatia do desafio reservada a reteste = round(question_count × retest_percentage), default
-    25%, configurável em Developers. Excedente fica para sessão seguinte (fila natural).
-  - retestQueue (fim de sessão) removido por completo — reteste passa a ser cross-sessão via
-    esta tabela, injectado por start_challenge.
-  - child_fact_mastery/WEAK/adaptive-rules.json não mudam — sistemas independentes.
+Trabalho autónomo enquanto o user estava fora — acesso ao Simulator concedido via
+request_access no início da sessão (só Simulator, full tier).
 ```
+
+### ✅ Concluído (sessão 16 — 2026-07-18) — Sistema de reteste persistente cross-challenge
+
+**Pedido do user:** análise "arquiteto sénior" completa ao fluxo de reteste de erros +
+spec fechado em conversa antes de implementar (8 rondas de perguntas/respostas). Substitui
+o `retestQueue` client-side (efémero, só reaparecia no fim da MESMA sessão) por uma tabela
+persistente: um erro marca o fato para reteste **garantido** em desafios futuros, até
+acumular acertos em sessões distintas.
+
+⚠️ **Achado antes de arrancar:** o `main` tinha avançado 5 commits (86886bb..7fda09c, entre
+07:54–08:31 do mesmo dia) de outra sessão, mexendo na MESMA área (removeu `retryBlock`,
+adicionou propagação de erro comutativo directo em `mastery.ts`/WEAK). Reconciliado com o
+user em chat: essa sessão já tinha terminado; o spec desta sessão substitui por completo o
+`retestQueue` por esta tabela nova; o fix em `mastery.ts` (932624f) ficou como estava —
+complementar, não tocado.
+
+**Regras de negócio (fechadas em conversa):**
+- Erro em qualquer fato → `a_retestar=true`, streak=0. Par comutativo (mult/adição, via
+  `fact_group_id`) também marcado automaticamente — `fact_id` isolado, sem incrementar
+  `retest_wrong_count` do par (não foi literalmente perguntado, só sinalizado).
+- Acerto (todas as ocorrências) em sessão/dia distinto → `retest_correct_streak++`. Erro →
+  volta a zero. Limiar global (default 5, configurável) → `a_retestar=false`,
+  `cleared_at` preenchido — a linha nunca é apagada (fica como histórico).
+- Máx. 2 aparições do mesmo fato por sessão.
+- Fatia do desafio reservada a reteste = `round(question_count × retest_percentage)`,
+  default 25% (configurável). Mais antigos primeiro; excedente fica para a sessão seguinte
+  (fila natural pela tabela, sem fila explícita).
+- `child_fact_mastery`/`WEAK`/`adaptive-rules.json` não mudam — sistema independente.
+
+**Backend:**
+- `backend/migrations/017_child_fact_retest.sql` — tabela `child_fact_retest` (RLS: leitura
+  do próprio parent, escrita só service_role) + tabela `app_config` (key/value, leitura
+  pública autenticada, escrita só service_role) com seeds `retest_correct_threshold=5`,
+  `retest_percentage=0.25`. Aplicada ao DB linked.
+- `backend/functions/_shared/retest.ts` — `getAppConfig`, `getActiveRetestFacts`,
+  `applyRetestOutcomes` (flag+streak, chamado por `complete_challenge`).
+- `start_challenge`: reserva vagas de reteste (mais antigos primeiro, até 2x cada) ANTES da
+  selecção adaptativa normal; exclui esses `fact_id`s da selecção normal restante.
+- `complete_challenge`: agrupa respostas por `fact_id` (errou alguma vez? todas certas?) e
+  aplica as regras acima, em paralelo a `updateMastery`/`applyCommutativity` (não substitui).
+- `update_app_config` EF nova — único caminho de escrita em `app_config` (valida key
+  allowlist + range do value). `supabase/functions/update_app_config` é symlink para
+  `backend/functions/update_app_config` (mesmo padrão de `start_challenge`/`complete_challenge`).
+
+**Client:**
+- `challenge.store.ts` — `retestQueue`/`retestQuestionIndex` removidos por completo (reteste
+  passa a ser 100% cross-sessão, injectado pelo payload do `start_challenge`); `[date].tsx`
+  perde o header "🔁 Vamos rever!" (chave i18n `retestLabel` removida dos 4 locales).
+- `src/services/app-config.service.ts` + `retest.service.ts` novos.
+- `app/(app)/parent-area/developers.tsx` — nova tela: PIN normal (já herdado do parent-area)
+  + senha fixa `120380` (fricção deliberada, documentada como não-segurança-real). Edita os
+  2 settings globais via `update_app_config`. Tinha um bug real (botão "Entrar" atrás do
+  teclado — sem `KeyboardAvoidingView`) encontrado e corrigido durante o teste no Simulator.
+- `app/(app)/parent-area/child/[id].tsx` — nova secção "Desempenho": lista "Em reteste"
+  (com progresso `X/limiar`) e "Recuperados", lidas de `child_fact_retest` via join com
+  `arithmetic_facts` (`retest.service.ts`).
+
+**Validação:**
+- `npx tsc --noEmit` limpo (só os 3 erros pré-existentes de sempre).
+- **Backend validado end-to-end via curl** directo às EFs deployadas (conta de teste
+  `teste.mathhero@gmail.com`/`Testinho`): erro flagga o fato + par comutativo
+  automaticamente; sessão seguinte inclui o fato garantidamente (mesmo com baixa
+  probabilidade adaptativa); acerto em dia distinto avança o streak; limiar simulado (=1)
+  limpa a flag e liberta a vaga para o próximo fato pendente. Dados de teste limpos depois
+  (xp/question_count/child_fact_retest restaurados).
+- **Telas novas validadas visualmente no Simulator** (iPhone 17 Pro, conta real do user,
+  criança de teste "Testadao"): gate + settings da tela Developers (threshold=5,
+  percentage=25% carregados correctamente do servidor); secção Desempenho a mostrar dados
+  reais inseridos directo no DB para o teste ("10 − 1 = 9 · 2/5 acertos" em reteste,
+  "10 − 2 = 8 ✓" recuperado). Dados de teste removidos depois.
+- **Não testado**: um desafio real jogado do início ao fim no Simulator com um fato
+  garantidamente reaparecendo dentro do payload gerado por `start_challenge` (validado só
+  via curl, a lógica é a mesma que a EF usa em produção — risco residual baixo, mas fica
+  registado como o único passo de validação visual que falta).
+
+**Deploy:** `start_challenge`, `complete_challenge`, `update_app_config` (nova) deployadas
+via `supabase functions deploy <nome> --use-api`. Migration 017 aplicada ao DB linked via
+`supabase db query --linked -f`.
 
 ---
 
