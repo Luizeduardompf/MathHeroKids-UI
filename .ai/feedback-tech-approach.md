@@ -341,3 +341,17 @@ reentradas para a mesma data independentemente de `phase` oscilar — sem bloque
 (offline/500, que não marca a ref). **Regra: qualquer efeito de init que dependa de um campo que
 `reset()` também zera precisa de uma guarda própria (ref local) contra reentrada, não pode confiar só
 no valor desse campo.**
+
+---
+
+**Decisão confirmada (sessão 16, QA ao sistema de reteste): um fato que aparece 2x na mesma sessão
+(reforço do reteste) conta 2x para `child_fact_mastery` (`times_seen`/`times_correct`/
+`consecutive_correct` sobem +2, não +1).**
+QA encontrou isto como possível inflação indevida do gate `mastered.totalCorrectRequired=8` para
+fatos que estão simultaneamente em reteste activo. `distinct_sessions_correct` (o gate que
+realmente controla as transições de estado LEARNING→REVIEWING→MASTERED) está protegido — só sobe
+1x por dia local, independentemente de quantas vezes o fato apareça na sessão. Apresentadas duas
+opções ao user: deixar como está ("mais prática = mais crédito") ou deduplicar por `fact_id` antes
+de chamar `updateMastery` em `complete_challenge.ts` (sem tocar em `mastery.ts`). **User confirmou:
+deixar como está.** Não mexer nisto sem re-abrir a conversa — é uma escolha deliberada, não uma
+lacuna esquecida.

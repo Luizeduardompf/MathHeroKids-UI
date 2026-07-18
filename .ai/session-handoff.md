@@ -4,18 +4,38 @@
 
 ---
 
-## Estado actual — 2026-07-18 09:25 (sessão 16)
+## Estado actual — 2026-07-18 10:15 (sessão 16, cont. — QA profundo)
 
 ### 🟢 Em curso
 ```
 ESTADO: LIVRE — sistema de reteste persistente cross-challenge (child_fact_retest) completo,
-commitado e pushed para origin/main. Tag de segurança pré-sessão: v1.4-pre-retest-system
-(HEAD=7fda09c, antes de qualquer alteração desta sessão — permite voltar atrás se algo
-aparecer partido).
-
-Trabalho autónomo enquanto o user estava fora — acesso ao Simulator concedido via
-request_access no início da sessão (só Simulator, full tier).
+testado a fundo (QA adversarial, ver secção abaixo) e pushed para origin/main. Tag de
+segurança pré-sessão: v1.4-pre-retest-system (HEAD=7fda09c).
 ```
+
+### ✅ Concluído (sessão 16 cont.) — QA profundo ao sistema de reteste
+
+Pedido do user: "haja como QA exigente e experiente", teste profundo de tudo + verificação da
+didática aplicada. 19 cenários testados via curl directo às EFs (regras de flag/par comutativo
+nas 4 operações, ciclo real de 5 dias distintos até ao limiar + clear, garantia de selecção com
+mais fatos que vagas, cap de 2x por sessão, RLS/segurança). Detalhe completo dado ao user em chat.
+
+**1 bug real encontrado e corrigido:** `applyRetestOutcomes` tinha um resultado não-determinístico
+— quando o par comutativo de um fato era respondido certo E o próprio fato errava na MESMA sessão,
+o resultado final (streak fica 0 ou reincrementa) dependia da ordem de posições no payload
+embaralhado. Reproduzido deliberadamente nas duas ordens antes do fix (uma dava resultado errado),
+confirmado determinístico depois. Fix: processamento em duas fases — todos os erros (directos +
+propagados ao par) resolvidos primeiro, acertos só depois, ignorando fatos já tocados por erro.
+Commit `46b35a4`, redeployado (`complete_challenge`).
+
+**1 decisão de design confirmada pelo user (não é bug):** um fato que aparece 2x na mesma sessão
+(reforço do reteste) conta 2x para `child_fact_mastery` (`times_seen`/`times_correct`/
+`consecutive_correct` +2 em vez de +1). O gate mais importante (`distinct_sessions_correct`) está
+protegido. User escolheu deixar como está ("mais prática = mais crédito"). Ver
+`.ai/feedback-tech-approach.md` para o detalhe — **não reabrir sem nova conversa**.
+
+Todos os dados de teste (Testinho + Testadao) limpos ao fim — contas voltaram ao estado
+documentado antes do QA.
 
 ### ✅ Concluído (sessão 16 — 2026-07-18) — Sistema de reteste persistente cross-challenge
 
