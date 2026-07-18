@@ -10,6 +10,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -73,7 +75,10 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   };
 
   return (
-    <View style={s.gateWrap}>
+    <KeyboardAvoidingView
+      style={s.gateWrap}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <View style={s.gateIcon}>
         <Ionicons name="lock-closed" size={28} color={colors.primary} />
       </View>
@@ -100,7 +105,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
         fullWidth
         style={{ marginTop: space.md }}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
