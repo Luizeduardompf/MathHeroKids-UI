@@ -667,6 +667,22 @@
     "controls": {
       "title": "Parental controls"
     },
+    "developers": {
+      "title": "Developers",
+      "gateTitle": "Restricted area",
+      "gateSubtitle": "Technical settings for the learning engine.",
+      "passwordPlaceholder": "Password",
+      "wrongPassword": "Wrong password.",
+      "enterBtn": "Enter",
+      "loadError": "Could not load settings.",
+      "retestSection": "Retest system",
+      "thresholdLabel": "Correct answers to consider learned",
+      "thresholdHint": "Number of correct answers in distinct sessions until a fact stops being retested.",
+      "percentageLabel": "% of challenge reserved for retest",
+      "percentageHint": "Percentage of each challenge's questions guaranteed to pending retest facts.",
+      "saveBtn": "Save",
+      "saved": "✓ Saved successfully!"
+    },
     "child": {
       "newTitle": "New child",
       "editTitle": "Edit profile",
@@ -704,7 +720,15 @@
       "deleteConfirmPlaceholder": "username",
       "deleteConfirmBtn": "Delete permanently",
       "deleteCancelBtn": "Cancel",
-      "deleteMismatch": "The username doesn't match."
+      "deleteMismatch": "The username doesn't match.",
+      "performanceTitle": "Performance",
+      "performanceHint": "Facts the child has gotten wrong, and progress toward mastering them again.",
+      "performanceRetestingTitle": "Being retested",
+      "performanceRetestingEmpty": "No facts pending retest — all caught up! 🎉",
+      "performanceLearnedTitle": "Recovered",
+      "performanceLearnedEmpty": "No recovered facts yet.",
+      "performanceStreak": "{{streak}}/{{threshold}} correct",
+      "performanceLoadError": "Could not load performance data."
     },
     "editProfile": "Edit profile",
     "editProfileSub": "Parent's data",

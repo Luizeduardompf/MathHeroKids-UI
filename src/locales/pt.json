@@ -672,6 +672,22 @@
     "controls": {
       "title": "Controle dos pais"
     },
+    "developers": {
+      "title": "Developers",
+      "gateTitle": "Área restrita",
+      "gateSubtitle": "Definições técnicas do motor de aprendizagem.",
+      "passwordPlaceholder": "Senha",
+      "wrongPassword": "Senha incorreta.",
+      "enterBtn": "Entrar",
+      "loadError": "Não foi possível carregar as definições.",
+      "retestSection": "Sistema de reteste",
+      "thresholdLabel": "Acertos para considerar aprendido",
+      "thresholdHint": "Nº de acertos em sessões distintas até um fato deixar de ser retestado.",
+      "percentageLabel": "% do desafio reservada a reteste",
+      "percentageHint": "Percentagem das questões de cada desafio garantida a fatos pendentes de reteste.",
+      "saveBtn": "Guardar",
+      "saved": "✓ Guardado com sucesso!"
+    },
     "child": {
       "newTitle": "Nova criança",
       "editTitle": "Editar perfil",
@@ -709,7 +725,15 @@
       "deleteConfirmPlaceholder": "username",
       "deleteConfirmBtn": "Eliminar definitivamente",
       "deleteCancelBtn": "Cancelar",
-      "deleteMismatch": "O username não corresponde."
+      "deleteMismatch": "O username não corresponde.",
+      "performanceTitle": "Desempenho",
+      "performanceHint": "Fatos que já foram errados e o progresso até serem dominados de novo.",
+      "performanceRetestingTitle": "Em reteste",
+      "performanceRetestingEmpty": "Nenhum fato em reteste — tudo em dia! 🎉",
+      "performanceLearnedTitle": "Recuperados",
+      "performanceLearnedEmpty": "Ainda não há fatos recuperados.",
+      "performanceStreak": "{{streak}}/{{threshold}} acertos",
+      "performanceLoadError": "Não foi possível carregar o desempenho."
     },
     "editProfile": "Editar perfil",
     "editProfileSub": "Dados do responsável",

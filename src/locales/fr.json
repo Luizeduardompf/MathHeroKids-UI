@@ -474,10 +474,34 @@
       "deleteConfirmPlaceholder": "username",
       "deleteConfirmBtn": "Supprimer définitivement",
       "deleteCancelBtn": "Annuler",
-      "deleteMismatch": "Le nom d'utilisateur ne correspond pas."
+      "deleteMismatch": "Le nom d'utilisateur ne correspond pas.",
+      "performanceTitle": "Performance",
+      "performanceHint": "Faits que l'enfant a déjà ratés, et la progression jusqu'à les maîtriser à nouveau.",
+      "performanceRetestingTitle": "En révision",
+      "performanceRetestingEmpty": "Aucun fait en révision — tout est à jour ! 🎉",
+      "performanceLearnedTitle": "Récupérés",
+      "performanceLearnedEmpty": "Aucun fait récupéré pour l'instant.",
+      "performanceStreak": "{{streak}}/{{threshold}} réussites",
+      "performanceLoadError": "Impossible de charger la performance."
     },
     "controls": {
       "title": "Contrôle parental"
+    },
+    "developers": {
+      "title": "Developers",
+      "gateTitle": "Zone restreinte",
+      "gateSubtitle": "Réglages techniques du moteur d'apprentissage.",
+      "passwordPlaceholder": "Mot de passe",
+      "wrongPassword": "Mot de passe incorrect.",
+      "enterBtn": "Entrer",
+      "loadError": "Impossible de charger les réglages.",
+      "retestSection": "Système de révision",
+      "thresholdLabel": "Réussites pour considérer comme appris",
+      "thresholdHint": "Nombre de réussites en sessions distinctes avant qu'un fait cesse d'être révisé.",
+      "percentageLabel": "% du défi réservé à la révision",
+      "percentageHint": "Pourcentage des questions de chaque défi garanti aux faits en attente de révision.",
+      "saveBtn": "Enregistrer",
+      "saved": "✓ Enregistré avec succès !"
     },
     "nameLabel": "Nom du responsable",
     "namePlaceholder": "Votre nom complet",

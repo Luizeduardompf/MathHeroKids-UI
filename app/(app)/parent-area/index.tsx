@@ -151,6 +151,15 @@ export default function ParentAreaScreen() {
           <Text variant="label" color={colors.primary}>{t('parentArea.addChild')}</Text>
         </Pressable>
 
+        {/* ── Developers (settings técnicos globais) ─────────────────── */}
+        <Pressable
+          onPress={() => router.push('/(app)/parent-area/developers')}
+          style={({ pressed }) => [s.devRow, pressed && { opacity: 0.6 }]}
+        >
+          <Ionicons name="code-slash-outline" size={16} color={colors.text.tertiary} />
+          <Text variant="caption" color={colors.text.tertiary}>{t('parentArea.developers.title')}</Text>
+        </Pressable>
+
       </ScrollView>
     </View>
   );
@@ -190,4 +199,7 @@ const s = StyleSheet.create({
   // Add child
   addChildBtn:        { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.md, borderRadius: radius['2xl'], borderWidth: 1.5, borderColor: colors.primary, borderStyle: 'dashed', justifyContent: 'center', marginTop: 4 },
   addChildBtnPressed: { opacity: 0.6 },
+
+  // Developers link
+  devRow: { flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center', marginTop: space.lg, padding: space.sm },
 });

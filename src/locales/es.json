@@ -507,10 +507,34 @@
       "deleteConfirmPlaceholder": "username",
       "deleteConfirmBtn": "Eliminar definitivamente",
       "deleteCancelBtn": "Cancelar",
-      "deleteMismatch": "El nombre de usuario no coincide."
+      "deleteMismatch": "El nombre de usuario no coincide.",
+      "performanceTitle": "Rendimiento",
+      "performanceHint": "Datos que el niño ya falló, y el progreso hasta dominarlos de nuevo.",
+      "performanceRetestingTitle": "En repaso",
+      "performanceRetestingEmpty": "Ningún dato en repaso — ¡todo al día! 🎉",
+      "performanceLearnedTitle": "Recuperados",
+      "performanceLearnedEmpty": "Aún no hay datos recuperados.",
+      "performanceStreak": "{{streak}}/{{threshold}} aciertos",
+      "performanceLoadError": "No se pudo cargar el rendimiento."
     },
     "controls": {
       "title": "Control parental"
+    },
+    "developers": {
+      "title": "Developers",
+      "gateTitle": "Área restringida",
+      "gateSubtitle": "Ajustes técnicos del motor de aprendizaje.",
+      "passwordPlaceholder": "Contraseña",
+      "wrongPassword": "Contraseña incorrecta.",
+      "enterBtn": "Entrar",
+      "loadError": "No se pudieron cargar los ajustes.",
+      "retestSection": "Sistema de repaso",
+      "thresholdLabel": "Aciertos para considerar aprendido",
+      "thresholdHint": "Nº de aciertos en sesiones distintas hasta que un dato deje de repasarse.",
+      "percentageLabel": "% del desafío reservado a repaso",
+      "percentageHint": "Porcentaje de las preguntas de cada desafío garantizado a datos pendientes de repaso.",
+      "saveBtn": "Guardar",
+      "saved": "✓ ¡Guardado con éxito!"
     },
     "nameLabel": "Nombre del responsable",
     "namePlaceholder": "Tu nombre completo",

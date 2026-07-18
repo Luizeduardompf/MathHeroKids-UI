@@ -7,16 +7,105 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 
 import { AvatarPicker, Button, Input, Text } from '@/components/ui';
 import { childService } from '@/services/child.service';
+import { retestService, type RetestFactEntry } from '@/services/retest.service';
+import { appConfigService } from '@/services/app-config.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { colors, fontFamily, radius, shadows, space } from '@/theme';
-import { TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT_OPTIONS, OPERATIONS, type TimerOption, type MultiplicationRange, type QuestionCountOption, type ModuleId } from '@/constants/config';
+import { TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT_OPTIONS, OPERATIONS, OPERATION_SYMBOLS, type TimerOption, type MultiplicationRange, type QuestionCountOption, type ModuleId } from '@/constants/config';
 import type { AvatarId } from '@/constants/config';
 import type { ChildProfile } from '@/types';
+
+// ─── Desempenho (child_fact_retest) ────────────────────────────────────────────
+
+function PerformanceSection({ childId }: { childId: string }) {
+  const { t } = useTranslation();
+
+  const { data: entries, isLoading, isError } = useQuery({
+    queryKey: ['child-retest-performance', childId],
+    queryFn: () => retestService.fetchChildRetestPerformance(childId),
+  });
+
+  const { data: appConfig } = useQuery({
+    queryKey: ['app-config'],
+    queryFn: () => appConfigService.getAppConfig(),
+  });
+
+  const threshold = appConfig?.retest_correct_threshold ?? 5;
+  const retesting = (entries ?? []).filter((e) => e.aRetestar);
+  const learned = (entries ?? []).filter((e) => !e.aRetestar && e.clearedAt != null);
+
+  return (
+    <View style={styles.performanceSection}>
+      <Text variant="label">{t('parentArea.child.performanceTitle')}</Text>
+      <Text variant="caption" color={colors.text.secondary} style={{ marginBottom: space.sm }}>
+        {t('parentArea.child.performanceHint')}
+      </Text>
+
+      {isLoading ? <ActivityIndicator color={colors.primary} /> : null}
+      {isError ? (
+        <Text variant="bodySmall" color={colors.error}>{t('parentArea.child.performanceLoadError')}</Text>
+      ) : null}
+
+      {!isLoading && !isError ? (
+        <>
+          <Text variant="caption" color={colors.text.tertiary} style={styles.performanceGroupLabel}>
+            {t('parentArea.child.performanceRetestingTitle')} ({retesting.length})
+          </Text>
+          {retesting.length === 0 ? (
+            <Text variant="bodySmall" color={colors.text.secondary}>
+              {t('parentArea.child.performanceRetestingEmpty')}
+            </Text>
+          ) : (
+            <View style={styles.performanceList}>
+              {retesting.map((e) => (
+                <PerformanceRow key={e.factId} entry={e} threshold={threshold} />
+              ))}
+            </View>
+          )}
+
+          <Text variant="caption" color={colors.text.tertiary} style={styles.performanceGroupLabel}>
+            {t('parentArea.child.performanceLearnedTitle')} ({learned.length})
+          </Text>
+          {learned.length === 0 ? (
+            <Text variant="bodySmall" color={colors.text.secondary}>
+              {t('parentArea.child.performanceLearnedEmpty')}
+            </Text>
+          ) : (
+            <View style={styles.performanceList}>
+              {learned.map((e) => (
+                <PerformanceRow key={e.factId} entry={e} threshold={threshold} learned />
+              ))}
+            </View>
+          )}
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+function PerformanceRow({ entry, threshold, learned }: { entry: RetestFactEntry; threshold: number; learned?: boolean }) {
+  const { t } = useTranslation();
+  const symbol = OPERATION_SYMBOLS[entry.operation] ?? '×';
+  return (
+    <View style={styles.performanceRow}>
+      <Text variant="bodySmall">
+        {entry.operandA} {symbol} {entry.operandB} = {entry.answer}
+      </Text>
+      {learned ? (
+        <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+      ) : (
+        <Text variant="caption" color={colors.text.secondary}>
+          {t('parentArea.child.performanceStreak', { streak: entry.retestCorrectStreak, threshold })}
+        </Text>
+      )}
+    </View>
+  );
+}
 
 const LANG_TO_LOCALE: Record<string, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
 
@@ -456,6 +545,8 @@ export default function EditarCriancaScreen() {
           </View>
         </View>
 
+        <PerformanceSection childId={child.id} />
+
         {/* ── Danger zone ─────────────────────────────────────────── */}
         <View style={styles.dangerZone}>
           <Text variant="label" color={colors.error}>{t('parentArea.child.dangerZoneTitle')}</Text>
@@ -543,6 +634,28 @@ const styles = StyleSheet.create({
   avatarGrid: { marginBottom: space.md },
   form: { gap: space.md },
   saveBtn: { marginTop: space.sm },
+
+  // ── Desempenho (child_fact_retest) ──────────────────────────────────────────
+  performanceSection: {
+    marginTop: space.md,
+    padding: space.md,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.background.card,
+    gap: 4,
+  },
+  performanceGroupLabel: { marginTop: space.sm, marginBottom: 4, textTransform: 'uppercase' },
+  performanceList: { gap: 6 },
+  performanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    paddingHorizontal: space.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.background.cardAlt,
+  },
 
   // ── Danger zone ──────────────────────────────────────────────────────────────
   dangerZone: {
