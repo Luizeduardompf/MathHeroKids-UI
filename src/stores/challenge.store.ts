@@ -292,7 +292,8 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
     const q50 = Math.floor(total * 0.5);
     const q75 = Math.floor(total * 0.75);
     const isMilestone = total >= 10
-      && (nextIndex === q25 || nextIndex === q50 || nextIndex === q75) && nextIndex > 0 && nextIndex < total;
+      && (nextIndex === q25 || nextIndex === q50 || nextIndex === q75)
+      && nextIndex >= CHALLENGE.QUESTIONS_PER_BLOCK && nextIndex < total;
     const isLast = nextIndex >= total;
 
     if (!isCorrect) {
@@ -408,17 +409,15 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
     }
 
     const isLastInBlock = nextIndex % CHALLENGE.QUESTIONS_PER_BLOCK === 0;
-    const q25 = Math.floor(state.totalQuestions * 0.25);
-    const q50 = Math.floor(state.totalQuestions * 0.5);
-    const q75 = Math.floor(state.totalQuestions * 0.75);
-    const isMilestone = state.totalQuestions >= 10
-      && (nextIndex === q25 || nextIndex === q50 || nextIndex === q75) && nextIndex > 0 && nextIndex < state.totalQuestions;
 
+    // Sem marco/celebração aqui: este caminho só é chamado depois de errar ou
+    // dar timeout, nunca depois de acertar — não faz sentido mostrar o ecrã
+    // de "Mandou bem!" logo a seguir a um erro.
     set({
       currentQuestionIndex: nextIndex,
       retestQueue: newRetestQueue,
       ...(isLastInBlock ? { currentBlock: state.currentBlock + 1, blockAttempt: 1, blockAnswers: [] } : {}),
-      phase: isMilestone ? 'milestone' : 'playing',
+      phase: 'playing',
     });
   },
 
