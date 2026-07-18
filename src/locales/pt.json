@@ -142,7 +142,6 @@
   },
   "challenge": {
     "question": "Questão {{current}} de {{total}}",
-    "retestLabel": "🔁 Vamos rever!",
     "timerLabel": "{{seconds}}s",
     "timerUnlimited": "∞",
     "category": "Tabuada da Multiplicação",

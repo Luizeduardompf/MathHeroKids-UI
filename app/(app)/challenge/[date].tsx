@@ -51,7 +51,6 @@ import {
   selectAllAnswers,
   selectSessionXp,
   selectUniqueCorrectCount,
-  selectIsRetestActive,
 } from '@/stores/challenge.store';
 import { challengeService } from '@/services/challenge.service';
 import { useNetworkStatus } from '@/hooks/use-network-status';
@@ -704,7 +703,6 @@ export default function ChallengeScreen() {
   );
 
   const question = useChallengeStore(selectCurrentQuestion);
-  const isRetestActive = useChallengeStore(selectIsRetestActive);
   const progress = useChallengeStore(selectProgressFraction);
   const allAnswers = useChallengeStore(selectAllAnswers);
   const sessionXp = useChallengeStore(selectSessionXp);
@@ -1176,12 +1174,10 @@ export default function ChallengeScreen() {
 
         <View style={gs.headerMiddle}>
           <Text style={gs.headerTitle}>
-            {isRetestActive
-              ? t('challenge.retestLabel')
-              : t('challenge.question', {
-                  current: String(currentQuestionIndex + 1),
-                  total: String(totalQuestions),
-                })}
+            {t('challenge.question', {
+              current: String(currentQuestionIndex + 1),
+              total: String(totalQuestions),
+            })}
           </Text>
           <View style={{ height: 6 }} />
           <View style={gs.progressTrack}>
