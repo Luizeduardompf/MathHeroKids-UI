@@ -347,7 +347,6 @@
   },
   "challenge": {
     "retestLabel": "🔁 On révise !",
-    "pickOperationTitle": "Qu'allons-nous pratiquer aujourd'hui ?",
     "category": "Table de Multiplication",
     "categoryMultiplication": "Table de Multiplication",
     "categoryAddition": "Table d'Addition",

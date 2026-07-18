@@ -143,7 +143,6 @@
   "challenge": {
     "question": "Pregunta {{current}} de {{total}}",
     "retestLabel": "🔁 ¡A repasar!",
-    "pickOperationTitle": "¿Qué vamos a practicar hoy?",
     "timerLabel": "{{seconds}}s",
     "timerUnlimited": "∞",
     "category": "Tabla de Multiplicar",

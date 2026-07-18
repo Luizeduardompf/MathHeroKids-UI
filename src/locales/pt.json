@@ -143,7 +143,6 @@
   "challenge": {
     "question": "Questão {{current}} de {{total}}",
     "retestLabel": "🔁 Vamos rever!",
-    "pickOperationTitle": "O que vamos praticar hoje?",
     "timerLabel": "{{seconds}}s",
     "timerUnlimited": "∞",
     "category": "Tabuada da Multiplicação",

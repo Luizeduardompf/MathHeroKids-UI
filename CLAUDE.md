@@ -272,8 +272,9 @@ face ao estado actual (multi-operação, ranking realtime) — tratar numa sess�
 - Questões geradas **server-side** por `start_challenge` EF de forma adaptativa, a partir de
   `arithmetic_facts` (coluna `operation`: multiplication/addition/subtraction/division).
 - `child_profiles.enabled_operations` (mín. 1) + `mix_operations` decidem de que operações a
-  sessão tira questões. Se >1 activada e não mistura, o cliente mostra um seletor antes de
-  chamar `start_challenge` (module_id do request = operação escolhida).
+  sessão tira questões. Se >1 activada e não mistura, o cliente escolhe uma ao calhas
+  (`Math.random()`, sem perguntar à criança) e manda-a como `module_id` do request — a EF
+  persiste a escolha no payload da sessão, por isso fica estável ao reabrir o mesmo dia.
 - Cada operação é seleccionada **independentemente** (mastery/tiers não fazem sentido
   misturados entre operações) e depois combinadas + reembaralhadas (seed = session_id —
   aleatoriedade real por sessão, resume estável).

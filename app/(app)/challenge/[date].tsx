@@ -680,8 +680,6 @@ export default function ChallengeScreen() {
   // enabled_operations pode faltar em activeChild cacheado localmente antes da migration 016
   // (AsyncStorage/Zustand persist sobrevive a updates de app) — nunca assumir presente.
   const childOperations = child?.enabled_operations?.length ? child.enabled_operations : ['multiplication' as ModuleId];
-  const needsOperationPicker = !!child && !child.mix_operations && childOperations.length > 1;
-  const [chosenOperation, setChosenOperation] = useState<ModuleId | null>(null);
 
   const phase = useChallengeStore((s) => s.phase);
   const sessionId = useChallengeStore((s) => s.sessionId);
@@ -758,7 +756,6 @@ export default function ChallengeScreen() {
 
   useEffect(() => {
     if (!child || !date || phase !== 'idle') return;
-    if (needsOperationPicker && !chosenOperation) return; // à espera da escolha no seletor
     if (initedDateRef.current === date) return; // já tratada nesta instância — ver initedDateRef
     async function init() {
       if (!child || !date) return;
@@ -771,7 +768,10 @@ export default function ChallengeScreen() {
       }
 
       const sid = randomUUID();
-      const moduleId = chosenOperation ?? childOperations[0] ?? MODULE_ID.MULTIPLICATION;
+      // Quando há mais de uma operação activada e não mistura, escolhe uma ao calhas —
+      // sem pedir à criança. O EF persiste o resultado no payload da sessão, por isso a
+      // escolha fica estável se a app reabrir o mesmo dia.
+      const moduleId = childOperations[Math.floor(Math.random() * childOperations.length)] ?? MODULE_ID.MULTIPLICATION;
 
       try {
         // Questões geradas adaptativamente pelo servidor
@@ -955,38 +955,6 @@ export default function ChallengeScreen() {
       Alert.alert(t('common.error'), (e as Error).message);
     }
   }, [child, sessionId, challengeDate, moduleId, allAnswers, uniqueCorrect, router, t, storeActions, dismissCelebrationIfReady]);
-
-  // ─── Seletor de operação (quando >1 activada e não misturada) ────────────
-
-  if (needsOperationPicker && !chosenOperation && child) {
-    return (
-      <View style={[gs.container, gs.centered]}>
-        <View style={{ alignItems: 'center', gap: 20, paddingHorizontal: 32, width: '100%' }}>
-          <Text style={{ fontFamily: fontFamily.extraBold, fontSize: 20, color: colors.text.primary, textAlign: 'center' }}>
-            {t('challenge.pickOperationTitle')}
-          </Text>
-          <View style={{ width: '100%', gap: 12 }}>
-            {childOperations.map((op) => (
-              <Pressable
-                key={op}
-                style={{
-                  backgroundColor: colors.primary,
-                  borderRadius: 20,
-                  paddingVertical: 18,
-                  alignItems: 'center',
-                }}
-                onPress={() => setChosenOperation(op)}
-              >
-                <Text style={{ fontFamily: fontFamily.bold, fontSize: 18, color: '#fff' }}>
-                  {OPERATION_SYMBOLS[op]}  {t(OPERATION_CATEGORY_KEYS[op])}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-      </View>
-    );
-  }
 
   // ─── Loading ─────────────────────────────────────────────────────────────
 
