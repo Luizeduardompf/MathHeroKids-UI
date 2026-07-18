@@ -19,6 +19,8 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getRules } from '../_shared/adaptive-rules.ts';
 import { updateMastery, applyCommutativity } from '../_shared/mastery.ts';
+import { getAppConfig, applyRetestOutcomes } from '../_shared/retest.ts';
+import type { RetestAnswerOutcome } from '../_shared/retest.ts';
 
 // ─── XP Constants ─────────────────────────────────────────────────────────────
 // Reduzido ~5x (2026-07-17) para alongar a curva e evitar totais exorbitantes
@@ -375,6 +377,31 @@ Deno.serve(async (req: Request) => {
           });
         }
       }
+    }
+
+    // ── 9b. Reteste persistente (child_fact_retest) ────────────────────────
+    // Sistema independente de mastery/WEAK — erro em qualquer fato marca-o (+ par
+    // comutativo) para reteste garantido em desafios futuros; acerto em sessao/dia
+    // distinto avanca o streak ate ao limiar global, que limpa a flag (linha fica).
+    {
+      const outcomesByFact = new Map<string, { wrong: boolean; correct: boolean }>();
+      for (const row of answerRows) {
+        const cur = outcomesByFact.get(row.fact_id) ?? { wrong: false, correct: true };
+        if (!row.is_correct) { cur.wrong = true; cur.correct = false; }
+        outcomesByFact.set(row.fact_id, cur);
+      }
+      const retestOutcomes: RetestAnswerOutcome[] = [...outcomesByFact.entries()]
+        .map(([factId, o]) => ({ factId, wrong: o.wrong, correct: o.correct }));
+
+      const appConfig = await getAppConfig(supabase);
+      await applyRetestOutcomes({
+        supabase,
+        childId,
+        childTimezone,
+        threshold: appConfig.retestCorrectThreshold,
+        outcomes: retestOutcomes,
+        factGroupMap,
+      });
     }
 
     // ── 10. Streak ─────────────────────────────────────────────────────────

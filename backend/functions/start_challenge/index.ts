@@ -38,8 +38,10 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getRules, getRulesVersion } from '../_shared/adaptive-rules.ts';
+import type { MasteryState } from '../_shared/adaptive-rules.ts';
 import { selectQuestions } from '../_shared/question-selector.ts';
 import type { Fact, Operation, SelectedQuestion } from '../_shared/question-selector.ts';
+import { getAppConfig, getActiveRetestFacts } from '../_shared/retest.ts';
 
 const RETROACTIVE_WINDOW_DAYS = 30;
 
@@ -235,10 +237,40 @@ Deno.serve(async (req: Request) => {
     // Quantidade de questoes vem do perfil da crianca (0 = AUTO, cai no default da regra
     // global; null/coluna inexistente idem), repartida por igual entre as operacoes da sessao.
     const questionCount = childRow?.question_count || rules.session.questionsPerChallenge;
-    const perOpCounts = splitCount(questionCount, sessionOperations.length);
+
+    // Reteste persistente (child_fact_retest) — fatos a_retestar=true entram com GARANTIA,
+    // mais antigos primeiro, ate 2x cada, antes da selecao adaptativa normal (que so preenche
+    // as vagas restantes). Independente de mastery/WEAK — ver _shared/retest.ts.
+    const appConfig = await getAppConfig(supabase);
+    const factsById = new Map(facts.map(f => [f.id, f]));
+    const masteryStateMap = new Map((mastery ?? []).map(m => [m.fact_id, m.state as MasteryState]));
+    const retestFacts = await getActiveRetestFacts(supabase, child_id, new Set(facts.map(f => f.id)));
+    const retestSlots = Math.round(questionCount * appConfig.retestPercentage);
+    const retestQuestions: SelectedQuestion[] = [];
+    for (let pass = 0; pass < 2 && retestQuestions.length < retestSlots; pass++) {
+      for (const rf of retestFacts) {
+        if (retestQuestions.length >= retestSlots) break;
+        const f = factsById.get(rf.fact_id);
+        if (!f) continue;
+        retestQuestions.push({
+          position: 0, // renumerado no fim, junto com o resto
+          fact_id: f.id,
+          operation: f.operation,
+          operand_a: f.operand_a,
+          operand_b: f.operand_b,
+          bucket: masteryStateMap.get(f.id) ?? 'NEW',
+        });
+      }
+    }
+    // Excluidos da selecao adaptativa normal — ja garantidos pelo bloco de reteste acima,
+    // nao pode ser escolhido de novo (evitaria passar do maximo de 2 aparicoes/sessao).
+    retestQuestions.forEach(q => excludedFactIds.add(q.fact_id));
+
+    const remainingCount = Math.max(0, questionCount - retestQuestions.length);
+    const perOpCounts = splitCount(remainingCount, sessionOperations.length);
 
     const bucketCountsMerged: Record<string, number> = {};
-    let allQuestions: SelectedQuestion[] = [];
+    let allQuestions: SelectedQuestion[] = [...retestQuestions];
     for (let i = 0; i < sessionOperations.length; i++) {
       const op = sessionOperations[i]!;
       const opFacts = facts.filter(f => f.operation === op);
@@ -271,7 +303,11 @@ Deno.serve(async (req: Request) => {
         module_id,
         questions_payload: finalQuestions,
         rules_version: getRulesVersion(),
-        selection_metadata: { bucketCounts: bucketCountsMerged, operations: sessionOperations },
+        selection_metadata: {
+          bucketCounts: bucketCountsMerged,
+          operations: sessionOperations,
+          retestCount: retestQuestions.length,
+        },
         timer_seconds,
         multiplication_max: 10,
         status: 'in_progress',
