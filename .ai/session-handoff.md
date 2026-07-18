@@ -4,7 +4,44 @@
 
 ---
 
-## Estado actual — 2026-07-18 10:35 (sessão 16, cont. — QA-2 avançado)
+## Estado actual — 2026-07-18 13:15 (sessão 16, cont. — teste de UX real)
+
+### ✅ Concluído (sessão 16 cont.) — Teste de UX a sério (Simulator, jogo real pelo teclado)
+
+Pedido do user: "teste sério e bem completo" de UX, não só verificação de exibição.
+
+**2 bugs reais encontrados e corrigidos:**
+1. **`challenge.wrong` (tela de erro) sem tradução em fr.json (nenhuma chave) e incompleta
+   em es.json (faltava `continueAnyway`/`miloMessage`)** — utilizadores em francês viam a
+   tela inteira de "errou" em português; espanhol via o botão e a mensagem do Milo em
+   português. Pré-existente, não desta sessão — descoberto ao trocar idioma no Simulator
+   e inspeccionar os locales. Fix: chaves adicionadas em ambos, com texto revisto (ver
+   achado 2). Commit `dbd50fe`.
+2. **Achado de conteúdo, não corrigido sem confirmação do user**: `challenge.wrong.miloMessage`
+   em pt/en diz "Agora você já sabe esta!" / "Now you know this one" — mensagem que
+   contradiz o próprio sistema de reteste (o fato acabou de ser marcado para reteste
+   obrigatório, a criança não "já sabe"). As traduções novas em es/fr evitaram repetir a
+   frase, mas pt/en ficaram como estavam — fica para o user decidir se quer alinhar.
+
+**Comportamento pré-existente confirmado (não é bug introduzido, mas relevante para UX):**
+timeout a meio de uma sessão descarta todo o progresso local e reinicia da questão 1 —
+o servidor mantém a sessão certa (mesmo payload ao retomar), mas o cliente não guarda
+progresso incremental (respostas só vão em batch no fim, por desenho). Reproduzido 3x.
+
+**Confirmado a funcionar correctamente** (jogo real pelo teclado, não curl): overlay de
+erro (WrongAnswerScreen) renderiza a equação/resposta certas; milestones 50%/75%; ecrã
+vazio do Desempenho ("Nenhum fato em reteste — tudo em dia! 🎉"); gate de senha errada
+("Senha incorrecta"); botão "Guardar" desactivado com valor fora do intervalo (validação
+client-side impede o pedido inválido de sequer ser enviado); guardar valor válido mostra
+spinner → "✓ Guardado com sucesso!" e persiste no servidor; Desempenho e Developers
+100% traduzidos em FR (as chaves adicionadas nesta feature, ao contrário do achado 1 que
+é dívida antiga).
+
+Dados de teste (Testadao) e settings globais (`app_config`) repostos ao estado por defeito.
+
+---
+
+## Estado anterior — 2026-07-18 10:35 (sessão 16, cont. — QA-2 avançado)
 
 ### ✅ Concluído (sessão 16 cont.) — QA-2: cenário avançado (nível 4) end-to-end
 
