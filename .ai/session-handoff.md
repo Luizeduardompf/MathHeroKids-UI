@@ -4,7 +4,34 @@
 
 ---
 
-## Estado actual — 2026-07-18 10:15 (sessão 16, cont. — QA profundo)
+## Estado actual — 2026-07-18 10:35 (sessão 16, cont. — QA-2 avançado)
+
+### ✅ Concluído (sessão 16 cont.) — QA-2: cenário avançado (nível 4) end-to-end
+
+Pedido do user: nova ronda de testes, "criança avançada" (nível 4), simular erros com ledger
+escrito à mão ANTES de correr, depois comparar com `child_fact_retest` real E com a exibição
+da tela Desempenho no Simulator.
+
+Setup: Testinho a nível 4 (1800xp), 4 operações misturadas, 15 questões/desafio (4 vagas de
+reteste), 12 fatos com mastery prévio seedado (realismo). Ciclo de 7 sessões reais via curl
+(datas + `last_correct_local_date` falsificado para simular dias distintos), com previsão
+escrita campo-a-campo ANTES de cada sessão. **Todas as 7 sessões bateram certo com a
+previsão**, incluindo um cenário rico de fila FIFO: um fato (`fact_add_3_1`) ficou "preterido"
+da garantia durante 5 sessões seguidas (fatos mais antigos ocupavam as 4 vagas), mas continuou
+a poder ser puxado pela seleção adaptativa normal por sorte (streak avançou na sessão 2 mesmo
+sem vaga garantida) — esclarece que "preterido da garantia" ≠ "excluído da sessão", só perde a
+garantia. 3 fatos atingiram o limiar e limparam **simultaneamente** numa sessão; o 4º (com 1
+recaída) fechou na sessão seguinte.
+
+Verificação final: estado real em `child_fact_retest` bateu 100% com o ledger escrito. Copiado
+o estado final para a Testadao (já autenticada no Simulator) só para validar a camada de UI —
+tela Desempenho mostrou exactamente os 2 fatos "em reteste" (`3+1=4 · 2/5`, `10÷10=1 · 1/5`) e
+os 4 "recuperados" com os símbolos de operação correctos. Nenhum bug novo encontrado nesta
+ronda. Dados de teste limpos (Testinho + Testadao voltaram ao baseline).
+
+---
+
+## Estado anterior — 2026-07-18 10:15 (sessão 16, cont. — QA profundo)
 
 ### 🟢 Em curso
 ```
