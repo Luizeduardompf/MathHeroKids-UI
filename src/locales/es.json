@@ -162,7 +162,9 @@
       "title": "¡Casi!",
       "subtitle": "Mira la respuesta correcta abajo.",
       "yourAnswer": "Tu respuesta:",
-      "continue": "Continuar →"
+      "continue": "Continuar →",
+      "continueAnyway": "Continuar →",
+      "miloMessage": "¡Equivocarse es parte de aprender! Vamos a practicar esta de nuevo pronto."
     },
     "timeout": {
       "title": "¡Se acabó el tiempo!",

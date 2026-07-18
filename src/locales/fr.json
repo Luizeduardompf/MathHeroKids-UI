@@ -405,6 +405,13 @@
       "title": "Trophée Conquis !",
       "subtitle": "Tu as complété le défi d'aujourd'hui !",
       "subtitlePast": "Tu as complété ce défi en retard !"
+    },
+    "wrong": {
+      "title": "Presque !",
+      "subtitle": "Regarde la bonne réponse ci-dessous.",
+      "yourAnswer": "Ta réponse :",
+      "continueAnyway": "Continuer →",
+      "miloMessage": "Se tromper fait partie de l'apprentissage ! On va s'entraîner à nouveau sur celle-ci bientôt."
     }
   },
   "parentArea": {
