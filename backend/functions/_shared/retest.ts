@@ -153,6 +153,14 @@ export interface RetestAnswerOutcome {
  * (mult/adição — factGroupMap só tem entrada para essas operações), o par também é
  * flagged (sem incrementar retest_wrong_count — não foi literalmente perguntado, só
  * sinalizado, mesmo critério de applyCommutativity em mastery.ts).
+ *
+ * Processado em duas fases (erro sempre vence, independente da ordem de posições no
+ * payload): 1) resolve TODOS os fact_ids atingidos por um erro nesta sessão — directo
+ * ou propagado ao par comutativo — e aplica flagWrong a todos; 2) só depois aplica
+ * flagCorrect aos restantes. Sem isto, um par que fosse respondido certo E tivesse o
+ * irmão errado na mesma sessão ficava com um resultado dependente da ordem de
+ * iteração (a queda para 0 do erro podia ser sobrescrita por um flagCorrect que
+ * corresse a seguir, ou não — não determinístico).
  */
 export async function applyRetestOutcomes(input: {
   supabase: SupabaseClient;
@@ -167,22 +175,33 @@ export async function applyRetestOutcomes(input: {
   const nowIso = now.toISOString();
   const todayLocal = toLocalDate(now, childTimezone);
 
+  // Fase 1 — resolve o conjunto completo de fact_ids atingidos por erro (directo + par
+  // comutativo propagado) e aplica flagWrong a todos, antes de qualquer flagCorrect.
+  const wrongTouched = new Map<string, boolean>(); // factId -> countsAsDirectAttempt
   for (const o of outcomes) {
-    if (o.wrong) {
-      await flagWrong(supabase, childId, o.factId, nowIso, true);
+    if (!o.wrong) continue;
+    if (!wrongTouched.has(o.factId)) wrongTouched.set(o.factId, true);
 
-      const groupId = factGroupMap.get(o.factId);
-      if (groupId) {
-        const { data: siblings } = await supabase
-          .from('arithmetic_facts')
-          .select('id')
-          .eq('fact_group_id', groupId)
-          .neq('id', o.factId);
-        for (const sib of (siblings ?? []) as Array<{ id: string }>) {
-          await flagWrong(supabase, childId, sib.id, nowIso, false);
-        }
+    const groupId = factGroupMap.get(o.factId);
+    if (groupId) {
+      const { data: siblings } = await supabase
+        .from('arithmetic_facts')
+        .select('id')
+        .eq('fact_group_id', groupId)
+        .neq('id', o.factId);
+      for (const sib of (siblings ?? []) as Array<{ id: string }>) {
+        if (!wrongTouched.has(sib.id)) wrongTouched.set(sib.id, false);
       }
-    } else if (o.correct) {
+    }
+  }
+
+  for (const [factId, countsAsDirectAttempt] of wrongTouched) {
+    await flagWrong(supabase, childId, factId, nowIso, countsAsDirectAttempt);
+  }
+
+  // Fase 2 — acertos, só para fatos não atingidos por nenhum erro (directo ou propagado).
+  for (const o of outcomes) {
+    if (o.correct && !wrongTouched.has(o.factId)) {
       await flagCorrect(supabase, childId, o.factId, todayLocal, nowIso, threshold);
     }
   }
