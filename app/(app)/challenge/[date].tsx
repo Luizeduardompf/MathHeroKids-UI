@@ -677,7 +677,10 @@ export default function ChallengeScreen() {
   const effectiveTimerSeconds = child
     ? resolveTimerSeconds(child.level, child.timer_seconds, child.timer_auto)
     : 15;
-  const needsOperationPicker = !!child && !child.mix_operations && child.enabled_operations.length > 1;
+  // enabled_operations pode faltar em activeChild cacheado localmente antes da migration 016
+  // (AsyncStorage/Zustand persist sobrevive a updates de app) — nunca assumir presente.
+  const childOperations = child?.enabled_operations?.length ? child.enabled_operations : ['multiplication' as ModuleId];
+  const needsOperationPicker = !!child && !child.mix_operations && childOperations.length > 1;
   const [chosenOperation, setChosenOperation] = useState<ModuleId | null>(null);
 
   const phase = useChallengeStore((s) => s.phase);
@@ -768,7 +771,7 @@ export default function ChallengeScreen() {
       }
 
       const sid = randomUUID();
-      const moduleId = chosenOperation ?? child.enabled_operations[0] ?? MODULE_ID.MULTIPLICATION;
+      const moduleId = chosenOperation ?? childOperations[0] ?? MODULE_ID.MULTIPLICATION;
 
       try {
         // Questões geradas adaptativamente pelo servidor
@@ -963,7 +966,7 @@ export default function ChallengeScreen() {
             {t('challenge.pickOperationTitle')}
           </Text>
           <View style={{ width: '100%', gap: 12 }}>
-            {child.enabled_operations.map((op) => (
+            {childOperations.map((op) => (
               <Pressable
                 key={op}
                 style={{
