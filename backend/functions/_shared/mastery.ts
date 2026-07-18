@@ -129,6 +129,16 @@ export async function applyCommutativity(input: {
       m.strength = Math.min(1, currentStrength + delta);
       // Tambem contabiliza como vista e correta (parcialmente) mas NAO muda distinct_sessions
       // para evitar inflacao de mastery por comutatividade
+    } else {
+      // Propagar o erro tambem ao par comutativo: errar 9+1 e sinal de que 1+9 pode estar
+      // igualmente fragil, mesmo sem ter sido perguntado nesta sessao. Incrementa
+      // consecutive_wrong (dispara WEAK via nextState se o par estava REVIEWING/MASTERED,
+      // exatamente como aconteceria se tivesse sido respondido errado directamente) e reseta
+      // consecutive_correct — a recuperacao de WEAK exige um streak novo, nao aproveita um
+      // streak anterior a este sinal de fragilidade.
+      m.consecutive_wrong += 1;
+      m.consecutive_correct = 0;
+      m.strength = computeStrength(m, input.rules, now);
     }
 
     m.state = nextState(m, input.rules);
