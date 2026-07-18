@@ -3,4 +3,4 @@
 //   major 0 = MVP em desenvolvimento
 //   minor = features estáveis
 //   patch = incrementado a cada commit/alteração
-export const APP_VERSION = 'v0.1.22';
+export const APP_VERSION = 'v0.1.23';

@@ -164,7 +164,6 @@
       "subtitle": "Veja a resposta certa abaixo.",
       "yourAnswer": "Sua resposta:",
       "continue": "Continuar →",
-      "retry": "Tentar o bloco de novo",
       "miloMessage": "Errar faz parte de aprender! Agora você já sabe esta. Bora continuar!",
       "continueAnyway": "Continuar →",
       "hint": "Lembre: {{a}} × {{b}} = {{a}} grupos de {{b}}"
@@ -172,7 +171,6 @@
     "timeout": {
       "title": "Acabou o tempo!",
       "message": "Não tem problema. Você consegue! Vamos tentar de novo com calma.",
-      "retry": "Tentar o bloco de novo",
       "goHome": "Voltar ao início",
       "miloMessage": "Sem pressa! Respire fundo e tente outra vez. Eu acredito em você!"
     },
@@ -182,7 +180,6 @@
       "correctOf": "{{correct}}/{{total}} respostas corretas",
       "accuracy": "{{pct}}% acertos",
       "target": "Meta: 100%",
-      "retry": "Tentar o bloco de novo",
       "continueAnyway": "Continuar mesmo assim",
       "goHome": "Voltar ao início",
       "miloMessage": "Faltou pouquinho! Mais uma tentativa e essa estrela perfeita é sua!"

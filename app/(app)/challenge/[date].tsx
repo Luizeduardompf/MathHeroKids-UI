@@ -696,7 +696,6 @@ export default function ChallengeScreen() {
       setPhase: s.setPhase,
       startSession: s.startSession,
       submitAnswer: s.submitAnswer,
-      retryBlock: s.retryBlock,
       advanceAfterWrong: s.advanceAfterWrong,
       dismissMilestone: s.dismissMilestone,
       markQuestionStart: s.markQuestionStart,
@@ -1077,7 +1076,6 @@ export default function ChallengeScreen() {
         operation={q?.operation}
         userAnswer={lastUserAnswer}
         onContinue={() => storeActions.advanceAfterWrong()}
-        onRetry={() => storeActions.retryBlock()}
       />
     );
   }
@@ -1087,7 +1085,6 @@ export default function ChallengeScreen() {
   if (phase === 'timeout') {
     return (
       <TimeExpiredScreen
-        onRetry={() => storeActions.retryBlock()}
         onGoHome={() => { storeActions.reset(); router.back(); }}
       />
     );
@@ -1105,7 +1102,6 @@ export default function ChallengeScreen() {
       <BlockEndScreen
         correct={blockCorrect}
         total={CHALLENGE.QUESTIONS_PER_BLOCK}
-        onRetry={() => storeActions.retryBlock()}
         onGoHome={() => { storeActions.reset(); router.back(); }}
       />
     );

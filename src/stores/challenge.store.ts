@@ -67,9 +67,8 @@ interface ChallengeState {
   timerSeconds: number;       // configured limit (0 = unlimited)
   questionStartTime: number;  // Date.now() when question was presented
 
-  // Retest — perguntas erradas que o filho "continuou" sem corrigir (retryBlock já
-  // reintroduz naturalmente via replay do bloco) ficam em fila e reaparecem no fim
-  // da sessão, antes de completar, para dar uma segunda oportunidade imediata.
+  // Retest — perguntas erradas ficam em fila e reaparecem no fim da sessão, antes de
+  // completar, para dar uma segunda oportunidade imediata.
   retestQueue: number[];             // índices (em `questions`) por re-testar
   retestQuestionIndex: number | null; // índice em re-teste neste momento, se houver
 
@@ -97,8 +96,6 @@ interface ChallengeState {
   markQuestionStart: () => void;
 
   submitAnswer: (childAnswer: number | null) => void;
-  /** Called when player opts to retry the current block */
-  retryBlock: () => void;
   /** Called when player accepts wrong answer and advances to next question */
   advanceAfterWrong: () => void;
   /** Called after milestone overlay is dismissed */
@@ -117,16 +114,6 @@ export const selectCurrentQuestion = (s: ChallengeState): Question | null =>
 export const selectIsRetestActive = (s: ChallengeState): boolean =>
   s.retestQuestionIndex != null;
 
-function shuffle<T>(arr: T[]): T[] {
-  const out = [...arr];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const tmp = out[i]!;
-    out[i] = out[j]!;
-    out[j] = tmp;
-  }
-  return out;
-}
 
 export const selectProgressFraction = (s: ChallengeState): number =>
   s.totalQuestions > 0 ? s.currentQuestionIndex / s.totalQuestions : 0;
@@ -385,31 +372,6 @@ export const useChallengeStore = create<ChallengeState>()((set, get) => ({
       lastUserAnswer: null,
       lastAnsweredQuestion: null,
       phase: 'correct',
-    });
-  },
-
-  retryBlock: () => {
-    const state = get();
-
-    if (state.retestQuestionIndex != null) {
-      // Em reteste não há "bloco" — repetir é só reiniciar o timer da mesma questão.
-      set({ phase: 'playing', questionStartTime: Date.now() });
-      return;
-    }
-
-    const blockStart = (state.currentBlock - 1) * CHALLENGE.QUESTIONS_PER_BLOCK;
-    const blockLength = Math.min(CHALLENGE.QUESTIONS_PER_BLOCK, state.questions.length - blockStart);
-    const reshuffled = shuffle(state.questions.slice(blockStart, blockStart + blockLength));
-    const newQuestions = [...state.questions];
-    newQuestions.splice(blockStart, blockLength, ...reshuffled);
-
-    set({
-      questions: newQuestions,
-      currentQuestionIndex: blockStart,
-      blockAttempt: state.blockAttempt + 1,
-      blockAnswers: [],
-      phase: 'playing',
-      questionStartTime: Date.now(),
     });
   },
 

@@ -164,14 +164,12 @@
       "subtitle": "See the correct answer below.",
       "yourAnswer": "Your answer:",
       "continue": "Continue →",
-      "retry": "Retry this block",
       "continueAnyway": "Continue anyway",
       "miloMessage": "Making mistakes is part of learning! Now you know this one. Keep going!"
     },
     "timeout": {
       "title": "Time's up!",
       "message": "No problem. You've got this! Let's try again calmly.",
-      "retry": "Retry this block",
       "goHome": "Go home",
       "miloMessage": "No rush! Take a deep breath and try again. I believe in you!"
     },
@@ -181,7 +179,6 @@
       "correctOf": "{{correct}}/{{total}} correct answers",
       "accuracy": "{{pct}}% accuracy",
       "target": "Target: 100%",
-      "retry": "Retry this block",
       "continueAnyway": "Continue anyway",
       "goHome": "Go home",
       "miloMessage": "Almost there! One more try and that perfect star is yours!"

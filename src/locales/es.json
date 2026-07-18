@@ -163,13 +163,11 @@
       "title": "¡Casi!",
       "subtitle": "Mira la respuesta correcta abajo.",
       "yourAnswer": "Tu respuesta:",
-      "continue": "Continuar →",
-      "retry": "Reintentar este bloque"
+      "continue": "Continuar →"
     },
     "timeout": {
       "title": "¡Se acabó el tiempo!",
       "message": "No hay problema. ¡Tú puedes!",
-      "retry": "Reintentar este bloque",
       "goHome": "Volver al inicio"
     },
     "blockIncomplete": {
@@ -178,7 +176,6 @@
       "correctOf": "{{correct}}/{{total}} respuestas correctas",
       "accuracy": "{{pct}}% de aciertos",
       "target": "Meta: 100%",
-      "retry": "Reintentar este bloque",
       "continueAnyway": "Continuar de todas formas",
       "goHome": "Volver al inicio"
     },

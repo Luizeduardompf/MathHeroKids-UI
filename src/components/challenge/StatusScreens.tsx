@@ -209,7 +209,7 @@ const si = StyleSheet.create({
 
 // ─── TimeExpiredScreen ────────────────────────────────────────────────────────
 
-export function TimeExpiredScreen({ onRetry, onGoHome }: { onRetry: () => void; onGoHome: () => void }) {
+export function TimeExpiredScreen({ onGoHome }: { onGoHome: () => void }) {
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -232,8 +232,7 @@ export function TimeExpiredScreen({ onRetry, onGoHome }: { onRetry: () => void; 
         <MiloBubble message={t('challenge.timeout.miloMessage')} tone="destructive" />
       </EntranceView>
       <View style={sc.actions}>
-        <ActionButton tone="primary" icon="refresh" label={t('challenge.timeout.retry')} onPress={onRetry} />
-        <ActionButton tone="neutral" icon="home-outline" label={t('challenge.timeout.goHome')} onPress={onGoHome} />
+        <ActionButton tone="primary" icon="home-outline" label={t('challenge.timeout.goHome')} onPress={onGoHome} />
       </View>
     </View>
   );
@@ -241,9 +240,9 @@ export function TimeExpiredScreen({ onRetry, onGoHome }: { onRetry: () => void; 
 
 // ─── WrongAnswerScreen ────────────────────────────────────────────────────────
 
-export function WrongAnswerScreen({ operandA, operandB, correctAnswer, userAnswer, operation, onContinue, onRetry }: {
+export function WrongAnswerScreen({ operandA, operandB, correctAnswer, userAnswer, operation, onContinue }: {
   operandA: number; operandB: number; correctAnswer: number;
-  userAnswer: number | null; operation?: ModuleId; onContinue: () => void; onRetry: () => void;
+  userAnswer: number | null; operation?: ModuleId; onContinue: () => void;
 }) {
   const { t } = useTranslation();
 
@@ -287,7 +286,6 @@ export function WrongAnswerScreen({ operandA, operandB, correctAnswer, userAnswe
 
       <View style={sc.actions}>
         <ActionButton tone="success" label={t('challenge.wrong.continueAnyway')} onPress={onContinue} />
-        <ActionButton tone="neutral" icon="refresh" label={t('challenge.wrong.retry')} onPress={onRetry} />
       </View>
     </View>
   );
@@ -326,8 +324,8 @@ const wa = StyleSheet.create({
 
 // ─── BlockEndScreen ───────────────────────────────────────────────────────────
 
-export function BlockEndScreen({ correct, total, onRetry, onGoHome }: {
-  correct: number; total: number; onRetry: () => void; onGoHome: () => void;
+export function BlockEndScreen({ correct, total, onGoHome }: {
+  correct: number; total: number; onGoHome: () => void;
 }) {
   const { t } = useTranslation();
   const pct = Math.round((correct / total) * 100);
@@ -366,8 +364,7 @@ export function BlockEndScreen({ correct, total, onRetry, onGoHome }: {
       </EntranceView>
 
       <View style={sc.actions}>
-        <ActionButton tone="primary" icon="refresh" label={t('challenge.blockIncomplete.retry')} onPress={onRetry} />
-        <ActionButton tone="neutral" icon="home-outline" label={t('challenge.blockIncomplete.goHome')} onPress={onGoHome} />
+        <ActionButton tone="primary" icon="home-outline" label={t('challenge.blockIncomplete.goHome')} onPress={onGoHome} />
       </View>
     </View>
   );
