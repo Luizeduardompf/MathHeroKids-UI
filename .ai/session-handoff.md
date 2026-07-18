@@ -4,7 +4,51 @@
 
 ---
 
-## Estado actual — 2026-07-18 00:35 (sessão 15)
+## Estado actual — 2026-07-18 08:55 (sessão 16)
+
+### 🔴 Em curso
+```
+ESTADO: EM CURSO — sistema de reteste persistente cross-challenge (child_fact_retest).
+Pedido do user: análise "arquiteto sénior" completa + spec fechado em conversa antes de
+implementar. Tag de segurança: v1.4-pre-retest-system (HEAD=7fda09c antes de qualquer
+alteração desta sessão).
+
+⚠️ IMPORTANTE: nota-se que outra sessão (não este handoff) fez 5 commits entre 07:54–08:31
+de hoje (86886bb..7fda09c) mexendo na MESMA área (retestQueue, comutatividade em mastery.ts,
+seletor de operação). Reconciliado com o user em chat antes de arrancar: essa sessão já
+tinha terminado, e o spec desta sessão substitui por completo o retestQueue (fim-de-sessão)
+por esta tabela nova — o fix em mastery.ts (932624f, propagação de erro comutativo via WEAK)
+fica como está, é complementar e não é tocado.
+
+Trabalho autónomo enquanto o user está fora — acesso ao Simulator + clipboard concedido via
+request_access no início da sessão (só Simulator, full tier — Terminal/Chrome não pedidos,
+uso Bash directo para tudo).
+
+Roadmap (ver TaskList desta sessão para o detalhe):
+  1. Migration 017 — child_fact_retest + app_config
+  2. _shared/retest.ts (helper)
+  3. start_challenge — reservar vagas de reteste (retest_percentage)
+  4. complete_challenge — gravar outcome (streak/clear/flag+comutativo)
+  5. Client — remover retestQueue de challenge.store.ts + [date].tsx
+  6. Tela Developers (PIN + senha 120380) + settings globais
+  7. Tela Desempenho em child/[id].tsx
+  8. i18n + deploy + validação Simulator
+
+Regras de negócio completas (fechadas em conversa antes de codificar):
+  - Erro em qualquer fact → a_retestar=true, streak=0. Par comutativo (mult/adição) também.
+  - Acerto em sessão/dia distinto → streak++. Erro → streak=0 de novo. Limiar global (default
+    5) → a_retestar=false, cleared_at preenchido, linha nunca apagada.
+  - Máx 2 aparições do mesmo fato por sessão.
+  - Fatia do desafio reservada a reteste = round(question_count × retest_percentage), default
+    25%, configurável em Developers. Excedente fica para sessão seguinte (fila natural).
+  - retestQueue (fim de sessão) removido por completo — reteste passa a ser cross-sessão via
+    esta tabela, injectado por start_challenge.
+  - child_fact_mastery/WEAK/adaptive-rules.json não mudam — sistemas independentes.
+```
+
+---
+
+## Estado anterior — 2026-07-18 00:35 (sessão 15)
 
 ### 🟢 Em curso
 ```
