@@ -89,7 +89,7 @@ Evolution API    ──webhook─▶  evolution-webhook (verify_jwt=false)
 - Migrations: `backend/migrations/018_whatsapp_notifications.sql`,
   `backend/migrations/019_whatsapp_notifications_cron.sql`
 - Vault: `project_url`, `service_role_key` (para o cron), `evolution_api_url`/`evolution_api_key`/
-  `evolution_instance_name` **pendentes** (Fase 3, depois do deploy no Railway)
+  `evolution_instance_name` ✅ configurados (Fase 3 concluída)
 
 ### Fase 2 — Edge Functions ✅ (deployadas)
 - `evolution-dev` — proxy (status/QR/reset), igual ao padrão LukaPsi
@@ -97,41 +97,77 @@ Evolution API    ──webhook─▶  evolution-webhook (verify_jwt=false)
 - `send-whatsapp-notifications` — cron horário (`pg_cron`, job `whatsapp-notifications-hourly`)
 - `test-whatsapp-message` — usado só pelo ecrã Developer para testar envio manual
 
-### Fase 3 — Infra Railway ⏳ (bloqueado — precisa do utilizador)
-- Novo projeto Railway **isolado do LukaPsi** (conta/projeto próprios)
-- Deploy Evolution API (mesma imagem/versão do LukaPsi: v1.7.4, `WHATSAPP-BAILEYS`)
-- `DATABASE_ENABLED=false` para MVP (mesma limitação conhecida: perde sessão em restart —
-  aceite conscientemente, documentado, plano de upgrade para Postgres dedicado se necessário)
-- Configurar Vault no Supabase (`evolution_api_url`, `evolution_api_key`, `evolution_instance_name`)
-- Configurar webhook na Evolution API a apontar para `evolution-webhook`
-- **Bloqueio**: login Railway exige OAuth no browser — só o utilizador pode autorizar
-  (`railway login --browserless`, ver secção de bloqueios abaixo)
+### Fase 3 — Infra Railway ✅ (2026-07-19)
+- Projeto Railway novo **`mathhero-whatsapp`** (id `a0bb1f57-d4ad-4b28-8e01-7f7b7e7ee84a`),
+  workspace "Luiz Eduardo de Menescal's Projects", **isolado do `luka-whatsapp`** (nunca tocado).
+- Serviço `evolution-api`: imagem **`evoapicloud/evolution-api:v2.3.7`** — **não** `atendai/evolution-api`
+  (ver nota abaixo sobre o porquê). URL pública:
+  `https://evolution-api-production-1246.up.railway.app`. Instância única: `mathhero-main`.
+- Serviço `Postgres` (template oficial Railway, `ghcr.io/railwayapp-templates/postgres-ssl:18`)
+  — **diferença deliberada vs. LukaPsi**: Evolution API **v2.x exige Postgres** para arrancar
+  (`prisma migrate deploy` corre sempre no boot, mesmo com `DATABASE_ENABLED=false` — não é
+  opcional como era no v1.x do LukaPsi). Isto elimina de raiz a limitação conhecida do LukaPsi
+  ("perde sessão/QR em restart do container", já documentada como pendência de melhoria lá).
+- Variáveis definidas em `evolution-api`: `AUTHENTICATION_API_KEY` (gerada, guardada só no
+  Vault), `SERVER_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}`, `LANGUAGE=pt-BR`,
+  `DATABASE_ENABLED=true`, `DATABASE_PROVIDER=postgresql`,
+  `DATABASE_CONNECTION_URI=${{Postgres.DATABASE_URL}}` (rede privada Railway),
+  `DATABASE_SAVE_DATA_INSTANCE=true` (resto dos `DATABASE_SAVE_*` a `false` — não precisamos de
+  histórico de mensagens/contactos/chats persistido), `CACHE_REDIS_ENABLED=false`,
+  `CACHE_LOCAL_ENABLED=true` (sem Redis — volume baixo, cache em memória chega).
+- Vault Supabase: `evolution_api_url`, `evolution_api_key`, `evolution_instance_name`
+  configurados via `vault.create_secret` (não versionado, valores reais só no Vault).
+- Webhook da instância configurado (`POST /webhook/set/mathhero-main`) →
+  `evolution-webhook`, eventos `CONNECTION_UPDATE`, `MESSAGES_UPSERT`, `MESSAGES_UPDATE`,
+  `QRCODE_UPDATED`.
+- **Testado ponta-a-ponta**: `evolution-dev` chamada com JWT real da conta de teste devolveu
+  QR code válido (base64 PNG) da instância `mathhero-main` recém-criada. `evolution-webhook`
+  testado com payload sintético → gravou em `whatsapp_events` corretamente.
 
-### Fase 4 — UI (em curso)
+**Nota — `atendai/evolution-api` não funciona no Railway (2026-07-19):** a imagem que o
+LukaPsi documentava (`atendai/evolution-api:v1.7.4`) falha o deploy no Railway **sem gerar
+nenhum log** (nem build nem runtime) — mesmo `nginx:latest` no mesmo projeto/conta funciona
+normalmente, isolando o problema à imagem em si, não à conta/Railway. A causa mais provável:
+o repositório Docker Hub `atendai/evolution-api` está descontinuado/com metadados quebrados
+(a API do Docker Hub devolve campos vazios para ele) — o projeto migrou para o namespace
+**`evoapicloud/evolution-api`**, activamente mantido (pushes recentes, v2.x). A troca de
+imagem resolveu o deploy instantaneamente. **Se o LukaPsi alguma vez precisar de re-deployar
+a instância dele do zero, este mesmo problema vai acontecer lá** — vale a pena avisar, mas
+não mexer no projeto deles agora.
+
+### Fase 4 — UI ✅
 - `app/(app)/parent-area/notifications.tsx` — Definições > Notificações (pai), 4 tipos
 - `app/(app)/parent-area/edit-profile.tsx` — campo WhatsApp do pai
 - `app/(app)/parent-area/child/[id].tsx` — campo WhatsApp da criança + 2 tipos de notificação
 - `app/(app)/parent-area/developers.tsx` — nova secção "Integração WhatsApp" (link)
 - `app/(app)/parent-area/developer-whatsapp.tsx` — QR code, status, testar envio, reset
 
-### Fase 5 — Teste e documentação
-- `npm run type-check` + `npm run lint`
-- Testar fluxo completo no Simulator/dev server (golden path + edge cases: sem número,
-  notificações desativadas, instância desligada)
-- Atualizar `CLAUDE.md` com a nova área de arquitetura crítica
-- Atualizar `docs/database-schema.md`
+### Fase 5 — Teste e documentação ✅ (parcial — falta toque manual na UI)
+- `npm run type-check` ✅ limpo (erros restantes pré-existentes, não relacionados)
+- `npm run lint` — quebrado por um problema de ambiente pré-existente (crash no `ajv`), não
+  relacionado com este trabalho
+- Bundle Metro testado (força build de `index.bundle?platform=ios` — sem erros) + screenshot
+  do Simulator do utilizador confirmando app viva com o bundle novo
+- Backend testado ponta-a-ponta via curl/Edge Functions reais (ver Fase 3)
+- **Não testado**: navegação por toque nos ecrãs novos (Notificações, Developer > WhatsApp) —
+  acesso ao Simulator foi recusado pelo utilizador nesta sessão
+- `CLAUDE.md` atualizado com a nova secção de arquitetura
+- `docs/database-schema.md` **não** atualizado (já estava marcado como desatualizado antes
+  desta feature — ver nota no topo do CLAUDE.md, tratar numa sessão de docs dedicada)
 
 ## Bloqueios que exigem presença do utilizador (não automatizáveis)
 
-1. **Login Railway** (OAuth) — feito uma vez no início da sessão via `railway login --browserless`.
-   Cada código de pairing expira em ~10-15 min — tem de ser gerado e autorizado na mesma
-   janela de tempo (não vale a pena gerar com antecedência).
+1. ~~**Login Railway** (OAuth)~~ ✅ feito em 2026-07-19.
 2. **Emparelhamento QR do WhatsApp** — dentro da própria app (Developer > Integração
    WhatsApp), o utilizador escaneia o QR com o telemóvel que vai servir de número de envio.
-   Pode ser feito em qualquer altura depois do deploy, não bloqueia o resto do trabalho.
+   **Ainda por fazer** — a instância `mathhero-main` existe e está pronta (`status: close`),
+   só falta abrir a app e escanear. Pode ser feito a qualquer momento.
 3. **Conta Resend para alertas de ops** (opcional, mesma limitação que o LukaPsi tem hoje —
    sandbox mode, só chega ao email da conta) — não bloqueia a funcionalidade principal,
    só os alertas de queda de servidor. Não implementado nesta fase.
+4. **Testar por toque na UI** — acesso ao Simulator recusado nesta sessão; verificação só
+   estática (type-check, bundle, screenshot). Conceder acesso numa próxima sessão para validar
+   visualmente Notificações e Developer > Integração WhatsApp.
 
 ## Nota operacional — perda de ficheiros locais não commitados (2026-07-19)
 

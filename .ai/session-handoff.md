@@ -6,33 +6,35 @@
 
 ## Em curso — Integração WhatsApp (Evolution API) — 2026-07-18/19
 
-**Estado: LIVRE.** Backend + UI completos e commitados/pushados. Só falta infra Railway
-(bloqueada em login OAuth do utilizador) + emparelhamento QR + teste manual por toque na UI.
+**Estado: LIVRE.** Backend + UI + infra Railway completos, commitados/pushados e testados
+ponta-a-ponta. Só falta escanear o QR (dentro da própria app) e testar por toque na UI.
 
 Ver `docs/WHATSAPP_INTEGRATION_ROADMAP.md` para o desenho completo e estado fase-a-fase.
-Resumo: schema (migrations 018/019) + 4 Edge Functions + cron pg_cron já aplicados/deployados
-no Supabase remoto `pelhtuspcofmejzqtibx` (verificado via query directa). UI completa:
-`app/(app)/parent-area/notifications.tsx` (pai, 4 tipos), campo WhatsApp em `edit-profile.tsx`,
-campo + 2 tipos por criança em `child/[id].tsx`, `developer-whatsapp.tsx` (QR/status/reset/teste,
-atrás do PIN 120380 já existente em `developers.tsx`). i18n completo pt/en/es/fr. type-check
-limpo (erros restantes em friends.tsx/ranking.tsx são pré-existentes, não relacionados).
+Resumo: schema (migrations 018/019) + 4 Edge Functions + cron pg_cron aplicados/deployados no
+Supabase remoto `pelhtuspcofmejzqtibx`. Railway: projeto `mathhero-whatsapp` (isolado do
+LukaPsi), Evolution API `evoapicloud/evolution-api:v2.3.7` + Postgres dedicado, instância
+`mathhero-main` criada e à espera de QR. UI completa: `app/(app)/parent-area/notifications.tsx`
+(pai, 4 tipos), campo WhatsApp em `edit-profile.tsx`, campo + 2 tipos por criança em
+`child/[id].tsx`, `developer-whatsapp.tsx` (QR/status/reset/teste, atrás do PIN 120380 já
+existente em `developers.tsx`). i18n completo pt/en/es/fr. type-check limpo (erros restantes
+em friends.tsx/ranking.tsx são pré-existentes, não relacionados). Testado ponta-a-ponta via
+curl: `evolution-dev` devolveu QR real com JWT da conta de teste; `evolution-webhook` grava em
+`whatsapp_events` corretamente.
 
-**Nota operacional importante:** entre a sessão de 18/07 (schema+EFs+cron aplicados) e a
-continuação em 19/07, o ambiente local reiniciou e todos os ficheiros ainda não commitados
+**Nota importante — imagem Docker**: `atendai/evolution-api` (a que o LukaPsi usa) **não
+funciona no Railway** — deploy falha sem nenhum log (repo Docker Hub descontinuado). Usar
+sempre `evoapicloud/evolution-api` a partir de agora. Detalhe completo no roadmap.
+
+**Nota operacional (lição já aplicada)**: entre a sessão de 18/07 (schema+EFs+cron aplicados) e
+a continuação em 19/07, o ambiente local reiniciou e todos os ficheiros ainda não commitados
 desapareceram (git log local mudou por completo — trabalho doutra sessão aconteceu entretanto,
 ver "Sessão 16" abaixo). O lado Supabase sobreviveu (é remoto); os ficheiros locais tiveram de
-ser reescritos. Lição: **commitar a cada ficheiro concluído**, não só no fim — já é a regra
-deste ficheiro, mas não estava a ser seguida à risca nesta feature. A partir de agora está.
+ser reescritos. A partir desta sessão, cada bloco de trabalho foi commitado e pushado
+imediatamente ao ficar pronto — sem perdas na segunda metade da sessão.
 
 **Pendente para a próxima sessão (precisa do utilizador):**
-1. `railway login --browserless` → autorizar em https://railway.com/activate (código expira
-   em ~10-15 min, gerar de novo se for preciso).
-2. Criar projeto Railway novo (isolado do LukaPsi), deploy Evolution API v1.7.4 (`WHATSAPP-BAILEYS`,
-   `DATABASE_ENABLED=false`), guardar `evolution_api_url`/`evolution_api_key`/
-   `evolution_instance_name` no Vault Supabase (`vault.create_secret`), configurar webhook da
-   Evolution API a apontar para `evolution-webhook`.
-3. Emparelhar QR dentro da app (Developer > Integração WhatsApp) com o número real.
-4. Testar por toque na UI — não foi possível nesta sessão (acesso ao Simulator foi recusado
+1. Emparelhar QR dentro da app (Developer > Integração WhatsApp, PIN 120380) com o número real.
+2. Testar por toque na UI — não foi possível nesta sessão (acesso ao Simulator foi recusado
    pelo utilizador; só verificação via type-check + bundle Metro + screenshot estático).
 
 ---

@@ -242,14 +242,14 @@ MathHeroKids-UI/
   runtime na tela `parent-area/developers.tsx` (`app_config` table)
 - A/B harness: `AB_TEST_ENABLED=true` para testar variantes de `adaptive-rules.json`
 
-### WhatsApp / Notificações (2026-07-18/19) — backend completo, infra Railway pendente
+### WhatsApp / Notificações (2026-07-18/19) — completo, falta só emparelhar o QR
 Ver `docs/WHATSAPP_INTEGRATION_ROADMAP.md` e secção "WhatsApp / Notificações" em
-Regras críticas de arquitetura, mais abaixo. Schema + 4 Edge Functions + cron já aplicados/
-deployados no Supabase remoto; UI completa (Notificações do pai, por criança, Developer >
-Integração WhatsApp). **Falta**: criar o projeto Railway e fazer deploy da Evolution API
-(bloqueado em login OAuth do utilizador — `railway login --browserless`, ver roadmap), depois
-emparelhar o QR dentro da própria app. Sem isso, `evolution-dev`/`send-whatsapp-notifications`
-respondem `EVOLUTION_NOT_CONFIGURED` (comportamento esperado, testado).
+Regras críticas de arquitetura, mais abaixo. Schema + 4 Edge Functions + cron + infra Railway
+(`mathhero-whatsapp`, isolado do LukaPsi) tudo deployado e testado ponta-a-ponta; UI completa
+(Notificações do pai, por criança, Developer > Integração WhatsApp). **Falta só**: abrir a app
+(Developer > Integração WhatsApp) e escanear o QR com o número real — a instância `mathhero-main`
+já existe e está à espera (`status: close`). Não testado por toque na UI (acesso ao Simulator
+recusado nesta sessão).
 
 ### Pendente (Phase 3+)
 Consultar `docs/implementation-phases.md` para o roadmap completo.
@@ -336,9 +336,14 @@ Ver `docs/WHATSAPP_INTEGRATION_ROADMAP.md` para o desenho completo. Padrão repl
 LukaPsi (`Luka/Luka`), com hardening de segurança desde o dia 1 (RPCs de Vault já nascem
 restritas a `service_role`, ao contrário do LukaPsi que teve de corrigir isto depois).
 
-- **Instância única partilhada**: `mathhero-main`, self-hosted no Railway (projeto próprio,
-  isolado do LukaPsi). Evolution API v1.7.4, motor `WHATSAPP-BAILEYS`, `DATABASE_ENABLED=false`
-  (perde sessão/QR em restart do container — limitação aceite conscientemente para o MVP).
+- **Instância única partilhada**: `mathhero-main`, self-hosted no Railway — projeto
+  `mathhero-whatsapp` (id `a0bb1f57-d4ad-4b28-8e01-7f7b7e7ee84a`), **isolado do LukaPsi**
+  (`luka-whatsapp`, nunca tocado). Imagem **`evoapicloud/evolution-api:v2.3.7`** — **não**
+  `atendai/evolution-api` (namespace descontinuado, deploy falha sem logs no Railway; ver nota
+  no roadmap). Motor `WHATSAPP-BAILEYS`, com Postgres dedicado (`DATABASE_ENABLED=true` — a
+  v2.x da Evolution API exige Postgres para arrancar, ao contrário da v1.x do LukaPsi; isto
+  elimina a limitação de "perde sessão em restart" que o LukaPsi tem). URL:
+  `https://evolution-api-production-1246.up.railway.app`.
 - **Segredos nunca no cliente nem em env var das Edge Functions** — vivem no Supabase Vault
   (`evolution_api_url`, `evolution_api_key`, `evolution_instance_name`), lidos só por
   `get_evolution_config()`/`get_vault_secrets()` (RPCs `SECURITY DEFINER`, `EXECUTE` restrito
