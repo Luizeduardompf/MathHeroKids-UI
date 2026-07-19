@@ -242,10 +242,20 @@ MathHeroKids-UI/
   runtime na tela `parent-area/developers.tsx` (`app_config` table)
 - A/B harness: `AB_TEST_ENABLED=true` para testar variantes de `adaptive-rules.json`
 
+### WhatsApp / Notificações (2026-07-18/19) — backend completo, infra Railway pendente
+Ver `docs/WHATSAPP_INTEGRATION_ROADMAP.md` e secção "WhatsApp / Notificações" em
+Regras críticas de arquitetura, mais abaixo. Schema + 4 Edge Functions + cron já aplicados/
+deployados no Supabase remoto; UI completa (Notificações do pai, por criança, Developer >
+Integração WhatsApp). **Falta**: criar o projeto Railway e fazer deploy da Evolution API
+(bloqueado em login OAuth do utilizador — `railway login --browserless`, ver roadmap), depois
+emparelhar o QR dentro da própria app. Sem isso, `evolution-dev`/`send-whatsapp-notifications`
+respondem `EVOLUTION_NOT_CONFIGURED` (comportamento esperado, testado).
+
 ### Pendente (Phase 3+)
 Consultar `docs/implementation-phases.md` para o roadmap completo.
 ⚠️ `docs/database-schema.md` e `docs/adaptive-multiplication-system.md` estão desatualizados
-face ao estado actual (multi-operação, ranking realtime) — tratar numa sessão de docs dedicada.
+face ao estado actual (multi-operação, ranking realtime, WhatsApp) — tratar numa sessão de
+docs dedicada.
 
 ---
 
@@ -320,6 +330,44 @@ face ao estado actual (multi-operação, ranking realtime) — tratar numa sess�
 - Challenges são **online-only** (Phase 2.5): sem queue de sync para sessões
 - AsyncStorage apenas para: completions locais (calendário), activeChild, idioma, tema
 - Todas as outras operações exigem conectividade
+
+### WhatsApp / Notificações (Evolution API) ⚠️ CRÍTICO
+Ver `docs/WHATSAPP_INTEGRATION_ROADMAP.md` para o desenho completo. Padrão replicado do
+LukaPsi (`Luka/Luka`), com hardening de segurança desde o dia 1 (RPCs de Vault já nascem
+restritas a `service_role`, ao contrário do LukaPsi que teve de corrigir isto depois).
+
+- **Instância única partilhada**: `mathhero-main`, self-hosted no Railway (projeto próprio,
+  isolado do LukaPsi). Evolution API v1.7.4, motor `WHATSAPP-BAILEYS`, `DATABASE_ENABLED=false`
+  (perde sessão/QR em restart do container — limitação aceite conscientemente para o MVP).
+- **Segredos nunca no cliente nem em env var das Edge Functions** — vivem no Supabase Vault
+  (`evolution_api_url`, `evolution_api_key`, `evolution_instance_name`), lidos só por
+  `get_evolution_config()`/`get_vault_secrets()` (RPCs `SECURITY DEFINER`, `EXECUTE` restrito
+  a `service_role`). O cliente fala sempre através do proxy `evolution-dev` — nunca chama a
+  Evolution API diretamente.
+- **Schema**: `parent_profiles.whatsapp_phone`/`whatsapp_phone_ddi` (pai),
+  `child_profiles.whatsapp_phone`/`whatsapp_phone_ddi` (criança, opcional). Definições do pai
+  em `notification_preferences` (extensão da tabela original da 001 — `daily_reminder`/
+  `reminder_time` já eram o tipo "lembrete diário", agora também gatilho WhatsApp; +
+  `unfinished_warning_*`, `completed_notice_*`, `weekly_summary_*`). Definições da criança em
+  `child_notification_settings` (só 2 tipos: `daily_reminder`, `unfinished_warning`).
+  `whatsapp_notification_log` faz dedup (1 envio por tipo/dia/destinatário) e auditoria.
+  `whatsapp_events` guarda o log bruto do webhook — só `service_role` lê.
+- **Cron horário** (`pg_cron`, job `whatsapp-notifications-hourly`) invoca
+  `send-whatsapp-notifications`, que varre as definições e decide enviar consultando
+  `calendar_days` no momento do trigger (não outbox event-driven — mais simples, notificações
+  não precisam da garantia de entrega que XP/gamificação precisa). `daily_reminder`/
+  `unfinished_warning` disparam se o dia **ainda não** está `completed`; `completed_notice` só
+  se **já** está. Só a **hora** da coluna `time` importa (cron corre 1×/hora, minutos ignorados
+  — ver `NOTIFICATION_HOURS` em `constants/config.ts`, os pickers da UI só oferecem horas).
+- **Edge Functions**: `evolution-dev` (proxy status/QR/reset, JWT do pai), `evolution-webhook`
+  (público, `verify_jwt=false`, log de eventos + reconciliação de entrega falhada — a Evolution
+  API responde 2xx ao aceitar a mensagem, não quando é entregue; erro real chega depois via
+  `messages.update`), `send-whatsapp-notifications` (cron, service_role),
+  `test-whatsapp-message` (envio manual, ecrã Developer).
+- **UI**: Definições > Notificações (pai, 4 tipos) em `app/(app)/parent-area/notifications.tsx`;
+  campo WhatsApp do pai em `edit-profile.tsx`; campo WhatsApp + 2 tipos por criança em
+  `child/[id].tsx`; Developer (PIN 120380, `developers.tsx`, **pré-existente** — não confundir
+  com uma área nova) > Integração WhatsApp (`developer-whatsapp.tsx`) — QR, status, reset, teste.
 
 ---
 

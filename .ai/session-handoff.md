@@ -4,6 +4,39 @@
 
 ---
 
+## Em curso — Integração WhatsApp (Evolution API) — 2026-07-18/19
+
+**Estado: LIVRE.** Backend + UI completos e commitados/pushados. Só falta infra Railway
+(bloqueada em login OAuth do utilizador) + emparelhamento QR + teste manual por toque na UI.
+
+Ver `docs/WHATSAPP_INTEGRATION_ROADMAP.md` para o desenho completo e estado fase-a-fase.
+Resumo: schema (migrations 018/019) + 4 Edge Functions + cron pg_cron já aplicados/deployados
+no Supabase remoto `pelhtuspcofmejzqtibx` (verificado via query directa). UI completa:
+`app/(app)/parent-area/notifications.tsx` (pai, 4 tipos), campo WhatsApp em `edit-profile.tsx`,
+campo + 2 tipos por criança em `child/[id].tsx`, `developer-whatsapp.tsx` (QR/status/reset/teste,
+atrás do PIN 120380 já existente em `developers.tsx`). i18n completo pt/en/es/fr. type-check
+limpo (erros restantes em friends.tsx/ranking.tsx são pré-existentes, não relacionados).
+
+**Nota operacional importante:** entre a sessão de 18/07 (schema+EFs+cron aplicados) e a
+continuação em 19/07, o ambiente local reiniciou e todos os ficheiros ainda não commitados
+desapareceram (git log local mudou por completo — trabalho doutra sessão aconteceu entretanto,
+ver "Sessão 16" abaixo). O lado Supabase sobreviveu (é remoto); os ficheiros locais tiveram de
+ser reescritos. Lição: **commitar a cada ficheiro concluído**, não só no fim — já é a regra
+deste ficheiro, mas não estava a ser seguida à risca nesta feature. A partir de agora está.
+
+**Pendente para a próxima sessão (precisa do utilizador):**
+1. `railway login --browserless` → autorizar em https://railway.com/activate (código expira
+   em ~10-15 min, gerar de novo se for preciso).
+2. Criar projeto Railway novo (isolado do LukaPsi), deploy Evolution API v1.7.4 (`WHATSAPP-BAILEYS`,
+   `DATABASE_ENABLED=false`), guardar `evolution_api_url`/`evolution_api_key`/
+   `evolution_instance_name` no Vault Supabase (`vault.create_secret`), configurar webhook da
+   Evolution API a apontar para `evolution-webhook`.
+3. Emparelhar QR dentro da app (Developer > Integração WhatsApp) com o número real.
+4. Testar por toque na UI — não foi possível nesta sessão (acesso ao Simulator foi recusado
+   pelo utilizador; só verificação via type-check + bundle Metro + screenshot estático).
+
+---
+
 ## Estado actual — 2026-07-19 (sessão 16, cont. — QA sénior: questões, montagem, XP)
 
 ### ✅ Concluído — QA sénior focado no SENTIDO das questões e montagem do desafio
