@@ -7,16 +7,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 
 import { AvatarPicker, Button, Input, Text } from '@/components/ui';
 import { childService } from '@/services/child.service';
 import { retestService, type RetestFactEntry } from '@/services/retest.service';
 import { appConfigService } from '@/services/app-config.service';
+import { notificationSettingsService } from '@/services/notification-settings.service';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { colors, fontFamily, radius, shadows, space } from '@/theme';
-import { TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT_OPTIONS, OPERATIONS, OPERATION_SYMBOLS, type TimerOption, type MultiplicationRange, type QuestionCountOption, type ModuleId } from '@/constants/config';
+import { TIMER_OPTIONS, MULTIPLICATION_RANGES, QUESTION_COUNT_OPTIONS, OPERATIONS, OPERATION_SYMBOLS, NOTIFICATION_HOURS, hourToTimeString, timeStringToHour, type TimerOption, type MultiplicationRange, type QuestionCountOption, type ModuleId } from '@/constants/config';
 import type { AvatarId } from '@/constants/config';
 import type { ChildProfile } from '@/types';
 
@@ -107,6 +108,115 @@ function PerformanceRow({ entry, threshold, learned }: { entry: RetestFactEntry;
   );
 }
 
+// ─── Notificações WhatsApp da criança ──────────────────────────────────────────
+
+function ChildNotificationsSection({ childId }: { childId: string }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ['child-notification-settings', childId],
+    queryFn: () => notificationSettingsService.getChildSettings(childId),
+  });
+
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+  const [dailyReminderEnabled, setDailyReminderEnabled] = useState(false);
+  const [dailyReminderHour, setDailyReminderHour] = useState(16);
+  const [unfinishedEnabled, setUnfinishedEnabled] = useState(false);
+  const [unfinishedHour, setUnfinishedHour] = useState(19);
+
+  useEffect(() => {
+    if (!settings) return;
+    setWhatsappEnabled(settings.whatsapp_enabled);
+    setDailyReminderEnabled(settings.daily_reminder_enabled);
+    setDailyReminderHour(timeStringToHour(settings.daily_reminder_time, 16));
+    setUnfinishedEnabled(settings.unfinished_warning_enabled);
+    setUnfinishedHour(timeStringToHour(settings.unfinished_warning_time, 19));
+  }, [settings]);
+
+  const mutation = useMutation({
+    mutationFn: () => notificationSettingsService.updateChildSettings(childId, {
+      whatsapp_enabled: whatsappEnabled,
+      daily_reminder_enabled: dailyReminderEnabled,
+      daily_reminder_time: hourToTimeString(dailyReminderHour),
+      unfinished_warning_enabled: unfinishedEnabled,
+      unfinished_warning_time: hourToTimeString(unfinishedHour),
+    }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['child-notification-settings', childId] }),
+  });
+
+  if (isLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: space.sm }} />;
+
+  return (
+    <View style={styles.settingCard}>
+      <Pressable style={styles.settingHeader} onPress={() => setWhatsappEnabled((v) => !v)}>
+        <View style={styles.settingIcon}>
+          <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text variant="label">{t('parentArea.child.whatsappNotifTitle')}</Text>
+          <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.whatsappNotifHint')}</Text>
+        </View>
+        <View style={[styles.toggle, whatsappEnabled && styles.toggleOn]}>
+          <View style={[styles.toggleThumb, whatsappEnabled && styles.toggleThumbOn]} />
+        </View>
+      </Pressable>
+
+      {whatsappEnabled ? (
+        <>
+          <Pressable style={styles.autoTimerRow} onPress={() => setDailyReminderEnabled((v) => !v)}>
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.child.dailyReminderLabel')}</Text>
+              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.dailyReminderHint')}</Text>
+            </View>
+            <View style={[styles.toggle, dailyReminderEnabled && styles.toggleOn]}>
+              <View style={[styles.toggleThumb, dailyReminderEnabled && styles.toggleThumbOn]} />
+            </View>
+          </Pressable>
+          {dailyReminderEnabled ? (
+            <View style={styles.optionRow}>
+              {NOTIFICATION_HOURS.map((h) => (
+                <Pressable key={h} style={[styles.optionBtn, dailyReminderHour === h && styles.optionBtnActive]} onPress={() => setDailyReminderHour(h)}>
+                  <RNText style={[styles.optionText, dailyReminderHour === h && styles.optionTextActive]}>{String(h).padStart(2, '0')}h</RNText>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+
+          <Pressable style={styles.autoTimerRow} onPress={() => setUnfinishedEnabled((v) => !v)}>
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.child.unfinishedLabel')}</Text>
+              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.unfinishedHint')}</Text>
+            </View>
+            <View style={[styles.toggle, unfinishedEnabled && styles.toggleOn]}>
+              <View style={[styles.toggleThumb, unfinishedEnabled && styles.toggleThumbOn]} />
+            </View>
+          </Pressable>
+          {unfinishedEnabled ? (
+            <View style={styles.optionRow}>
+              {NOTIFICATION_HOURS.map((h) => (
+                <Pressable key={h} style={[styles.optionBtn, unfinishedHour === h && styles.optionBtnActive]} onPress={() => setUnfinishedHour(h)}>
+                  <RNText style={[styles.optionText, unfinishedHour === h && styles.optionTextActive]}>{String(h).padStart(2, '0')}h</RNText>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+        </>
+      ) : null}
+
+      {mutation.isError ? <Text variant="bodySmall" color={colors.error}>{(mutation.error as Error).message}</Text> : null}
+      {mutation.isSuccess ? <Text variant="bodySmall" color={colors.success}>{t('parentArea.notifications.saved')}</Text> : null}
+
+      <Button
+        label={t('parentArea.notifications.saveBtn')}
+        onPress={() => mutation.mutate()}
+        loading={mutation.isPending}
+        fullWidth
+      />
+    </View>
+  );
+}
+
 const LANG_TO_LOCALE: Record<string, string> = { pt: 'pt-BR', en: 'en-US', es: 'es-ES', fr: 'fr-FR' };
 
 function formatDateTime(iso: string | null | undefined, language: string): string {
@@ -176,6 +286,8 @@ export default function EditarCriancaScreen() {
   const [enabledOperations, setEnabledOperations] = useState<ModuleId[]>(['multiplication']);
   const [mixOperations, setMixOperations] = useState(false);
   const [socialEnabled, setSocialEnabled] = useState(true);
+  const [whatsappDdi, setWhatsappDdi] = useState('351');
+  const [whatsappPhone, setWhatsappPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -203,6 +315,8 @@ export default function EditarCriancaScreen() {
       if (found.enabled_operations?.length) setEnabledOperations(found.enabled_operations);
       setMixOperations(found.mix_operations ?? false);
       setSocialEnabled(found.social_enabled ?? true);
+      setWhatsappDdi(found.whatsapp_phone_ddi || '351');
+      setWhatsappPhone(found.whatsapp_phone ?? '');
     }).catch(() => setLoadError('Erro ao carregar perfil.')); // i18n-ignore — internal error state
   }, [id, parentId]);
 
@@ -245,6 +359,8 @@ export default function EditarCriancaScreen() {
         enabled_operations: enabledOperations,
         mix_operations: mixOperations,
         social_enabled: socialEnabled,
+        whatsapp_phone: whatsappPhone.trim() || null,
+        whatsapp_phone_ddi: whatsappDdi.trim() || '351',
       });
       // Keep store in sync if editing the active child
       if (activeChild?.id === child.id) setActiveChild(updated);
@@ -367,6 +483,27 @@ export default function EditarCriancaScreen() {
             keyboardType="number-pad"
             maxLength={10}
           />
+
+          <View style={styles.whatsappRow}>
+            <Input
+              label={t('parentArea.whatsappDdiLabel')}
+              placeholder="351"
+              value={whatsappDdi}
+              onChangeText={(v: string) => setWhatsappDdi(v.replace(/\D/g, '').slice(0, 4))}
+              keyboardType="number-pad"
+              containerStyle={styles.whatsappDdiField}
+            />
+            <Input
+              label={t('parentArea.child.whatsappNumberLabel')}
+              hint={t('parentArea.child.whatsappNumberHint')}
+              placeholder={t('parentArea.whatsappNumberPlaceholder')}
+              value={whatsappPhone}
+              onChangeText={(v: string) => setWhatsappPhone(v.replace(/\D/g, ''))}
+              keyboardType="number-pad"
+              leftIcon={<Ionicons name="logo-whatsapp" size={20} color="#25D366" />}
+              containerStyle={styles.whatsappNumberField}
+            />
+          </View>
 
           {error ? (
             <Text variant="bodySmall" color={colors.error}>{error}</Text>
@@ -522,6 +659,8 @@ export default function EditarCriancaScreen() {
           </View>
         </Pressable>
 
+        <ChildNotificationsSection childId={child.id} />
+
         <Button
           label={t('parentArea.child.save')}
           loading={saving}
@@ -634,6 +773,9 @@ const styles = StyleSheet.create({
   avatarGrid: { marginBottom: space.md },
   form: { gap: space.md },
   saveBtn: { marginTop: space.sm },
+  whatsappRow: { flexDirection: 'row', gap: space.sm },
+  whatsappDdiField: { width: 72 },
+  whatsappNumberField: { flex: 1 },
 
   // ── Desempenho (child_fact_retest) ──────────────────────────────────────────
   performanceSection: {

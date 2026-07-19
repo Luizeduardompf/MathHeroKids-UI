@@ -117,6 +117,13 @@ export default function ParentAreaScreen() {
             sublabel={t('parentArea.pinActive')}
             onPress={() => router.push('/(app)/parent-area/pin')}
           />
+          <View style={s.divider} />
+          <ActionRow
+            icon="logo-whatsapp"
+            label={t('parentArea.notifications.title')}
+            sublabel={t('parentArea.notifications.rowSub')}
+            onPress={() => router.push('/(app)/parent-area/notifications')}
+          />
         </Card>
 
         {/* ── Children section ────────────────────────────────────── */}

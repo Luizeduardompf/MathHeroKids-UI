@@ -56,6 +56,19 @@ export const DEFAULT_MULTIPLICATION_MAX = 10 satisfies MultiplicationRange;
 export const AVATAR_IDS = ['sofia', 'lucas', 'luna', 'mia', 'pedro', 'theo'] as const;
 export type AvatarId = (typeof AVATAR_IDS)[number];
 
+// Horas disponíveis para agendar notificações WhatsApp — o cron corre 1x/hora (ver
+// backend/functions/send-whatsapp-notifications), por isso só a hora importa, não os minutos.
+export const NOTIFICATION_HOURS = [7, 8, 9, 12, 14, 16, 17, 18, 19, 20, 21, 22] as const;
+export type NotificationHour = (typeof NOTIFICATION_HOURS)[number];
+export function hourToTimeString(hour: number): string {
+  return `${String(hour).padStart(2, '0')}:00:00`;
+}
+export function timeStringToHour(time: string | null | undefined, fallback: number): number {
+  if (!time) return fallback;
+  const h = parseInt(time.split(':')[0] ?? '', 10);
+  return Number.isFinite(h) ? h : fallback;
+}
+
 export const SUPPORTED_LOCALES = ['pt', 'en', 'es', 'fr'] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: SupportedLocale = 'pt';

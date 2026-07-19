@@ -159,6 +159,7 @@ export default function EditProfileScreen() {
   const router   = useRouter();
   const user     = useAuthStore((s) => s.user);
   const parentProfile = useAuthStore((s) => s.parentProfile);
+  const setParentProfile = useAuthStore((s) => s.setParentProfile);
 
   const currentName = (parentProfile?.name as string | undefined)
     ?? (user?.user_metadata?.name as string | undefined)
@@ -167,6 +168,8 @@ export default function EditProfileScreen() {
   const email = user?.email ?? '';
 
   const [name,    setName]    = useState(currentName);
+  const [whatsappDdi, setWhatsappDdi] = useState(parentProfile?.whatsapp_phone_ddi || '351');
+  const [whatsappPhone, setWhatsappPhone] = useState(parentProfile?.whatsapp_phone ?? '');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
@@ -178,18 +181,26 @@ export default function EditProfileScreen() {
     const trimmed = name.trim();
     if (!trimmed)            { setError(t('errors.validation.required')); return; }
     if (trimmed.length < 2)  { setError(t('errors.validation.nameTooShort')); return; }
-    if (trimmed === currentName) { router.back(); return; }
 
     setLoading(true);
     try {
-      const { error: authErr } = await supabase.auth.updateUser({ data: { name: trimmed } });
-      if (authErr) throw authErr;
+      if (trimmed !== currentName) {
+        const { error: authErr } = await supabase.auth.updateUser({ data: { name: trimmed } });
+        if (authErr) throw authErr;
+      }
 
-      const { error: dbErr } = await supabase
+      const { data: updated, error: dbErr } = await supabase
         .from('parent_profiles')
-        .update({ name: trimmed })
-        .eq('id', user!.id);
+        .update({
+          name: trimmed,
+          whatsapp_phone: whatsappPhone.trim() || null,
+          whatsapp_phone_ddi: whatsappDdi.trim() || '351',
+        })
+        .eq('id', user!.id)
+        .select()
+        .single();
       if (dbErr) throw dbErr;
+      if (updated) setParentProfile(updated);
 
       setSuccess(true);
       setTimeout(() => router.back(), 1200);
@@ -218,6 +229,28 @@ export default function EditProfileScreen() {
             autoComplete="name"
             leftIcon={<Ionicons name="person-outline" size={20} color={colors.text.tertiary} />}
           />
+
+          {/* WhatsApp — usado para notificações (ver Definições > Notificações) */}
+          <View style={styles.whatsappRow}>
+            <Input
+              label={t('parentArea.whatsappDdiLabel')}
+              placeholder="351"
+              value={whatsappDdi}
+              onChangeText={(v: string) => { setWhatsappDdi(v.replace(/\D/g, '').slice(0, 4)); setError(null); setSuccess(false); }}
+              keyboardType="number-pad"
+              containerStyle={styles.whatsappDdiField}
+            />
+            <Input
+              label={t('parentArea.whatsappNumberLabel')}
+              hint={t('parentArea.whatsappNumberHint')}
+              placeholder={t('parentArea.whatsappNumberPlaceholder')}
+              value={whatsappPhone}
+              onChangeText={(v: string) => { setWhatsappPhone(v.replace(/\D/g, '')); setError(null); setSuccess(false); }}
+              keyboardType="number-pad"
+              leftIcon={<Ionicons name="logo-whatsapp" size={20} color="#25D366" />}
+              containerStyle={styles.whatsappNumberField}
+            />
+          </View>
 
           {/* E-mail — read only */}
           <View style={styles.emailField}>
@@ -278,6 +311,10 @@ export default function EditProfileScreen() {
 
 const styles = StyleSheet.create({
   form: { gap: space.md },
+
+  whatsappRow: { flexDirection: 'row', gap: space.sm },
+  whatsappDdiField: { width: 72 },
+  whatsappNumberField: { flex: 1 },
 
   emailField: { gap: space.xs },
   emailLabel: { marginBottom: 2 },

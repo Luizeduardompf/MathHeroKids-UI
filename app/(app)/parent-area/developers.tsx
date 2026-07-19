@@ -113,6 +113,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
 
 function DevelopersPanel() {
   const { t } = useTranslation();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
@@ -160,6 +161,19 @@ function DevelopersPanel() {
 
   return (
     <ScrollView contentContainerStyle={s.content}>
+      <Text variant="h3" style={s.sectionTitle}>{t('parentArea.developers.whatsappSection')}</Text>
+      <Pressable
+        onPress={() => router.push('/(app)/parent-area/developer-whatsapp')}
+        style={({ pressed }) => [s.whatsappCard, pressed && { opacity: 0.7 }]}
+      >
+        <Ionicons name="logo-whatsapp" size={24} color="#25D366" />
+        <View style={{ flex: 1 }}>
+          <Text variant="label">{t('parentArea.developers.whatsappLinkLabel')}</Text>
+          <Text variant="caption" color={colors.text.secondary}>{t('parentArea.developers.whatsappLinkHint')}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+      </Pressable>
+
       <Text variant="h3" style={s.sectionTitle}>{t('parentArea.developers.retestSection')}</Text>
       <Card style={{ gap: space.md }}>
         <Input
@@ -210,4 +224,10 @@ const s = StyleSheet.create({
 
   content:      { padding: space.md, gap: space.sm, paddingBottom: space['2xl'] },
   sectionTitle: { marginTop: space.sm, marginBottom: 4 },
+
+  whatsappCard: {
+    flexDirection: 'row', alignItems: 'center', gap: space.md,
+    backgroundColor: '#fff', borderRadius: 20, padding: space.md,
+    borderWidth: 1, borderColor: colors.border.default,
+  },
 });
