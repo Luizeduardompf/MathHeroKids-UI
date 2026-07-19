@@ -307,11 +307,22 @@ Deno.serve(async (req: Request) => {
           bucketCounts: bucketCountsMerged,
           operations: sessionOperations,
           retestCount: retestQuestions.length,
+          // Pool esgotado (operacao com poucos factos + cooldown cross-sessao) pode entregar
+          // menos questoes do que o pedido — regista para diagnostico, nunca silencioso.
+          ...(finalQuestions.length < questionCount
+            ? { requestedQuestionCount: questionCount, shortfall: questionCount - finalQuestions.length }
+            : {}),
         },
         timer_seconds,
         multiplication_max: 10,
         status: 'in_progress',
-        total_questions: questionCount,
+        // total_questions reflete o que foi REALMENTE entregue (finalQuestions.length), nao o
+        // pedido (questionCount) — sao a mesma coisa no caminho feliz, mas divergem quando o
+        // pool de factos elegiveis (apos cooldown/tier-gating) e menor que o pedido. Usar o
+        // valor pedido aqui fazia complete_challenge nunca marcar is_perfect=true numa sessao
+        // encurtada, mesmo com 100% de acertos — a crianca perdia XP/troféu por um bug, nao
+        // por ter errado nada.
+        total_questions: finalQuestions.length,
         is_retroactive: diffDays > 0,
         question_seed: null, // legacy — deprecado na Phase 2.5
       }, { onConflict: 'id' });
