@@ -4,7 +4,59 @@
 
 ---
 
-## Estado actual — 2026-07-18 13:15 (sessão 16, cont. — teste de UX real)
+## Estado actual — 2026-07-19 (sessão 16, cont. — QA sénior: questões, montagem, XP)
+
+### ✅ Concluído — QA sénior focado no SENTIDO das questões e montagem do desafio
+
+Pedido do user: QA profundo não só do mecanismo de reteste, mas se as questões fazem sentido,
+como o desafio é montado (dificuldade/tiers/nível), e a matemática de XP.
+
+**1 bug real encontrado e corrigido (`eb1ac22`):** quando o pool de fatos elegíveis esgota
+(operação com poucos fatos + `question_count` alto + cooldown cross-sessão), `start_challenge`
+entrega MENOS questões do que o pedido — mas gravava `total_questions` = valor PEDIDO, não o
+realmente entregue. `complete_challenge` compara `correctCount === total_questions` para
+`is_perfect` → uma criança que acerta 100% das questões que realmente recebeu (ex: 22/22) era
+marcada como não-perfeita (22 vs 25 pedidas), perdendo o bónus de XP e progresso de troféu.
+Reproduzido deliberadamente (criança nova, só adição — pool T1+T2=47 menor que mult/div=66 —,
+question_count=25, 2ª sessão consecutiva esgota o pool a 22). Fix: `total_questions =
+finalQuestions.length` (entregue, não pedido) + `selection_metadata.shortfall` para
+diagnóstico (nunca silencioso).
+
+**Catálogo de questões (`arithmetic_facts`) auditado — tudo correto:**
+- Zero inconsistências aritméticas (resposta bate com a fórmula em todas as 400 linhas)
+- Subtração nunca negativa, divisão nunca com resto/por zero
+- Distribuição de tiers faz sentido pedagógico real: tier 5 de multiplicação = exactamente os
+  fatos classicamente mais difíceis (7×8, 8×9, 9×8, 6×9, 7×7...); tier 1 = ×1/N×1 (trivial)
+- Divisão deriva de multiplicação, subtração deriva de adição (mesma distribuição de tiers) —
+  intencional e documentado
+
+**Tier gating vs nível — confirmado desacoplado (correcto, não é bug):** desbloqueio de
+dificuldade depende só de mastery (`child_fact_mastery`), nunca de `level`/XP. Testado o limiar
+exacto: 28/47 fatos tier2 não-NEW não desbloqueia tier3 (59.57% < 60%), 29/47 desbloqueia
+(61.7%). Mesmo desbloqueado, um tier novo só começa a aparecer depois do bucket NEW dos tiers
+mais baixos esgotar (`buckets.NEW` ordena por `base_difficulty` ascendente) — desbloqueio é
+gradual/orgânico, auto-equilibrado (jogar mais avança mastery, que desbloqueia mais pool,
+evitando esgotamento na prática).
+
+**⚠️ Achado de design não corrigido — reteste ignora tier gating:** um fato em
+`child_fact_retest` (`a_retestar=true`) é injectado com garantia por `start_challenge`
+independentemente de o seu tier estar actualmente desbloqueado para a criança (testado: fato
+tier 4 injectado numa criança só com tier 1+2 desbloqueados). Na prática só é alcançável via
+regressão de mastery (tier "re-tranca" depois de já ter sido desbloqueado, ver `WEAK` em
+`computeUnlockedTiers`), um caminho estreito mas real. Defensável ("corrigir erro conhecido
+> sequência de dificuldade") mas é uma escolha de produto, não decidi sozinho — fica para
+o user avaliar se quer manter ou gatear o reteste por tier também.
+
+**Matemática de XP validada end-to-end**, incluindo o caso de um fato de reteste aparecer 2x
+na sessão: `correctCount`/`xp_earned`/`xp_total` bateram exactamente com o cálculo manual
+(10 corretas incl. 2x do mesmo fato → 34 XP, streak de reteste conta só 1x apesar de 2
+ocorrências). Constantes XP cliente/servidor confirmadas em sincronia (2/4/10).
+
+Dados de teste do Testinho totalmente resetados ao fim (xp=0, nível=1, sem mastery/retest).
+
+---
+
+## Estado anterior — 2026-07-18 13:15 (sessão 16, cont. — teste de UX real)
 
 ### ✅ Concluído (sessão 16 cont.) — Teste de UX a sério (Simulator, jogo real pelo teclado)
 
