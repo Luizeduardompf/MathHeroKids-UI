@@ -24,6 +24,8 @@ export interface UpdateChildInput {
   question_count?: QuestionCountOption;
   enabled_operations?: ModuleId[];
   mix_operations?: boolean;
+  whatsapp_phone?: string | null;
+  whatsapp_phone_ddi?: string;
 }
 
 // ─── Error mapping ────────────────────────────────────────────────────────────

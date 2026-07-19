@@ -22,6 +22,8 @@ export interface ParentProfile {
   name: string;
   pin_hash: string | null;
   language: SupportedLocale;
+  whatsapp_phone: string | null;
+  whatsapp_phone_ddi: string;
   created_at: string;
   updated_at: string;
 }
@@ -47,6 +49,9 @@ export interface ChildProfile {
   question_count: QuestionCountOption;
   enabled_operations: ModuleId[];
   mix_operations: boolean;
+  // WhatsApp — número próprio, opcional (nem toda criança tem telefone)
+  whatsapp_phone: string | null;
+  whatsapp_phone_ddi: string;
   // Management
   is_active: boolean;
   sort_order: number;
@@ -195,9 +200,30 @@ export interface LevelThreshold {
 export interface NotificationPreferences {
   id: string;
   parent_id: string;
+  // "daily_reminder" — reaproveita as colunas originais (001), agora também gatilho WhatsApp
   daily_reminder: boolean;
-  reminder_time: string; // HH:MM:SS
+  reminder_time: string; // "HH:MM:SS"
   push_token: string | null;
+  whatsapp_enabled: boolean;
+  unfinished_warning_enabled: boolean;
+  unfinished_warning_time: string;
+  completed_notice_enabled: boolean;
+  completed_notice_time: string;
+  weekly_summary_enabled: boolean;
+  weekly_summary_weekday: number; // 0 = domingo ... 6 = sábado
+  weekly_summary_time: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChildNotificationSettings {
+  child_id: string;
+  whatsapp_enabled: boolean;
+  daily_reminder_enabled: boolean;
+  daily_reminder_time: string;
+  unfinished_warning_enabled: boolean;
+  unfinished_warning_time: string;
+  created_at: string;
   updated_at: string;
 }
 
