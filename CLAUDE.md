@@ -321,9 +321,15 @@ docs dedicada.
 - Server state: TanStack Query. Client state: Zustand
 
 ### Rankings (Phase 5+)
-- **Não usar tabelas pré-computadas** no MVP — queries indexadas on-demand
-- Sem Supabase Realtime para rankings — pull-to-refresh via TanStack Query
-- Realtime apenas para: badge de friend requests
+- **Não usar tabelas pré-computadas** no MVP — queries indexadas on-demand (ranking em si é
+  sempre query, nunca lido de uma tabela `weekly_rankings`/`monthly_rankings` — essas nunca
+  chegaram a ser criadas)
+- ⚠️ Realtime **está** ativo em `child_profiles.xp_total` desde a migration 010
+  (`friends_realtime_ranking.sql`) — usado para detetar "ultrapassagem" no ranking
+  (`social.service.ts:subscribeToRankingUpdates`, canal `ranking_<childId>`). Não é só
+  pull-to-refresh.
+- Realtime também ativo em: badge de friend requests, e no chat entre amigos (`messages`,
+  migration 003)
 
 ### Offline
 - **NÃO usar SQLite** — overengineering para MVP

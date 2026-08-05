@@ -2,6 +2,17 @@
 ## Product Requirements Document (PRD)
 ### Version 1.1 – Official Project Specification
 
+> ⚠️ **Nota de estado (2026-08-05)**: este PRD é o documento de intenção original — mantido
+> como está, não reescrito para bater certo com o código. A implementação real diverge em
+> vários pontos concretos; para o estado atual, ver `architecture.md`, `database-schema.md`,
+> `application-flows.md` e `open-questions.md` (que agora marca explicitamente o que já foi
+> resolvido, resolvido-de-forma-diferente, ou confirmado como nunca implementado). Divergências
+> mais relevantes: §11–14 (motor de questões — hoje é multi-operação e 100% server-side, não só
+> multiplicação client-side), §19 (valores de XP são 2/resposta+4+10, não os descritos aqui),
+> §20 (níveis vão até 100, não os valores exemplificados), §23–24 (existe chat entre amigos,
+> ranking é só entre amigos, não global), §25 (notificações são via WhatsApp, não push nativo),
+> §27 (offline foi abandonado — app é online-only para challenges).
+
 # 1. Product Vision
 
 Math Hero Kids is a gamified mathematics learning platform designed for children aged 6–12.

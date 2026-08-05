@@ -1,421 +1,245 @@
 # Math Hero Kids — Application Flows
 
+> Reescrito em 2026-08-05 a partir das rotas reais em `app/`. A versão anterior tinha um
+> inventário de 32 ecrãs; a app real tem mais de 45 rotas, incluindo chat, WhatsApp e
+> ferramentas de developer que não existiam no desenho original.
+
 ---
 
 ## 1. Onboarding & Authentication
 
-### 1.1 New User Registration (2-step)
+### 1.1 Registo (2 passos)
 
 ```
-Welcome Screen
+Welcome Screen (app/(auth)/welcome.tsx)
   │
-  ├─[Começar agora]──→ Step 1: Parent Account
-  │                         Fields: Nome do responsável, E-mail, Senha (8+ chars)
-  │                         Checkbox: accept terms (legal guardian)
-  │                         [Continuar] ──→ Step 2: Child Profile
-  │                                              Fields: Avatar (6 options), Nome da criança,
-  │                                                      Nome de usuário, Data de nascimento
-  │                                                      (no password — child does not log in)
-  │                                              [Criar perfil] ──→ Profile Switcher / Home Dashboard
+  ├─[Começar agora]──→ Passo 1: register/parent.tsx
+  │                         Nome, E-mail, Senha
+  │                         [Continuar] ──→ Passo 2: register/child.tsx
+  │                                              Avatar (6), nome, username, data nasc.
+  │                                              [Criar perfil] ──→ (profile-select) ou Home
   │
-  └─[Já tenho uma conta]──→ Login Screen
+  └─[Já tenho uma conta]──→ login.tsx
 ```
 
-**Key observations from screens:**
-- Registration is always 2 steps: parent first, child second. The child is created inline during onboarding.
-- The Milo mascot appears in both steps providing contextual encouragement.
-- Registration subtitle: "Você poderá adicionar mais crianças depois, na área dos pais."
+⚠️ `mailer_autoconfirm: true` — o signup confirma a conta na hora, sem exigir clique num email
+(ver `CLAUDE.md` Auth). Isto é uma troca deliberada para o MVP, não um bug.
+
+### 1.2 Login
+
+```
+welcome.tsx ─[Já tenho uma conta]→ login.tsx
+  Campos: E-mail do responsável, Senha
+  [Esqueceu a senha?] → forgot-password.tsx → email de reset
+  [Entrar] → (profile-select)/index.tsx ("Quem está jogando?")
+```
+
+### 1.3 Seleção de perfil
+
+```
+(profile-select)/index.tsx
+  Lista de child_profiles do pai: avatar, nome, level, XP
+  [Tap perfil] → profileStore.setActiveChild() → (app)/(tabs)/index (home)
+  [+ Adicionar criança] → add-child.tsx (mesmo formulário do passo 2 do registo)
+```
+
+O guard em `(app)/_layout.tsx` redireciona para aqui sempre que `!authenticated ||
+!activeChild`.
 
 ---
 
-### 1.2 Login Flow
+## 2. Home Dashboard (`(app)/(tabs)/index.tsx`)
 
 ```
-Welcome Screen
-  │
-  └─[Já tenho uma conta]──→ Login Screen
-                                Fields: E-mail do responsável, Senha
-                                [Esqueceu a senha?] ──→ Forgot Password Screen
-                                                            Field: E-mail do responsável
-                                                            [Enviar instruções] ──→ Email sent confirmation
-                                [Entrar] ──→ (if 1 child) Home Dashboard (child auto-selected)
-                                         ──→ (if 2+ children) Profile Switcher
-```
-
-> **Decision (OQ-01/OQ-02)**: Login is parent-only (email + password via Supabase Auth). Children do not log in. The "Nome de usuário" placeholder in the original design was a design error — the field is the parent's email. The design must be updated to reflect this. Child identity is established solely via the profile switcher, under the parent's active session.
-
----
-
-### 1.3 Profile Switcher (Multi-child)
-
-```
-Profile Switcher ("Quem está jogando?")
-  Shows all child profiles: avatar, display name, level, XP bar
-  [Tap profile] ──→ Home Dashboard (as selected child)
-  Profile switcher is also accessible from the Header dropdown (chevron next to child name)
-  [+ Add Child] ──→ Parent PIN Gate ──→ Child Profile Creation (same as Step 2)
-```
-
----
-
-## 2. Home Dashboard
-
-The dashboard is a single scrollable screen with the following sections (top to bottom):
-
-```
-Header Bar
-  ├── Child avatar + name + chevron
-  │     ├── [Tap chevron] → Profile Switcher (full screen)
-  │     └── [Tap avatar/name area] → Profile Menu (bottom sheet)
-  │               ├── ⚡ Progressão  → Level Progression screen
-  │               ├── 🏆 Conquistas  → Achievements screen
-  │               └── 🎁 Recompensas → Level Rewards screen
-  └── XP bar: current XP / next level XP  (tap → Level Progression)
-
-Section 1: Milo Motivation
-  └── Milo speech bubble with contextual message
-
-Section 2: Streak Stats
-  ├── Current Streak (fire icon + number + "Day Streak")
-  └── Best Streak (trophy icon + number)
-
-Section 3: Today's Challenge Card
-  ├── Status badge: "IN PROGRESS" | "COMPLETED" | "NOT STARTED"
-  ├── Challenge name: "Multiplication Mountain"
-  ├── Progress: "X / 20 questions" + progress bar
-  ├── +XP indicator
-  └── CTA button: [Continue Challenge] | [Start Challenge] | [Completed ✓]
-
-Section 4: Recent Trophies
-  ├── [See all] → Trophy Room
-  └── Trophy cards: Daily Trophy, Weekly Trophy, Monthly Trophy (earned/locked)
-
-Section 5: Friends
-  ├── "X Friends · Top players you follow"
-  ├── [Requests N] → Friends screen
-  └── Top 3 friends by XP (rank + avatar + name + level + XP)
-
-Section 6: Ranking (Friends ranking preview)
-  ├── Top 3 with position medals
-  └── [View Full Ranking] → Friends Ranking Screen
-
-Section 7: Your Statistics
-  ├── Perfect Days
-  ├── Perfect Weeks
-  ├── Perfect Months
-  └── Challenges Done
+Header: avatar + nome + nível, XP bar
+Secção Milo: mensagem contextual (streak, desafio feito/não feito)
+Secção Streak: current_streak (chama-flame) + best_streak (troféu)
+Secção "Desafio de hoje":
+  ├── Badge: HOJE / Concluído
+  ├── "+N XP" badge — calculado: 2×question_count + 4 + 10 (ver architecture.md §5.1)
+  ├── Título "Multiplication Mountain" ⚠️ TEXTO FIXO no código (não localizado, não reflete
+  │     a operação real do desafio — pode ser adição/subtração/divisão e continua a mostrar
+  │     este nome). Achado em 2026-08-05, nunca corrigido.
+  ├── "X / N questões" (N = child_profiles.question_count, default 20)
+  └── [Iniciar Desafio] → challenge/[date].tsx
+Troféus recentes (preview) → trophy-room.tsx
 ```
 
 ---
 
-## 3. Challenge Flow
+## 3. Challenge Flow (`challenge/[date].tsx`)
 
-### 3.1 Challenge Start
-
-```
-Home Dashboard [Start/Continue Challenge]
-  │
-  └─→ Challenge Screen (full-screen, no tab bar)
-        Header: [✕ Exit] | "Questão X de 20" | ⏱ timer
-        Progress bar (green, fills as questions complete)
-        Body: Question display (e.g. "7 × 8 = ?")
-        Footer: Numeric keypad (1-9, 0, backspace, ✓ confirm)
-```
-
-### 3.2 Question Answer Flow
+### 3.1 Início
 
 ```
-Question displayed + timer starts
-  │
-  ├─[Correct answer + ✓]──→ Correct Feedback Screen
-  │                              "+10 XP" shown (if first correct for this question_index)
-  │                              "Acertou!" + confetti
-  │                              Auto-advance after ~1.5s OR tap to continue
-  │                              → [Block boundary at Q5/Q10/Q15/Q20] → Block Milestone (§3.5)
-  │
-  └─[Wrong answer + ✓]──→ Wrong Answer Screen ("Quase lá!")
-  │                              Shows correct answer, child's answer, hint
-  │                              Milo encouragement
-  │                              [Continuar →] → next question (advancing without retry)
-  │                              [Tentar o bloco de novo] → Block Retry (§3.5)
-  │
-  └─[Timer expires]──→ Time Expired Screen ("Acabou o tempo!")
-                             Milo: "Sem pressão! Respire fundo e tente outra vez."
-                             [Tentar o bloco de novo] → Block Retry (§3.5)
-                             [Voltar ao início] → Home Dashboard
+[Iniciar Desafio] → chama start_challenge (Edge Function)
+  Se offline: ecrã de erro amigável (use-network-status), sem fallback local
+  Se >1 operação ativa e mix_operations=false: seletor de operação antes de começar
+    (module_id enviado no request)
+  Resposta: questions_payload persistido — o cliente só renderiza, nunca gera localmente
 ```
 
-### 3.3 Exit Mid-Challenge
+### 3.2 Pergunta
 
 ```
-[✕ Exit button]
-  │
-  └─→ Confirmation Modal: "Sair do desafio?"
-        "Seu progresso desta questão não será salvo."
-        [Continuar] → resume challenge
-        [Sair] → Home Dashboard
-                  Progress up to the last submitted block checkpoint is saved.
-                  Session status set to 'abandoned'.
+Questão N de TOTAL (TOTAL = questions_payload.length, pode ser < question_count pedido
+  se o pool de factos elegíveis esgotou — ver database-schema.md nota sobre
+  selection_metadata.shortfall)
+Operador exibido via OPERATION_SYMBOLS[operation] — nunca assumir '×'
+Timer: manual (timer_seconds) ou automático por nível (timer_auto → resolveTimerSeconds)
+Teclado numérico → [✓]
+  ├─[Correto] → CorrectOverlay (confetti + spring + haptic, Reanimated) → próxima questão
+  ├─[Errado]  → marca fact_id para child_fact_retest (+ par comutativo, se aplicável)
+  └─[Timeout] → idem, sem resposta
 ```
 
-### 3.4 Block System
+### 3.3 Fim de bloco / conclusão
 
-The 20 questions are divided into 4 blocks of 5 questions each (B1: Q1–5, B2: Q6–10, B3: Q11–15, B4: Q16–20).
-
-**Milestone events** fire when the child reaches the end of each block (whether via normal flow or after retry):
-- End of B1 (Q5) → Milo: "Mandou bem! Você já completou 5 questões." (+60 XP cumulative shown)
-- End of B2 (Q10) → Milo: "Você está na metade!" (+100 XP cumulative shown)
-- End of B3 (Q15) → Milo: "Faltam só algumas!" (+150 XP cumulative shown)
-- End of B4 (Q20) → Challenge Completion screen (§3.5)
-
-### 3.5 Block Retry
+Blocos de 5 questões continuam a existir como agrupamento visual/milestone, mas não são um
+gate — "Continuar mesmo assim" sempre disponível. Ao fim de todas as questões:
 
 ```
-Block ends (child answered all 5 questions of the current block)
-  │
-  ├─[All 5 correct → Block Perfect]──→ Milestone screen → advance to next block
-  │
-  └─[< 5 correct → Block Incomplete screen]
-        Shows: score (e.g. "18/20 respostas corretas"), target "Meta: 100%"
-        Milo encouragement
-        [Tentar o bloco de novo] → re-attempt the SAME 5 questions
-        │    - attempt_number incremented in challenge_answers
-        │    - XP NOT awarded again for questions already answered correctly
-        │    - Progress of previous blocks is NOT reset
-        │
-        [Continuar mesmo assim] → advance to next block without perfection
-              (no gate; child is never forced to retry)
+Respostas enviadas em batch → complete_challenge
+  ├─→ XP real calculado server-side (não confiar na estimativa mostrada durante o jogo)
+  ├─→ level_up? → Level Up Celebration
+  ├─→ trophies_earned[] / achievements_earned[] → overlays sequenciais
+  └─→ Home Dashboard (calendar_days atualizado, streak atualizado se não retroativo)
 ```
 
-**"Perfeito" rule**: `is_perfect = true` on the session requires all 20 unique `question_index` values to have at least one `is_correct = true` answer across all attempts. A child can achieve perfect by getting every question right eventually via retries.
-
-### 3.6 Challenge Completion
+### 3.4 Saída a meio
 
 ```
-Q20 answered
-  │
-  └─→ Challenge Completed Screen ("Desafio concluído!")
-        Milo large celebration
-        "+200 XP" awarded
-        Stats: "20/20 questões · 100%"
-        [Continuar] → Check for level-up
-                        │
-                        ├─[Level up]──→ Level Up Celebration Screen
-                        │                   Shows new level number + title + Milo
-                        │                   Shows unlocked reward (if any)
-                        │                   [Continuar] → Home Dashboard
-                        │
-                        └─[No level up]──→ Home Dashboard
+[✕] → Confirmação "Sair do desafio?" → session fica 'abandoned'
 ```
 
 ---
 
-## 4. Calendar Flow
+## 4. Calendar Flow (`(app)/(tabs)/calendar.tsx`)
 
 ```
-Tab: Calendário
-  │
-  └─→ Calendar Screen
-        Header: Child avatar + XP bar (same as dashboard)
-        Milo motivation message (streak-specific)
-        Streak stats: current streak + record
-        Month navigation: < Junho 2026 >
-        Calendar grid (weeks × days):
-          - Day states: future (grey), completed (trophy/green), failed (red), in_progress (blue), perfect (star)
-          - Today: highlighted with "HOJE" label
-        Legend: Perfeito ★ | Concluído ✓ | Perdido ✗ | Bloqueado 🔒
-
-        [Tap past day, within 7 days] → Opens that day's challenge (retroactive, full XP)
-        [Tap past day, older than 7 days] → Shows completion state only (locked, no retry)
-        [Tap future day] → No action (blocked)
-        [Tap today] → Navigates to challenge if not done, or shows completion state
-
-        Below calendar: "Seu progresso"
-          - Monthly progress ring (e.g. "82%")
-          - This week: "5/7 dias" progress bar
-          - Monthly trophy card: "14 de 30 dias"
-          - "+1,650 XP no mês" stat card
+Grid mensal: estados completed/failed/in_progress vêm de calendar_days;
+  'future'/'today' são inferidos client-side pela data
+[Tap dia passado, ≤7 dias] → challenge/[date] retroativo (XP igual, streak NÃO atualiza,
+  calendar_days.is_retroactive = true)
+[Tap dia passado, >7 dias] → só mostra estado, sem retry
 ```
 
 ---
 
-## 5. Friends Flow
+## 5. Friends Flow (`(app)/friends/`)
 
-### 5.1 Friends List
-
-```
-Tab: Amigos
-  │
-  └─→ Friends Screen
-        Header: "Amigos" + [person+ icon → Add Friend]
-        Search bar: "Buscar por nome de usuário" (inline search in friend list)
-        Pending Requests section (with count badge):
-          - Each request: avatar initials + name + mutual friends count
-          - [✓ Accept] [✗ Reject]
-        Friends list (scrollable):
-          - Ordered by XP (weekly ranking)
-          - Each: avatar + name + level + XP
-```
-
-### 5.2 Add Friend
+### 5.1 Lista (`list.tsx`) + pedidos
 
 ```
-[person+ icon] → Add Friend Screen
-  Search field: "Digite o nome de usuário"
-    - Exact match only — no autocomplete, no results while typing
-    - Search executes only on [Submit/Enter] or explicit search button tap
-    - Returns single result if username exists, "Nenhum resultado" if not
-    - Result shows: avatar initials + display name + @username + streak
-    - [Adicionar] → sends friend request (if social_enabled = true on both sides)
-
-  Below search (when field is empty): "Sugestões para você"
-    - Friends-of-friends algorithm, max 10 suggestions
-    - Shows: avatar initials + name + @username + streak
-    - [Adicionar] button → sends friend request
+Pedidos pendentes (badge com contagem, Realtime via canal friend_requests_<childId>)
+  [✓ Aceitar] → respond_friend_request → 2 linhas em friendships (bidirecional)
+  [✗ Rejeitar] → respond_friend_request → cooldown 24h antes de reenviar
+Lista de amigos ordenada por XP
 ```
 
-> **Decision (OQ-13)**: Search is global but requires exact username match — no discovery by partial name. This ensures children only find people whose username they already know (i.e., real-world acquaintances). No parental approval per-friendship in MVP; `social_enabled` toggle on the child profile is the parent's control mechanism.
-
-### 5.3 Rankings
+### 5.2 Adicionar (`add.tsx`)
 
 ```
-From Friends section on Dashboard [View Full Ranking] or from Friends screen
-  │
-  └─→ Friends Ranking Screen
-        Toggle: [Semanal] | [Mensal]
-        Podium: 1st (large, crown), 2nd, 3rd
-        List: position + avatar + name + XP
-        Current user highlighted as "Você"
+Busca por username exato (sem autocomplete) → send_friend_request
+"Sugestões para você" — friends-of-friends, máx. 10 (ver open-questions.md OQ-12)
+```
+
+### 5.3 Bloqueados (`blocked.tsx`) ⚠️
+
+Existe e funciona, mas **a lista de bloqueados vive em `AsyncStorage`, não numa tabela
+Supabase** — é um placeholder de MVP com migração para uma tabela `blocked_users` já prevista
+em comentário no próprio ficheiro, nunca feita. Isto significa que bloqueios não sincronizam
+entre dispositivos nem são visíveis ao backend (ex.: `send_friend_request` não os impede
+server-side).
+
+### 5.4 Chat (`chat/[friendId].tsx`) — não existia no desenho original
+
+Chat de texto 1:1 entre amigos, tabela `messages` (migration 003), Realtime ativo. Mensagens
+1–500 caracteres. Só o pai do remetente pode inserir; só o pai do destinatário pode marcar como
+lida.
+
+### 5.5 Notificações de amigo (`notifications.tsx`)
+
+Ecrã de notificações relacionadas com pedidos de amizade (distinto das notificações WhatsApp
+em `parent-area/notifications.tsx`).
+
+### 5.6 Ranking (`ranking.tsx`)
+
+```
+Toggle Semanal/Mensal — sempre entre amigos, nunca global
+Realtime: subscribeToRankingUpdates ouve xp_total de próprio filho + amigos para detetar
+  ultrapassagem (canal ranking_<childId>) — não é só pull-to-refresh, ver architecture.md §6
 ```
 
 ---
 
-## 6. Trophy Room Flow
+## 6. Trophy Room / Achievements / Progression
 
 ```
-Dashboard [See all trophies] OR direct navigation
+trophy-room.tsx → trophy/[id].tsx (detalhe, progresso ou data de conquista)
+achievements.tsx → grid por categoria (primeiros_passos, sequencias, habilidades, especiais)
+progression.tsx → nível atual, XP bar, timeline de marcos (1..100, tabela esparsa)
+rewards.tsx → recompensas de nível desbloqueadas/próximas
+```
+
+⚠️ O troféu "Madrugador" aparece na Sala de Troféus mas não tem condição de desbloqueio
+confirmada no backend — ver `open-questions.md` OQ-11.
+
+---
+
+## 7. Parent Area (`(app)/parent-area/`)
+
+```
+[Qualquer ponto de acesso] → pin.tsx (PIN 4 dígitos, bcrypt via verify_parent_pin)
   │
-  └─→ Trophy Room ("Sala de Troféus")
-        Milo message
-        Stats: "X Conquistados" | "Y Sequência"
-        Next Trophy card: name + progress bar (e.g. "18/30")
-        Sections (horizontal scroll or grid):
-          - Diários: Troféu Diário (Bronze), Madrugador (Bronze)
-          - Semanais: Troféu Semanal (Prata)
-          - Mensais: Troféu Mensal (Ouro)
-          - Sequência: Sequência de Fogo (Ouro)
-          - Especiais: Semana Perfeita (Diamante), Mês Perfeito (Diamante), Campeão (Ouro)
-        Locked trophies shown with padlock icon
-
-        [Tap trophy] → Trophy Detail Screen
-                          Shows: trophy icon + tier badge
-                          "Como conquistar": requirement description
-                          "CONQUISTADO · [date]" (if earned) OR progress bar (if in progress)
-                          [CTA button if not earned]
+  └─→ index.tsx (menu)
+        ├── controls.tsx           — definições por criança (timer, question_count,
+        │                             enabled_operations, mix_operations, multiplication_max)
+        ├── child/new.tsx, child/[id].tsx — CRUD de perfis + WhatsApp da criança
+        ├── edit-profile.tsx       — dados do pai + WhatsApp do pai
+        ├── change-password.tsx
+        ├── notifications.tsx      — definições WhatsApp do pai (4 tipos: daily_reminder,
+        │                             unfinished_warning, completed_notice, weekly_summary)
+        └── developers.tsx         — 2º gate: password fixa "120380" (hardcoded no cliente,
+              │                        ver ficheiro), ferramentas internas (settings do reteste
+              │                        em runtime, editáveis via update_app_config)
+              └── developer-whatsapp.tsx — QR code, status da instância Evolution API, teste
+                    de envio manual, reset de instância
 ```
+
+Definições child-level "leves" (idioma, tema) ficam na tab Settings (`(tabs)/settings.tsx`),
+acessíveis sem PIN — distinto da parent-area.
 
 ---
 
-## 7. Achievements Flow
+## 8. Screen Inventory (real, `app/`)
 
-```
-Navigation (from where? — not shown in designs, likely accessible from dashboard or profile)
-  │
-  └─→ Achievements Screen ("Conquistas")
-        Milo message
-        "Coleção completa: X%" + progress bar
-        "N de M conquistas desbloqueadas"
-        Grid of achievement cards by category:
-          - Primeiros Passos: Primeiro Dia Perfeito, Primeiro Acesso
-          - Sequências: Sequência de 7 Dias, Sequência de 30 Dias
-          - Habilidades: Mestre da Multiplicação, Campeão da Velocidade
-          - Especiais: Semana Perfeita, Mês Perfeito
-        Unlocked: colored icon + name
-        Locked: padlock icon + grayed name
-```
-
----
-
-## 8. Level Progression Flow
-
-```
-Navigation (from header avatar/level, or from settings area)
-  │
-  └─→ Level Progression Screen ("Progressão")
-        Current level circle (large, with star)
-        "NÍVEL ATUAL · [Level Name]"
-        XP bar: current / next level XP
-        "Faltam X XP para o nível Y"
-        Milo proximity message
-        "Marcos e recompensas" timeline:
-          - Each milestone: level number · level name · reward name · reward icon
-          - Completed: green checkmark
-          - Current: highlighted blue with level badge
-          - Future: padlock
-
-  └─→ Level Rewards Screen ("Recompensas")
-        Milo: "Suba de nível para liberar roupas, molduras e muito mais!"
-        Unlocked rewards grid (green checkmark badges)
-        "Próximas recompensas" list (level, item name, levels remaining)
-        Motivational footer: "Continue jogando todos os dias para liberar as recompensas mais raras!"
-```
+| Grupo | Rota | Nota |
+|---|---|---|
+| Auth | `(auth)/welcome`, `login`, `forgot-password` | |
+| Auth | `(auth)/register/parent`, `register/child` | |
+| Profile | `(profile-select)/index`, `add-child` | |
+| Tabs | `(app)/(tabs)/index` (home), `calendar`, `challenge`, `friends`, `settings` | |
+| Challenge | `(app)/challenge/[date]` | Full-screen, sem tab bar |
+| Gamificação | `achievements`, `progression`, `rewards`, `trophy-room`, `trophy/[id]` | |
+| Amigos | `friends/add`, `friends/list`, `friends/blocked`, `friends/ranking`, `friends/notifications` | |
+| Amigos | `friends/chat/[friendId]` | Não existia no desenho original |
+| Parent area | `parent-area/index`, `pin`, `controls`, `change-password`, `edit-profile` | |
+| Parent area | `parent-area/child/[id]`, `child/new` | |
+| Parent area | `parent-area/notifications` | WhatsApp do pai |
+| Parent area | `parent-area/developers`, `developer-whatsapp` | 2º gate PIN "120380" |
+| Erro | `+not-found` | |
 
 ---
 
-## 9. Parent Area Flow
+## 9. O que mudou vs. o desenho original
 
-```
-[Any access point to parent area] → Parent PIN Screen ("Controle dos pais")
-  Shows 4-dot PIN input + numeric keypad
-  [Correct PIN] → Parent Settings
-  [Wrong PIN] → Error state (retry limit TBD)
-
-Parent Settings ("Ajustes") — accessible from Settings tab without PIN for child-level settings:
-  - Idioma: PT | EN | ES | FR (pill selector)
-  - Tempo por questão: pill selector — 10s | 15s (default) | 20s | 30s | Sem limite
-  - Tabuada: pill selector — 1–10 | 1–12 | 1–15 | 1–20
-
-Parent-gated area (after PIN):
-  - Manage child profiles (add, edit, deactivate)
-  - Per-child: timer, multiplication range, social features toggle
-  - Notifications settings
-```
-
----
-
-## 10. Screen Inventory (Complete)
-
-| # | Screen | Route | Auth Level |
-|---|---|---|---|
-| 1 | Welcome | `/welcome` | Public |
-| 2 | Login | `/login` | Public |
-| 3 | Forgot Password | `/forgot-password` | Public |
-| 4 | Parent Registration (Step 1) | `/register/parent` | Public |
-| 5 | Child Registration (Step 2) | `/register/child` | Parent auth |
-| 6 | Profile Switcher | `/who-is-playing` | Parent auth |
-| 7 | Home Dashboard | `/` | Child active |
-| 8 | Calendar | `/calendar` | Child active |
-| 9 | Challenge (active) | `/challenge/[date]` | Child active |
-| 10 | Correct Answer Feedback | (modal/overlay) | Child active |
-| 11 | Wrong Answer Feedback | (modal/overlay) | Child active |
-| 12 | Time Expired Feedback | (modal/overlay) | Child active |
-| 13 | Block Incomplete Feedback | (modal/overlay) | Child active |
-| 14 | Challenge Completed | (modal/overlay) | Child active |
-| 15 | Milo Milestone (Q5/Q10/Q15) | (overlay) | Child active |
-| 16 | Level Up Celebration | (modal) | Child active |
-| 17 | Friends List | `/friends` | Child active |
-| 18 | Add Friend | `/friends/add` | Child active |
-| 19 | Friends Ranking | `/friends/ranking` | Child active |
-| 20 | Trophy Room | `/trophies` | Child active |
-| 21 | Trophy Detail | `/trophies/[id]` | Child active |
-| 22 | Profile Menu (bottom sheet) | (sheet, avatar tap) | Child active |
-| 23 | Achievements | `/achievements` | Child active |
-| 24 | Level Progression | `/progression` | Child active |
-| 25 | Level Rewards | `/rewards` | Child active |
-| 26 | Settings (child-level) | `/settings` | Child active |
-| 27 | Parent PIN Gate | `/parent-area` | Child active |
-| 28 | Parent Controls | `/parent-area/controls` | Parent PIN |
-| 29 | Add Child Profile | `/parent-area/child/new` | Parent PIN |
-| 30 | Edit Child Profile | `/parent-area/child/[id]` | Parent PIN |
-| 31 | Exit Challenge Modal | (modal) | Child active |
-| 32 | Block Retry Screen | (modal/overlay) | Child active |
+- **Sem oferta única de multiplicação** — 4 operações configuráveis por criança.
+- **Sem geração local de questões** — sempre server-side desde a Phase 2.5.
+- **Chat entre amigos** — funcionalidade inteira ausente do desenho original.
+- **WhatsApp** — substitui completamente o conceito de "push notifications" do desenho
+  original, que nunca chegou a ser implementado.
+- **Ferramentas de developer** (`developers.tsx`, `developer-whatsapp.tsx`) — não previstas.
+- **Bloqueio de amigos** existe, mas em AsyncStorage, não Supabase.
+- **XP e níveis** têm valores muito diferentes dos estimados no desenho original (ver
+  `architecture.md` §5.1–5.2).

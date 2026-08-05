@@ -1,326 +1,280 @@
 # Math Hero Kids — Architecture
 
-> **Revision note**: This document was reviewed and challenged after initial draft. Sections marked with ⚠️ were corrected or simplified from the first version.
+> Reescrito em 2026-08-05 para refletir o estado real do código (a versão anterior descrevia o
+> desenho pré-implementação — geração de questões client-side, oferta única de multiplicação,
+> XP de 10/resposta, sem WhatsApp/chat — nada disso corresponde ao que existe hoje).
 
 ---
 
 ## 1. Overview
 
-Math Hero Kids is a mobile-first gamified mathematics learning platform for children aged 6–12. The system has two user roles (Parent and Child), supports multi-profile shared devices, offline play, four languages, and a social layer. MVP focuses on multiplication; the architecture must support future math modules without structural changes.
+Math Hero Kids é uma app mobile de matemática gamificada para crianças (6–12 anos), iOS +
+Android, **sem versão web**. Dois papéis (Pai e Criança, esta última sem login próprio),
+múltiplos perfis de criança por conta, quatro idiomas, camada social (amigos + chat + ranking),
+e um motor adaptativo multi-operação (multiplicação/adição/subtração/divisão) com mastery por
+questão. Challenges são **online-only** por decisão deliberada — ver §4.3.
 
 ---
 
-## 2. Tech Stack
+## 2. Tech Stack (real)
 
-| Layer | Technology | Rationale |
+| Camada | Tecnologia | Notas |
 |---|---|---|
-| Mobile App | React Native + Expo (managed workflow) | Cross-platform, fast iteration, OTA updates |
-| Language | TypeScript (strict) | Type safety across the entire codebase |
-| Backend-as-a-Service | Supabase | Auth, DB, Storage, Edge Functions in one; avoids custom backend in early stage |
-| Database | PostgreSQL (via Supabase) | Relational model fits the domain well |
-| Auth | Supabase Auth | Parent email/password login; children are NOT Auth users |
-| Realtime | Supabase Realtime | **Scoped to friend request badge only** — not rankings (see §8.2) |
-| Storage | Supabase Storage | Avatar assets |
-| Offline | AsyncStorage + sync queue | **Not SQLite** — see §4.3 |
-| i18n | expo-localization + i18next | 4 languages from day one |
-| Server state | TanStack Query (React Query) | Caching, background refresh, mutations with retry |
-| Client state | Zustand | Auth session, active child profile, challenge UI state only |
-| Navigation | Expo Router (file-based) | Aligned with Expo ecosystem |
-| Animations | React Native Reanimated 3 | Required for celebration screens and XP animations |
+| App | React Native + Expo (managed workflow) | `expo ~54.0.35`, SDK 54 |
+| Linguagem | TypeScript strict | Sem `any` |
+| Routing | Expo Router (file-based) | `expo-router ~5.0.7` — fixado propositadamente abaixo do que o SDK 54 espera (~6.x); ver nota |
+| Backend | Supabase | Auth, PostgreSQL, Edge Functions (Deno), Realtime, Vault |
+| Server state | TanStack Query | Cache + mutations |
+| Client state | Zustand | `authStore`, `profileStore` (persist AsyncStorage) |
+| i18n | i18next + expo-localization | pt, en, es, fr |
+| Animações | React Native Reanimated **4.1** (`react-native-reanimated ~4.1.1`) | Migrado de 3.17 em 2026-06-16 (commit `1ad6fdb`) para alinhar com o bundle nativo do SDK 54; depende de `react-native-worklets` |
+| Offline | AsyncStorage apenas | `activeChild`, idioma, tema, completions locais de calendário — nunca challenges (§4.3) |
+
+**Nota — `expo-router` fixado em v5**: `npx expo install --check` assinala que o SDK 54 espera
+`~6.0.24`; o projeto está deliberadamente em `~5.0.0` desde uma sessão de debug em junho/2026
+("fix: expo-router 5 no plugin") que resolveu um problema de compatibilidade com o Expo Go.
+Este drift é intencional, não um esquecimento — não fazer upgrade sem re-testar em Expo Go real.
 
 ---
 
 ## 3. High-Level Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                  React Native / Expo App                 │
-│                                                         │
-│  ┌────────────┐  ┌──────────────┐  ┌────────────────┐  │
-│  │  Auth      │  │  Child Game  │  │  Parent Area   │  │
-│  │  Screens   │  │  Screens     │  │  (PIN-gated)   │  │
-│  └────────────┘  └──────────────┘  └────────────────┘  │
-│                                                         │
-│  ┌────────────────────┐  ┌──────────────────────────┐   │
-│  │  TanStack Query    │  │  Zustand                 │   │
-│  │  (server state)    │  │  (auth, active child,    │   │
-│  │                    │  │   challenge UI)           │   │
-│  └────────────────────┘  └──────────────────────────┘   │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐    │
-│  │         Offline Sync Queue (AsyncStorage)        │    │
-│  │  Buffer challenge submissions → flush on reconnect│   │
-│  └─────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                    React Native / Expo App (Expo Go)              │
+│                                                                    │
+│  (auth) → (profile-select) → (app)/(tabs): home, calendar,        │
+│           challenge, friends, settings  +  parent-area (PIN)      │
+│                                                                    │
+│  TanStack Query (server state)   │   Zustand (auth, activeChild)  │
+└──────────────────────────────────────────────────────────────────┘
+                          │  HTTPS (Supabase client)
+                          ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                           Supabase                                │
+│  Auth (só pais)  │  PostgreSQL (RLS em todas as tabelas)  │       │
+│  Realtime: friend_requests badge, ranking overtake, chat  │       │
+│  Vault: segredos Evolution API                              │     │
+│                                                                    │
+│  Edge Functions (Deno):                                          │
+│  start_challenge · complete_challenge · recompute_mastery        │
+│  verify_parent_pin · send/respond/cancel_friend_request           │
+│  delete_child · update_app_config                                 │
+│  evolution-dev · evolution-webhook · test-whatsapp-message         │
+│  send-whatsapp-notifications (cron pg_cron, 1x/hora)              │
+└──────────────────────────────────────────────────────────────────┘
                           │
                           ▼
-┌─────────────────────────────────────────────────────────┐
-│                      Supabase                            │
-│                                                         │
-│  ┌────────────┐  ┌──────────────┐  ┌────────────────┐  │
-│  │  Auth      │  │  PostgreSQL  │  │  Storage       │  │
-│  │  (parents  │  │  (all data)  │  │  (avatar imgs) │  │
-│  │   only)    │  └──────────────┘  └────────────────┘  │
-│  └────────────┘                                         │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐    │
-│  │  Row Level Security — all tables                │    │
-│  └─────────────────────────────────────────────────┘    │
-│                                                         │
-│  ┌─────────────────────────────────────────────────┐    │
-│  │  Edge Functions (Deno)                          │    │
-│  │  - start_challenge                              │    │
-│  │  - complete_challenge (batch, not per-answer)   │    │
-│  │  - verify_parent_pin                            │    │
-│  │  - send_friend_request / respond_friend_request │    │
-│  └─────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────┘
+              Railway — mathhero-whatsapp (Evolution API self-hosted)
 ```
+
+Distribuição atual: sem build nativo iOS bem-sucedido ainda (3 tentativas erradas em
+2026-06-12) — os dispositivos reais correm a app via **Expo Go** consumindo updates OTA
+publicados no branch `main` (`eas update --branch main`). Ver `CLAUDE.md`.
 
 ---
 
 ## 4. Application Layers
 
-### 4.1 Navigation Structure
+### 4.1 Navigation Structure (real, `app/`)
 
 ```
-Root
-├── (auth)                  ← unauthenticated stack
-│   ├── welcome
-│   ├── login               ← parent email + password (see OQ-01)
-│   ├── register
-│   │   ├── step-1-parent
-│   │   └── step-2-child
-│   └── forgot-password
+Root (app/_layout.tsx)
+├── (auth)
+│   ├── welcome, login, forgot-password
+│   └── register/parent, register/child
 │
-├── (profile-select)        ← after parent login, if multiple children
-│   └── who-is-playing
+├── (profile-select)
+│   ├── index            ← "Quem está jogando?"
+│   └── add-child
 │
-└── (app)                   ← parent authenticated + child profile selected
-    ├── (tabs)
-    │   ├── home
-    │   ├── calendar
-    │   ├── challenge       ← center FAB tab
-    │   ├── friends
-    │   └── settings
-    │
-    ├── challenge/[date]    ← full-screen, no tab bar
-    ├── profile-menu        ← bottom sheet, opened by tapping avatar in header
-    │   ├── progression     ← Level Progression
-    │   ├── achievements    ← Conquistas
-    │   └── rewards         ← Recompensas de Nível
-    ├── trophy-room
-    ├── trophy/[id]
-    ├── friends/ranking
-    ├── friends/add
-    └── parent-area
-        ├── pin             ← PIN gate
-        ├── controls
-        ├── child/new
-        └── child/[id]
+└── (app)                ← pai autenticado + criança ativa
+    ├── (tabs): index (home), calendar, challenge, friends, settings
+    ├── challenge/[date]
+    ├── achievements, progression, rewards
+    ├── trophy-room, trophy/[id]
+    ├── friends/
+    │   ├── add, list, blocked, ranking, notifications
+    │   └── chat/[friendId]           ← chat 1:1 entre amigos (messages)
+    └── parent-area/                  ← PIN-gated
+        ├── index, pin, controls, change-password, edit-profile
+        ├── child/[id], child/new
+        ├── notifications             ← WhatsApp: definições do pai
+        └── developers, developer-whatsapp   ← PIN 120380, ferramentas internas
 ```
 
 ### 4.2 Auth Model
 
-**Parents** authenticate via Supabase Auth (email + password). Their `auth.users` row maps 1:1 to a `parent_profiles` row via a DB trigger on signup.
+Igual ao desenhado originalmente: **pais** autenticam via Supabase Auth (email+password);
+**crianças** são rows em `child_profiles`, sem login próprio. `handle_new_user()` (trigger)
+cria `parent_profiles` no signup. PIN parental (`verify_parent_pin`, bcrypt) é um segundo gate,
+não uma sessão nova.
 
-**Children** are NOT Supabase Auth users and do NOT log in. A child is a row in `child_profiles` linked to a parent. After the parent logs in, they select which child is playing via the profile switcher. All subsequent data reads/writes are scoped to that child by the app, under the parent's authenticated session. Children have no password.
+⚠️ `mailer_autoconfirm: true` está ativo no projeto Supabase (sem SMTP próprio configurado —
+ver CLAUDE.md) — qualquer email pode registar-se sem confirmar posse. Reconsiderar antes de
+produção com pais desconhecidos.
 
-**Parent PIN**: A 4-digit PIN (bcrypt hash in `parent_profiles`) gates access to the parent settings area within the app. Verified via Edge Function `verify_parent_pin`. Does not create a new session — it's a second-factor gate, not a login.
+**Sessão**: JWT do pai persiste via Supabase (`AsyncStorage` internamente); criança ativa via
+Zustand `profileStore` + persist AsyncStorage.
 
-**Session state**:
-- Parent JWT: `Expo SecureStore` (encrypted, persists across app restarts)
-- Active child ID: `Zustand` + `AsyncStorage` (survives app restart so the family doesn't need to re-select the child every time)
+### 4.3 Offline Strategy — decisão real, diferente do desenho original ⚠️
 
-### 4.3 Offline Strategy ⚠️
+**Não existe fila de sync para challenges.** O desenho original (SQLite + fila de sync
+offline-first) foi abandonado — ver `docs/adaptive-multiplication-system.md` §3 e
+`CLAUDE.md`: "**app online-only** — sem fila de sync offline para sessões de challenge".
 
-**Original draft used Expo SQLite. This is overengineering for MVP.**
+Motivo: as questões são geradas **server-side** de forma adaptativa (`start_challenge`),
+dependendo de mastery/reteste que só o servidor tem — não é possível gerar localmente para
+depois validar, como o desenho original propunha (`ChallengeModule.generateQuestions` client-
+side nunca foi implementado).
 
-SQLite mirroring requires:
-- Schema migration tooling on the client
-- Bi-directional sync conflict resolution
-- Significant development time
-
-**MVP offline approach (simpler)**:
-
-During a challenge, all answers are accumulated **in memory** (Zustand `challengeStore`). Only one network call fires at the end: `complete_challenge` with the full answers array. If that call fails (no internet), the entire session payload is serialized to `AsyncStorage` as a pending sync item. On next app open or network reconnect, the queue is flushed.
-
-This means:
-- Zero local database needed
-- Only challenge sessions can be "offline pending" (all other operations require connectivity)
-- The UI shows an "offline indicator" during a challenge and a "syncing" indicator after reconnect
-- The challenge itself runs fully client-side (question generation is deterministic from config)
-
-**Trade-off**: If the app crashes mid-challenge, in-progress session data is lost. Mitigation: write the in-progress session to AsyncStorage after each block completion (4 checkpoints per challenge), not per question.
-
-**Not offline**:
-- Friend requests
-- Rankings
-- Trophy/achievement display (show cached data from last fetch)
-- Profile switching
+Comportamento real: `use-network-status` deteta desconexão e mostra um ecrã de erro amigável.
+Nada de challenge acontece sem rede. Cache local (AsyncStorage) é usada só para:
+`activeChild`, idioma, tema, e completions de calendário já confirmadas pelo servidor.
 
 ### 4.4 Security Model
 
-- All DB tables use RLS. Parents can only read/write their own children's data.
-- **XP, levels, streaks, trophies, achievements are mutated exclusively by Edge Functions**, never by direct client writes. This is the primary anti-cheat mechanism.
-- `child_credentials.password_hash` is **never returned to the client** via a dedicated RLS policy that blocks all `SELECT` on that column.
-- Parent PIN hash is in `parent_profiles.pin_hash` — same treatment: never returned.
-- Social features are child-scoped. Parent data is never exposed in social contexts.
-- Edge Functions must validate that the child_id in the request belongs to the authenticated parent session. Client-provided child_id is not trusted alone.
+Igual ao original: RLS em todas as tabelas; XP/level/streak/mastery/retest **só** escritos por
+Edge Functions (`service_role`); `parent_profiles.pin_hash` nunca devolvido ao cliente; Edge
+Functions validam que `child_id` pertence ao pai autenticado. Ver `database-schema.md` para o
+detalhe tabela a tabela.
 
 ---
 
-## 5. Gamification Engine
+## 5. Motor Adaptativo (challenge engine)
 
-All gamification state changes happen atomically inside the `complete_challenge` Edge Function, which receives the full session answers array.
+Ver `docs/adaptive-multiplication-system.md` (algoritmo base + extensão multi-operação Phase E)
+para o detalhe completo. Resumo:
 
 ```
-complete_challenge(child_id, challenge_date, answers[])
-        │
-        ├─→ Insert challenge_session record
-        │
-        ├─→ Insert all challenge_answers records
-        │
-        ├─→ Compute: correct_count, xp_earned
-        │     - 10 XP per correct answer
-        │     - +200 XP flat bonus for completing all 20 (regardless of correctness)
-        │     - Milestone bonuses at Q5/Q10/Q15 (these are shown in UI, included in total)
-        │
-        ├─→ Update child_profiles: xp_total += xp_earned
-        │
-        ├─→ Check level threshold → if level up:
-        │     - Update child_profiles.level
-        │     - Insert child_level_rewards for any rewards unlocked at new level
-        │     - Return level_up: true + new_level + reward in response
-        │
-        ├─→ Update streak:
-        │     - If challenge_date = last_challenge_date + 1 day: increment current_streak
-        │     - If challenge_date = last_challenge_date: same day (idempotent, no change)
-        │     - Else: reset current_streak to 1
-        │     - Update best_streak if current > best
-        │     - Update last_challenge_date
-        │
-        ├─→ Upsert calendar_days: set state = 'completed', is_perfect = (correct_count == 20)
-        │
-        ├─→ Evaluate trophy progress:
-        │     - Increment per-trophy progress counters
-        │     - Award if threshold met → insert child_trophies
-        │
-        ├─→ Evaluate achievement conditions:
-        │     - Check all conditions; award newly unlocked ones → insert child_achievements
-        │
-        └─→ Return: { xp_earned, level_up, new_level, reward, trophies_earned[], achievements_earned[] }
+start_challenge(child_id, module_id?)
+  ├─→ Lê enabled_operations/mix_operations/question_count/timer_auto de child_profiles
+  ├─→ Para cada operação ativa: seleciona questões por mastery (buckets WEAK/LEARNING/
+  │     REVIEWING/NEW/MASTERED, pesos de adaptive-rules.json) + reserva de reteste
+  │     (child_fact_retest, garantida antes da seleção adaptativa)
+  ├─→ Combina + reembaralha (seed = session_id) as questões de todas as operações ativas
+  ├─→ Persiste em challenge_sessions.questions_payload (total_questions = entregue, não pedido)
+  └─→ Devolve payload ao cliente — sem geração local, sem regeneração com seed
+
+complete_challenge(session_id, answers[])
+  ├─→ Idempotente (session_id já completada? devolve resultado em cache)
+  ├─→ Valida respostas contra questions_payload persistido (não regenera)
+  ├─→ Computa XP: 2/resposta correta + 4 bónus de conclusão + 10 bónus perfeito
+  │     (CHALLENGE.XP_PER_CORRECT_ANSWER/XP_COMPLETION_BONUS/XP_PERFECT_BONUS —
+  │     valores de exibição no cliente; fonte autoritativa é sempre a Edge Function)
+  ├─→ Atualiza child_profiles: xp_total, level (LEVEL_THRESHOLDS, 1..100), streak
+  ├─→ Upsert calendar_days
+  ├─→ Avalia trophies/achievements
+  ├─→ Atualiza child_fact_mastery (por questão, com comutatividade) + child_fact_retest
+  └─→ Devolve xp_earned, level_up, trophies_earned[], achievements_earned[]
 ```
 
-**Why one Edge Function, not per-question calls** ⚠️:
-- Per-question server calls = 20 network round-trips per session on a mobile device
-- A child on 3G in Brazil might experience 200–500ms latency per call → 4–10 seconds of network overhead per challenge
-- The question generator is deterministic (seeded by config), so all questions can be generated client-side
-- Security: the Edge Function validates all 20 answers against the same generator on the server side, preventing answer substitution
+**Por que uma única chamada, não por-questão**: evita 20+ round-trips por sessão numa rede
+móvel; a Edge Function valida tudo de uma vez contra o payload persistido (não há geração
+determinística re-executável no cliente para validar contra — o payload É a fonte de verdade).
 
-### 5.1 XP Values
+### 5.1 XP — valores reais
 
-| Event | XP |
+| Evento | XP |
 |---|---|
-| Correct answer | +10 |
-| Block milestone (Q5, Q10, Q15) | +60, +100, +150 (cumulative shown, not additive bonuses) |
-| Challenge completion (Q20) | +200 flat |
-| Achievement unlock | TBD by product |
-| Trophy unlock | TBD by product |
+| Resposta correta | +2 |
+| Bónus de conclusão do desafio | +4 |
+| Bónus de desafio perfeito (100%) | +10 |
 
-Note: Milestone XP shown in the UI (+60, +100, +150, +200) appears to be cumulative totals, not per-block additions. Needs confirmation — see OQ-16.
+Exemplo: desafio de 20 questões, 100% correto = `2×20 + 4 + 10 = 54 XP` (valor real mostrado
+no cartão "Desafio de hoje" do dashboard). Fonte: `src/constants/config.ts` `CHALLENGE`.
 
----
+### 5.2 Níveis
 
-## 6. Rankings ⚠️
-
-**Original draft had pre-computed `weekly_rankings` and `monthly_rankings` tables. These are premature optimization.**
-
-For MVP scale (< 100k users, friend groups of ≤ 50 children), ranking queries are fast enough on-demand:
-
-```sql
--- Friend ranking for a child, current week
-SELECT cp.id, cp.display_name, cp.avatar_id, cp.level,
-       COALESCE(SUM(l.amount), 0) AS xp_week
-FROM friendships f
-JOIN child_profiles cp ON cp.id = f.friend_id
-LEFT JOIN child_xp_ledger l
-  ON l.child_id = f.friend_id
-  AND l.created_at >= date_trunc('week', now())
-WHERE f.child_id = $current_child_id
-GROUP BY cp.id
-ORDER BY xp_week DESC;
-```
-
-This query with proper indexes on `child_xp_ledger(child_id, created_at)` and `friendships(child_id)` runs in < 50ms for typical friend group sizes.
-
-**Pre-computed tables should be introduced only when query latency becomes a problem**, not preemptively. No scheduled Edge Functions needed for rankings in MVP.
-
-Supabase Realtime is **not needed for rankings** — a pull-to-refresh or on-focus refetch via TanStack Query is sufficient. Rankings don't update in real-time in any meaningful way.
-
-**Supabase Realtime is only used for**: friend request badge notifications (push a small event when a new friend request arrives so the badge updates without polling).
+`LEVEL_THRESHOLDS` em `src/constants/config.ts` (espelhado em `level_thresholds` via
+`backend/seeds/level_thresholds.sql`) vai de nível 1 (0 XP) a nível 100 (200.000 XP), tabela
+esparsa (nem todo nível tem entrada — o cliente interpola entre o threshold anterior e o
+seguinte). Bem mais extenso que o rascunho original (que ia só até nível 20).
 
 ---
 
-## 7. Module Extension Pattern
+## 6. Rankings — Realtime está ativo (ao contrário do desenho original) ⚠️
 
-Future math modules must implement a `ChallengeModule` interface. The question generator runs client-side; the validator runs server-side in `complete_challenge`.
+O desenho original dizia explicitamente "Realtime não é necessário para rankings... só pull-to-
+refresh". **Isto já não é verdade**: a migration 010 (`friends_realtime_ranking.sql`) ativa
+Realtime em `child_profiles` especificamente para detetar "ultrapassagem" no ranking
+(`social.service.ts:subscribeToRankingUpdates`, canal `ranking_<childId>`, escuta `UPDATE` em
+`xp_total` do próprio filho e dos amigos).
 
-```typescript
-interface ChallengeModule {
-  id: string;                          // 'multiplication', 'division', etc.
-  generateQuestions(config: ModuleConfig, seed: string): Question[];
-  validateAnswer(question: Question, answer: string): boolean;
-  getDefaultConfig(birthDate: Date): ModuleConfig;
-}
-```
+Continua a não haver tabelas pré-computadas (`weekly_rankings`/`monthly_rankings`) — o ranking
+em si é sempre query on-demand sobre `child_xp_ledger`/`child_profiles.xp_total`, filtrado a
+amigos (não é global). Realtime aqui não substitui a query, só dispara um refetch/toast quando
+alguém ultrapassa.
 
-The `seed` is `${child_id}:${challenge_date}:${module_id}` — deterministic, per-child-per-day, non-guessable. This ensures the server can regenerate and validate the exact same questions the client presented.
-
----
-
-## 8. Key Architectural Decisions & Trade-offs
-
-**Supabase over custom backend**
-Reduces time-to-market significantly. Risk: Supabase vendor lock-in. Mitigation: all business logic in Edge Functions (Deno), not in Supabase-specific features, making migration feasible if needed.
-
-**Expo managed workflow**
-Pro: OTA updates, simplified builds, no native code to maintain. Con: cannot use arbitrary native modules. If we need specialized audio for sound effects or background streak notifications, we'll need to eject to bare workflow. This is a known risk for Phase 2+.
-
-**Children as DB rows, not Auth users**
-Children have no credentials and cannot log in independently. The parent authenticates once per device; children are selected via the profile switcher. This eliminates child password management, recovery flows, and independent session complexity. Simplifies LGPD/COPPA compliance (no child email collection). One-time parent login per device is acceptable UX for a family app.
-
-**Batch challenge submission**
-All 20 answers submitted at once at session end, not per-question. Pro: 1 network call vs 20, works better offline. Con: if session is abandoned, partial answers aren't saved until the next checkpoint. Mitigation: checkpoint writes to AsyncStorage at each block boundary.
-
-**Client-side question generation**
-Questions generated client-side from a deterministic seed. Server validates the seed during `complete_challenge`. Pro: zero latency between questions, works offline. Con: requires server-side re-implementation of the generator for validation. Mitigation: share the generator algorithm as a shared TS module (used in both app and Edge Function).
-
-**Optimistic XP UI**
-XP animations fire immediately on the client based on local calculation. The server response confirms or corrects. Pro: snappy UX. Con: if server rejects (e.g., duplicate session), the animation was "wrong". Mitigation: make `complete_challenge` idempotent with a session UUID; any retry returns the same XP amount.
+**Realtime está ativo em três canais, não só um**:
+1. `friend_requests` — badge de pedidos pendentes (como no desenho original)
+2. `child_profiles.xp_total` — deteção de ultrapassagem no ranking (migration 010, **não
+   estava no desenho original**)
+3. `messages` — chat entre amigos (migration 003, funcionalidade inteira ausente do desenho
+   original)
 
 ---
 
-## 9. Design System
+## 7. Extensão multi-operação (Phase E)
 
-From screenshots:
-
-- **Primary**: Blue (`#2D4EF5` approx) — headers, primary buttons, active tab
-- **Accent**: Orange (`#F56B2D` approx) — Challenge FAB, streak indicator, milestone highlights
-- **Success**: Green — correct answer feedback, completed calendar days
-- **Error/Fail**: Red — wrong answer indicator, failed calendar days
-- **Tiers**: Bronze, Prata (Silver), Ouro (Gold), Diamante (Diamond)
-- **Avatars**: 6 predefined 3D-style characters (data-driven catalog, not hardcoded)
-- **Fonts**: Rounded sans-serif, child-friendly
-- **Level reward types**: Frame (moldura), Outfit (roupa/capa), Medal (medalha), Trophy variant, Celebration effect
+O motor foi generalizado de "só multiplicação" para 4 operações (multiplicação, adição,
+subtração, divisão) sem mudar a arquitetura de seleção — ver §5 acima e
+`docs/adaptive-multiplication-system.md`. Cada operação corre o algoritmo de seleção
+independentemente (mastery não faz sentido misturado entre operações) e o resultado é
+combinado + reembaralhado. `child_profiles.enabled_operations`/`mix_operations` controlam a
+oferta por criança.
 
 ---
 
-## 10. What This Architecture Does NOT Include (intentionally)
+## 8. Integração WhatsApp
 
-- No push notification service for MVP (can add Expo Notifications in Phase 9)
-- No analytics SDK (Amplitude/Mixpanel) for MVP — Supabase logs + custom events table is enough
-- No CDN for assets — Supabase Storage serves avatars directly (fine at MVP scale)
-- No background sync process — foreground-only sync queue is sufficient
-- No global leaderboard — friends-only ranking only in MVP
-- No admin panel — Supabase Studio serves this purpose during early stage
+Ver `docs/WHATSAPP_INTEGRATION_ROADMAP.md` e a secção "WhatsApp / Notificações" em `CLAUDE.md`
+para o desenho completo (Evolution API self-hosted no Railway, Vault, cron horário,
+`whatsapp_notification_log` para dedup). Backend + UI completos; falta só o utilizador
+emparelhar o QR com o número real dentro da app.
+
+---
+
+## 9. Key Architectural Decisions & Trade-offs (atualizado)
+
+**Supabase sobre backend próprio** — mantido, sem mudanças.
+
+**Expo managed workflow** — mantido, mas com um risco concretizado: **3 tentativas de build
+nativo iOS falharam** (jun/2026). A app real corre via Expo Go + EAS Update OTA, não via build
+standalone instalado. Nenhum build Android/iOS de produção existe ainda.
+
+**Crianças como rows na DB, não Auth users** — mantido, sem mudanças.
+
+**Submissão em batch no fim do desafio** — mantido, mas a razão mudou: não é mais sobre
+funcionar offline (challenges são online-only agora), é sobre reduzir round-trips e permitir
+validação server-side contra um payload persistido único.
+
+**Geração de questões server-side, não client-side** ⚠️ — o desenho original assumia geração
+determinística client-side validada contra seed no servidor. Isto **nunca foi implementado
+assim**: desde a Phase 2.5, a geração é sempre server-side e adaptativa (depende de mastery
+por criança, que só existe no servidor). O cliente é puramente um consumidor de
+`questions_payload`.
+
+**Realtime além do previsto** — ver §6. Ranking overtake e chat usam Realtime; o desenho
+original previa só o badge de pedidos de amizade.
+
+---
+
+## 10. O que esta arquitetura genuinamente NÃO inclui
+
+- Push notifications nativas (`expo-notifications`) — nunca implementado; as "notificações" do
+  produto são todas via WhatsApp (Evolution API), não push do sistema.
+- Analytics SDK (Amplitude/Mixpanel) — nada implementado.
+- CDN para assets — Supabase serve os avatares diretamente.
+- Ranking global (todos os jogadores) — só ranking entre amigos.
+- Guest mode — nenhum vestígio no código; ver `docs/open-questions.md` OQ-14.
+- Testes E2E (Detox), auditoria de acessibilidade, submissão às lojas — Phase 9 do roadmap
+  original, nunca iniciada.
+
+---
+
+## 11. Design System
+
+Ver `src/theme/` (colors, typography, spacing, radius, shadows) para os tokens reais — nunca
+hardcode valores. 6 avatares (`AVATAR_IDS` em `config.ts`): sofia, lucas, luna, mia, pedro, theo.
+Tiers de troféu: bronze/silver/gold/diamond. i18n: pt/en/es/fr via `src/locales/*.json`.

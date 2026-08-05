@@ -1,8 +1,11 @@
 # Math Hero Kids — Database Schema
 
-> **Revision note**: (1) `child_credentials` removed — no child login; (2) `weekly_rankings`/`monthly_rankings` removed — indexed queries; (3) `child_streaks` simplified to `last_challenge_date` on profile; (4) `notification_preferences` added; (5) `challenge_answers` — removed `UNIQUE (session_id, question_index)`, added `block_number` + `attempt_number` to support block retry without XP double-award.
+> Reescrito em 2026-08-05 a partir das 19 migrations reais em `backend/migrations/` (001–019).
+> Reflete o schema tal como existe hoje — não um plano. Fonte de verdade: os ficheiros de
+> migration versionados (nunca o Studio/Management API diretamente — ver CLAUDE.md).
 
-All tables live in Supabase/PostgreSQL. RLS is enabled on every table. `auth.users` is managed by Supabase Auth.
+Todas as tabelas vivem em Supabase/PostgreSQL, schema `public`. RLS ativo em todas as tabelas
+de dados de utilizador. `auth.users` é gerido pelo Supabase Auth.
 
 ---
 
@@ -13,7 +16,7 @@ auth.users (Supabase Auth)
     │
     └──< parent_profiles
               │
-              ├──< notification_preferences
+              ├──< notification_preferences (1:1 — settings WhatsApp/lembrete do pai)
               └──< child_profiles
                         │
                         ├──< challenge_sessions
@@ -23,16 +26,26 @@ auth.users (Supabase Auth)
                         ├──< child_trophies
                         ├──< child_achievements
                         ├──< child_level_rewards
-                        ├──< friendships (child ←→ child)
-                        └──< friend_requests
+                        ├──< child_fact_mastery      (mastery adaptativo, por facto)
+                        ├──< child_fact_retest       (reteste persistente cross-challenge)
+                        ├──< child_notification_settings (1:1 — settings WhatsApp da criança)
+                        ├──< friendships (child ←→ child, bidirecional)
+                        ├──< friend_requests
+                        └──< messages (chat entre amigos, from_id/to_id)
+
+whatsapp_notification_log  — log de envios (dedup + auditoria), referencia parent_id/child_id
+whatsapp_events            — eventos brutos do webhook Evolution API, só service_role
 ```
 
-Static catalogs (seeded, no writes from app):
+Catálogos estáticos (seed, sem escrita da app):
 ```
 level_thresholds
 trophies
 achievements
 level_rewards
+arithmetic_facts       (400 questões: multiplicação/adição/subtração/divisão)
+multiplication_facts   (DEPRECATED — ver nota abaixo)
+app_config             (key/value, editável em runtime via EF update_app_config)
 ```
 
 ---
@@ -42,456 +55,613 @@ level_rewards
 ### `parent_profiles`
 
 ```sql
-CREATE TABLE parent_profiles (
-  id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  name        TEXT NOT NULL,
-  pin_hash    TEXT,                 -- bcrypt hash of 4-digit PIN; NULL = PIN not yet set
-  language    TEXT NOT NULL DEFAULT 'pt' CHECK (language IN ('pt','en','es','fr')),
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+create table parent_profiles (
+  id                  uuid primary key references auth.users(id) on delete cascade,
+  name                text not null,
+  pin_hash            text,                 -- bcrypt; null = PIN não definido
+  language            text not null default 'pt' check (language in ('pt','en','es','fr')),
+  whatsapp_phone      text,                 -- migration 018
+  whatsapp_phone_ddi  text not null default '',
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now()
 );
 ```
 
-**RLS**: `id = auth.uid()` — parent reads/writes own row only.
+**RLS**: `id = auth.uid()` — pai lê/escreve só a própria linha.
 
-**Trigger**: created automatically on `auth.users` insert via Supabase DB trigger.
+**Trigger**: `handle_new_user()` cria a linha automaticamente no `insert` em `auth.users`
+(migration 001).
 
 ---
 
 ### `child_profiles`
 
 ```sql
-CREATE TABLE child_profiles (
-  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  parent_id           UUID NOT NULL REFERENCES parent_profiles(id) ON DELETE CASCADE,
-  username            TEXT NOT NULL UNIQUE,       -- public-facing identifier; friend search key
-  display_name        TEXT NOT NULL,
-  birth_date          DATE,                       -- used for difficulty calibration
-  avatar_id           TEXT NOT NULL,              -- 'sofia' | 'gabriel' | 'pedro' | ...
-  -- Progression (server-authoritative — never updated by client directly)
-  xp_total            INTEGER NOT NULL DEFAULT 0,
-  level               INTEGER NOT NULL DEFAULT 1,
-  current_streak      INTEGER NOT NULL DEFAULT 0,
-  best_streak         INTEGER NOT NULL DEFAULT 0,
-  last_challenge_date DATE,                       -- for streak consecutive-day detection
-  -- Parent-configurable settings (per child)
-  timer_seconds       INTEGER NOT NULL DEFAULT 15
-                        CHECK (timer_seconds IN (10, 15, 20, 30, 0)),  -- 0 = unlimited
-  multiplication_max  INTEGER NOT NULL DEFAULT 10
-                        CHECK (multiplication_max IN (10, 12, 15, 20)),
-  social_enabled      BOOLEAN NOT NULL DEFAULT true,
-  -- Profile management
-  is_active           BOOLEAN NOT NULL DEFAULT true,
-  sort_order          INTEGER NOT NULL DEFAULT 0,   -- profile switcher display order
-  created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+create table child_profiles (
+  id                  uuid primary key default gen_random_uuid(),
+  parent_id           uuid not null references parent_profiles(id) on delete cascade,
+  username            text not null unique,
+  display_name        text not null,
+  birth_date          date,
+  avatar_id           text not null,
+  -- Progressão (server-authoritative — só Edge Functions escrevem)
+  xp_total            integer not null default 0 check (xp_total >= 0),
+  level               integer not null default 1 check (level >= 1),
+  current_streak      integer not null default 0 check (current_streak >= 0),
+  best_streak         integer not null default 0 check (best_streak >= 0),
+  last_challenge_date date,
+  -- Definições configuráveis pelo pai
+  timer_seconds       integer not null default 15 check (timer_seconds in (10, 15, 20, 30, 0)),
+  timer_auto          boolean not null default false,   -- migration 012 — tempo desce por nível
+  multiplication_max  integer not null default 10 check (multiplication_max in (10, 12, 15, 20)),
+  question_count      smallint not null default 20      -- migration 011; 0 = AUTO
+                        check (question_count in (5, 10, 15, 20, 25, 0)),
+  enabled_operations  text[] not null default array['multiplication']  -- migration 016
+                        check (
+                          array_length(enabled_operations, 1) >= 1
+                          and enabled_operations <@ array['multiplication','addition','subtraction','division']
+                        ),
+  mix_operations      boolean not null default false,    -- migration 016
+  social_enabled      boolean not null default true,
+  timezone            text not null default 'America/Sao_Paulo',  -- migration 007
+  expo_push_token     text,                               -- migration 003
+  whatsapp_phone      text,                               -- migration 018
+  whatsapp_phone_ddi  text not null default '',
+  -- Gestão de perfil
+  is_active           boolean not null default true,
+  sort_order          integer not null default 0,
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now()
 );
 
-CREATE INDEX idx_child_profiles_parent ON child_profiles(parent_id);
-CREATE INDEX idx_child_profiles_username ON child_profiles(username);
+create index idx_child_profiles_parent_id on child_profiles (parent_id, is_active, sort_order);
+create index idx_child_profiles_username  on child_profiles (username);
 ```
 
-**Security note**: Progression columns (`xp_total`, `level`, `current_streak`, `best_streak`, `last_challenge_date`) are updated **exclusively** by the `complete_challenge` Edge Function. The RLS `UPDATE` policy must allow only settings columns (`timer_seconds`, `multiplication_max`, `social_enabled`, `display_name`, `avatar_id`, `sort_order`) for the parent client role.
+**Segurança**: as colunas de progressão (`xp_total`, `level`, `current_streak`, `best_streak`,
+`last_challenge_date`) só são escritas por `complete_challenge`. `child_fact_mastery` e
+`child_fact_retest` seguem a mesma regra (só `service_role`, via Edge Functions).
 
-**RLS**:
-- Parent: `SELECT` all own children (`parent_id = auth.uid()`); `UPDATE` settings columns only; `INSERT`/`DELETE` (soft delete via `is_active`).
-- No direct child-session access to this table from the client — child profile data is loaded by the parent session.
+**RLS**: pai lê/atualiza as próprias crianças (`parent_id = auth.uid()`); ver também a policy
+de amigos abaixo (`friendships`/migration 010) que permite a um pai ler `child_profiles` de
+um amigo do filho (colunas públicas — nome, avatar, level, xp, streak).
 
 ---
 
-
 ### `notification_preferences`
 
+Definições de notificação do **pai**. A tabela nasceu na 001 só com `daily_reminder`/
+`reminder_time`/`push_token` (nunca usada por nenhuma UI até à integração WhatsApp); a
+migration 018 estendeu-a em vez de criar tabela nova.
+
 ```sql
-CREATE TABLE notification_preferences (
-  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  parent_id           UUID NOT NULL UNIQUE REFERENCES parent_profiles(id) ON DELETE CASCADE,
-  daily_reminder      BOOLEAN NOT NULL DEFAULT true,
-  reminder_time       TIME NOT NULL DEFAULT '18:00:00',  -- local time (stored in UTC offset TBD)
-  push_token          TEXT,                              -- Expo push token; nullable if not granted
-  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+create table notification_preferences (
+  id                            uuid primary key default gen_random_uuid(),
+  parent_id                     uuid not null unique references parent_profiles(id) on delete cascade,
+  daily_reminder                boolean not null default true,   -- também gatilho WhatsApp
+  reminder_time                 time not null default '18:00:00',
+  push_token                    text,                             -- nunca implementado (push nativo)
+  whatsapp_enabled              boolean not null default false,
+  unfinished_warning_enabled    boolean not null default true,
+  unfinished_warning_time       time not null default '19:00:00',
+  completed_notice_enabled      boolean not null default false,
+  completed_notice_time         time not null default '20:00:00',
+  weekly_summary_enabled        boolean not null default false,
+  weekly_summary_weekday        smallint not null default 0 check (weekly_summary_weekday between 0 and 6),
+  weekly_summary_time           time not null default '19:00:00',
+  created_at                    timestamptz not null default now(),
+  updated_at                    timestamptz not null default now()
 );
 ```
 
-**RLS**: parent reads/writes own row.
+**RLS**: pai lê/escreve a própria linha.
 
-**Note**: Per-child notification preferences (e.g., different reminder times per child) not needed for MVP. One preference set per parent account.
+---
+
+### `child_notification_settings` (migration 018)
+
+Definições de notificação **por criança** — só 2 tipos, enviados para o número da própria
+criança (não do pai).
+
+```sql
+create table child_notification_settings (
+  child_id                    uuid primary key references child_profiles(id) on delete cascade,
+  whatsapp_enabled             boolean not null default false,
+  daily_reminder_enabled       boolean not null default false,
+  daily_reminder_time          time not null default '16:00:00',
+  unfinished_warning_enabled   boolean not null default false,
+  unfinished_warning_time      time not null default '19:00:00',
+  created_at                   timestamptz not null default now(),
+  updated_at                   timestamptz not null default now()
+);
+```
+
+**RLS**: pai lê/escreve definições dos próprios filhos; `service_role` lê tudo (cron de envio).
 
 ---
 
 ### `challenge_sessions`
 
-One record per challenge attempt. A "session" is idempotent — the client generates a UUID before starting and uses it as the session `id`. This makes `complete_challenge` safe to retry.
-
 ```sql
-CREATE TABLE challenge_sessions (
-  id                UUID PRIMARY KEY,              -- client-generated UUID (idempotency key)
-  child_id          UUID NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-  challenge_date    DATE NOT NULL,
-  module_id         TEXT NOT NULL DEFAULT 'multiplication',
-  question_seed     TEXT NOT NULL,                 -- seed used to generate this session's questions
-  status            TEXT NOT NULL DEFAULT 'in_progress'
-                      CHECK (status IN ('in_progress','completed','abandoned')),
-  total_questions   INTEGER NOT NULL DEFAULT 20,
-  correct_count     INTEGER NOT NULL DEFAULT 0,
-  xp_awarded        INTEGER NOT NULL DEFAULT 0,
-  is_retroactive    BOOLEAN NOT NULL DEFAULT false,
-  is_perfect        BOOLEAN NOT NULL DEFAULT false,  -- all 20 correct
-  -- Settings snapshot (frozen at session start)
-  timer_seconds     INTEGER NOT NULL,
-  multiplication_max INTEGER NOT NULL,
-  started_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-  completed_at      TIMESTAMPTZ,
-  UNIQUE (child_id, challenge_date, module_id)      -- one session per day per module per child
+create table challenge_sessions (
+  id                  uuid primary key,   -- gerado pelo cliente, chave de idempotência
+  child_id            uuid not null references child_profiles(id) on delete cascade,
+  challenge_date      date not null,
+  module_id           text not null default 'multiplication',  -- operação única, ou 'mixed'
+  question_seed       text,               -- DEPRECATED (Phase 2.5) — nullable, legacy
+  status              text not null default 'in_progress' check (status in ('in_progress','completed','abandoned')),
+  total_questions     integer not null default 20,   -- entregue de facto, não o pedido (ver nota)
+  correct_count       integer not null default 0,
+  xp_awarded          integer not null default 0,
+  is_retroactive      boolean not null default false,
+  is_perfect          boolean not null default false,
+  timer_seconds       integer not null,
+  multiplication_max  integer not null,
+  questions_payload   jsonb,              -- lista de questões gerada server-side (Phase 2.5+)
+  rules_version       integer,            -- A/B harness — ver docs/ab-testing.md
+  selection_metadata  jsonb,              -- diagnóstico (buckets usados, shortfall, etc.)
+  started_at          timestamptz not null default now(),
+  completed_at        timestamptz,
+  unique (child_id, challenge_date, module_id)
 );
 
-CREATE INDEX idx_challenge_sessions_child_date ON challenge_sessions(child_id, challenge_date DESC);
+create index idx_sessions_child_date on challenge_sessions (child_id, challenge_date desc);
 ```
 
-**Notes**:
-- `UNIQUE (child_id, challenge_date, module_id)` enforces one challenge per day. The Edge Function handles conflicts: if a session already exists and is `completed`, reject re-submission. If `in_progress` and same UUID, this is a retry → idempotent update.
-- `status = 'abandoned'` is set when the child exits mid-challenge. Questions completed up to the last block checkpoint are preserved in `challenge_answers`.
-- No `failed` status: a session is either completed (possibly with low score) or abandoned. "Failed" in the calendar context means `challenge_date` passed with no `completed` session.
-- **Retroactive challenge rules** (enforced in `start_challenge` Edge Function):
-  - `challenge_date` must be within the past 7 calendar days; older dates are rejected with a `429 RETROACTIVE_WINDOW_EXPIRED` error.
-  - XP awarded is identical to a same-day challenge.
-  - Trophy progress counters (cumulative counts like monthly_days_completed) are incremented.
-  - "Perfect week" / "perfect month" trophy conditions are only evaluated for the **current** open window, not retroactively closed ones.
-  - `last_challenge_date` and `current_streak` are NOT updated by retroactive completions.
+**Notas**:
+- `question_seed` é legacy — sessões desde a Phase 2.5 são geradas server-side e persistidas em
+  `questions_payload`; o cliente nunca gera nem regenera localmente.
+- `total_questions` grava a quantidade **realmente entregue**, não a pedida — se o pool de
+  factos elegíveis esgotar (operação com poucos factos + `question_count` alto + cooldown
+  cross-sessão), pode ser menor que `child_profiles.question_count`. Bug corrigido no commit
+  `eb1ac22` (antes gravava o valor pedido, o que quebrava `is_perfect` para quem esgotava o pool
+  mas acertava tudo o que recebeu). `selection_metadata.shortfall` regista quando isto acontece.
+- Regras de desafio retroativo (janela de 7 dias, XP igual, não atualiza streak) continuam a
+  aplicar-se — enforced em `start_challenge`.
 
 ---
 
 ### `challenge_answers`
 
-Submitted in a batch at block checkpoint or session end. Stores every attempt, including retries.
-
 ```sql
-CREATE TABLE challenge_answers (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id      UUID NOT NULL REFERENCES challenge_sessions(id) ON DELETE CASCADE,
-  block_number    SMALLINT NOT NULL,             -- 1–4 (block of 5 questions)
-  attempt_number  SMALLINT NOT NULL DEFAULT 1,   -- increments on each block retry
-  question_index  SMALLINT NOT NULL,             -- 0–19 (absolute position in session)
-  operand_a       SMALLINT NOT NULL,
-  operand_b       SMALLINT NOT NULL,
-  correct_answer  SMALLINT NOT NULL,
-  child_answer    SMALLINT,                      -- NULL = timed out or unanswered
-  is_correct      BOOLEAN NOT NULL,
-  time_taken_ms   INTEGER,
-  xp_awarded      SMALLINT NOT NULL DEFAULT 0    -- 0 on retry attempts; XP paid once per question
+create table challenge_answers (
+  id                uuid primary key default gen_random_uuid(),
+  session_id        uuid not null references challenge_sessions(id) on delete cascade,
+  block_number      integer not null check (block_number >= 1),
+  attempt_number    integer not null default 1,
+  question_index    integer not null check (question_index >= 0),
+  operand_a         integer not null,
+  operand_b         integer not null,
+  correct_answer    integer not null,
+  child_answer      integer,             -- null = timeout
+  is_correct        boolean not null,
+  time_taken_ms     integer,
+  xp_awarded        integer not null default 0,
+  fact_id           text references arithmetic_facts(id),   -- migration 007 (era multiplication_facts), repontado na 013
+  response_time_ms  integer
 );
 
-CREATE INDEX idx_challenge_answers_session ON challenge_answers(session_id);
+create index idx_answers_session on challenge_answers (session_id);
+create index idx_answers_child_fact on challenge_answers (fact_id, id) where fact_id is not null;
 ```
 
-**Block retry rules** (enforced in `complete_challenge` Edge Function):
-
-- `UNIQUE (session_id, question_index)` is intentionally **absent** — the same question_index can appear multiple times across retry attempts.
-- `correct_count` on `challenge_sessions` is computed as:
-  ```sql
-  COUNT(DISTINCT question_index) FILTER (WHERE is_correct = true)
-  ```
-  This deduplicates retries: a question answered correctly on attempt 2 counts, but only once.
-- `xp_awarded = 10` only on the **first correct answer** for a given `question_index` within the session. All retry rows for that question_index get `xp_awarded = 0`.
-- `is_perfect = (correct_count = 20)` — requires every unique question to have been answered correctly at least once.
-- Block retry does **not** reset other blocks. `block_number` tracks which block each answer belongs to.
+`question_index`/`block_number` deixaram de ter CHECK de limite superior fixo (0–19 / 1–4) desde
+a migration 011, para suportar `question_count` configurável (até 25). `UNIQUE(session_id,
+question_index)` continua ausente de propósito — permite múltiplas tentativas por retry de bloco,
+`xp_awarded` só na primeira correta.
 
 ---
 
 ### `child_xp_ledger`
 
-Append-only audit log. `child_profiles.xp_total` is the denormalized running total. Both must stay in sync — the Edge Function updates both atomically.
-
 ```sql
-CREATE TABLE child_xp_ledger (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  child_id      UUID NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-  source        TEXT NOT NULL CHECK (source IN (
-                  'correct_answer',
-                  'challenge_completion',
-                  'achievement',
-                  'trophy'
-                )),
-  amount        INTEGER NOT NULL,
-  reference_id  UUID,                           -- session_id, achievement_id, trophy_id
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+create table child_xp_ledger (
+  id            uuid primary key default gen_random_uuid(),
+  child_id      uuid not null references child_profiles(id) on delete cascade,
+  source        text not null check (source in ('correct_answer','challenge_completion','achievement','trophy')),
+  amount        integer not null,
+  reference_id  uuid,
+  created_at    timestamptz not null default now()
 );
 
-CREATE INDEX idx_xp_ledger_child_date ON child_xp_ledger(child_id, created_at DESC);
+create index idx_xp_ledger_child_created on child_xp_ledger (child_id, created_at desc);
 ```
 
-**Note on "perfect_block" and "weekly_completion" XP sources from PRD**: These are not yet confirmed as distinct ledger entries. Milestone bonuses (Q5/Q10/Q15/Q20 shown in UI) may be part of the flat `challenge_completion` bonus, not separate ledger rows. See OQ-16. Keeping source categories minimal for now; can add later.
-
-This table also serves as the **ranking data source** — weekly/monthly XP totals are computed with date-range queries on this table (see architecture.md §6). No pre-computed ranking tables.
+Append-only. Serve também de fonte de dados para o ranking de amigos (ver `architecture.md`).
 
 ---
 
 ### `calendar_days`
 
 ```sql
-CREATE TABLE calendar_days (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  child_id    UUID NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-  day_date    DATE NOT NULL,
-  state       TEXT NOT NULL CHECK (state IN ('completed','failed','in_progress')),
-             -- 'future' and 'today' are computed client-side from date comparison; not stored
-  is_perfect  BOOLEAN NOT NULL DEFAULT false,
-  session_id  UUID REFERENCES challenge_sessions(id),
-  UNIQUE (child_id, day_date)
+create table calendar_days (
+  id              uuid primary key default gen_random_uuid(),
+  child_id        uuid not null references child_profiles(id) on delete cascade,
+  day_date        date not null,
+  state           text not null check (state in ('completed','failed','in_progress')),
+  is_perfect      boolean not null default false,
+  session_id      uuid references challenge_sessions(id),
+  is_retroactive  boolean not null default false,   -- migration 009
+  unique (child_id, day_date)
 );
 
-CREATE INDEX idx_calendar_days_child_date ON calendar_days(child_id, day_date DESC);
+create index idx_calendar_child_date on calendar_days (child_id, day_date desc);
 ```
 
-**Simplification from original draft**: `'future'` and `'today'` states are not stored — they're computed client-side by comparing `day_date` with today's date. Only days with actual challenge activity have rows.
-
-A day is `'failed'` when a cron job (or the next `complete_challenge` call) detects that a past `day_date` has no `completed` session. Alternatively, the client infers `failed` for any past day with no row (no session = missed day). The latter is simpler and preferred for MVP.
+`is_retroactive` (migration 009) corrige um bug: sem esta coluna o calendário "esquecia" que um
+dia tinha sido recuperado assim que a sessão terminava.
 
 ---
 
-### `trophies` (static catalog)
+### Catálogos estáticos: `trophies`, `achievements`, `level_rewards`, `level_thresholds`
 
 ```sql
-CREATE TABLE trophies (
-  id                TEXT PRIMARY KEY,
-  name_key          TEXT NOT NULL,
-  description_key   TEXT NOT NULL,
-  category          TEXT NOT NULL CHECK (category IN ('daily','weekly','monthly','streak','special')),
-  tier              TEXT NOT NULL CHECK (tier IN ('bronze','silver','gold','diamond')),
-  requirement_type  TEXT NOT NULL,
-  requirement_value INTEGER NOT NULL,
-  icon_asset        TEXT NOT NULL,
-  sort_order        INTEGER NOT NULL DEFAULT 0
+create table trophies (
+  id                  uuid primary key default gen_random_uuid(),
+  name_key            text not null,           -- unique index (migration 008) — chave natural p/ seeds idempotentes
+  description_key     text not null,
+  category            text not null check (category in ('daily','weekly','monthly','streak','special')),
+  tier                text not null check (tier in ('bronze','silver','gold','diamond')),
+  requirement_type    text not null,
+  requirement_value   integer not null,
+  icon_asset          text not null,
+  sort_order          integer not null default 0
+);
+
+create table achievements (
+  id                uuid primary key default gen_random_uuid(),
+  name_key          text not null,             -- unique index (migration 008)
+  description_key   text not null,
+  category          text not null check (category in ('primeiros_passos','sequencias','habilidades','especiais')),
+  condition_type    text not null,
+  condition_value   integer,
+  icon_asset        text not null,
+  sort_order        integer not null default 0
+);
+
+create table level_rewards (
+  id            uuid primary key default gen_random_uuid(),
+  name_key      text not null,                 -- unique index (migration 008)
+  reward_type   text not null check (reward_type in ('frame','outfit','medal','trophy_variant','celebration')),
+  unlock_level  integer not null,
+  icon_asset    text not null,
+  sort_order    integer not null default 0
+);
+
+create table level_thresholds (
+  level         integer primary key,
+  xp_required   integer not null,
+  name_key      text not null
 );
 ```
 
-**Known trophies** (from designs):
+⚠️ **Achado (2026-08-05)**: o troféu "Madrugador" existe nas traduções (`src/locales/*.json`)
+e é mostrado na Sala de Troféus, mas **não tem nenhuma linha correspondente confirmada no seed**
+com `requirement_type` definido — condição de desbloqueio por hora do dia nunca foi
+implementada no backend (ver `docs/open-questions.md` OQ-11, ainda aberta).
 
-| id | category | tier | requirement_type | requirement_value |
-|---|---|---|---|---|
-| daily_trophy | daily | bronze | days_completed | 1 |
-| madrugador | daily | bronze | TBD (OQ-11) | TBD |
-| weekly_trophy | weekly | silver | days_completed_week | 7 |
-| monthly_trophy | monthly | gold | days_completed_month | 30 |
-| sequencia_de_fogo | streak | gold | streak_days | TBD |
-| semana_perfeita | special | diamond | perfect_week_days | 7 |
-| mes_perfeito | special | diamond | perfect_month_days | 30 |
-| campiao | special | gold | TBD | TBD |
-
-**RLS**: public read, no client writes.
+**RLS**: leitura pública para `authenticated`, sem escrita pelo cliente (só seeds em
+`backend/seeds/`).
 
 ---
 
-### `child_trophies`
+### `child_trophies`, `child_achievements`, `child_level_rewards`
 
 ```sql
-CREATE TABLE child_trophies (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  child_id    UUID NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-  trophy_id   TEXT NOT NULL REFERENCES trophies(id),
-  earned_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-  progress    INTEGER NOT NULL DEFAULT 0,        -- progress toward trophy (e.g. 18/30 days)
-  UNIQUE (child_id, trophy_id)
+create table child_trophies (
+  id          uuid primary key default gen_random_uuid(),
+  child_id    uuid not null references child_profiles(id) on delete cascade,
+  trophy_id   uuid not null references trophies(id),
+  earned_at   timestamptz not null default now(),
+  progress    integer not null default 0,
+  unique (child_id, trophy_id)
 );
 
-CREATE INDEX idx_child_trophies_child ON child_trophies(child_id);
-```
-
----
-
-### `achievements` (static catalog)
-
-```sql
-CREATE TABLE achievements (
-  id                TEXT PRIMARY KEY,
-  name_key          TEXT NOT NULL,
-  description_key   TEXT NOT NULL,
-  category          TEXT NOT NULL CHECK (category IN ('primeiros_passos','sequencias','habilidades','especiais')),
-  condition_type    TEXT NOT NULL,
-  condition_value   INTEGER,
-  icon_asset        TEXT NOT NULL,
-  sort_order        INTEGER NOT NULL DEFAULT 0
-);
-```
-
-**Known achievements** (from designs):
-
-| id | category | condition_type | condition_value |
-|---|---|---|---|
-| primeiro_acesso | primeiros_passos | app_opened | 1 |
-| primeiro_dia_perfeito | primeiros_passos | perfect_days | 1 |
-| sequencia_7_dias | sequencias | streak_days | 7 |
-| sequencia_30_dias | sequencias | streak_days | 30 |
-| mestre_multiplicacao | habilidades | TBD | TBD |
-| campeao_velocidade | habilidades | speed_perfect_challenge | TBD |
-| semana_perfeita | especiais | perfect_week | 7 |
-| mes_perfeito | especiais | perfect_month | 30 |
-
-**RLS**: public read, no client writes.
-
----
-
-### `child_achievements`
-
-```sql
-CREATE TABLE child_achievements (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  child_id        UUID NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-  achievement_id  TEXT NOT NULL REFERENCES achievements(id),
-  earned_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  progress        INTEGER NOT NULL DEFAULT 0,
-  UNIQUE (child_id, achievement_id)
+create table child_achievements (
+  id              uuid primary key default gen_random_uuid(),
+  child_id        uuid not null references child_profiles(id) on delete cascade,
+  achievement_id  uuid not null references achievements(id),
+  earned_at       timestamptz not null default now(),
+  progress        integer not null default 0,
+  unique (child_id, achievement_id)
 );
 
-CREATE INDEX idx_child_achievements_child ON child_achievements(child_id);
+create table child_level_rewards (
+  id          uuid primary key default gen_random_uuid(),
+  child_id    uuid not null references child_profiles(id) on delete cascade,
+  reward_id   uuid not null references level_rewards(id),
+  unlocked_at timestamptz not null default now(),
+  unique (child_id, reward_id)
+);
 ```
 
 ---
 
-### `level_thresholds` (static catalog)
+### `arithmetic_facts` (migration 013 — substitui `multiplication_facts`)
+
+Catálogo estático de **400 questões**: 100 por operação (multiplicação, adição, subtração,
+divisão), tiers de dificuldade T1–T5.
 
 ```sql
-CREATE TABLE level_thresholds (
-  level         SMALLINT PRIMARY KEY,
-  xp_required   INTEGER NOT NULL,          -- cumulative XP to reach this level
-  name_key      TEXT NOT NULL              -- i18n key for level title
+create table arithmetic_facts (
+  id              text primary key,   -- ex: 'fact_7x8', 'fact_add_3_9', 'fact_sub_12_4', 'fact_div_56_7'
+  operation       text not null check (operation in ('multiplication','addition','subtraction','division')),
+  operand_a       smallint not null,
+  operand_b       smallint not null,
+  answer          smallint not null,
+  fact_group_id   text,      -- null = sem par comutativo (subtração/divisão)
+  base_difficulty smallint not null check (base_difficulty between 1 and 5),
+  created_at      timestamptz not null default now()
 );
+
+create index idx_arith_facts_operation on arithmetic_facts (operation);
+create index idx_arith_facts_difficulty on arithmetic_facts (operation, base_difficulty);
+create index idx_arith_facts_group on arithmetic_facts (fact_group_id) where fact_group_id is not null;
 ```
 
-**Known values** (inferred from designs — needs product confirmation):
+- **Multiplicação/adição**: comutativas — `fact_group_id` partilhado entre `a×b`/`b×a` (ou
+  `a+b`/`b+a`), transferência de 50% de mastery entre o par (`commutativity.transferFactor`
+  em `adaptive-rules.json`).
+- **Subtração/divisão**: não comutativas — `fact_group_id` sempre `null`, sem transferência.
+  Subtração deriva de adição (`c-a=b` para cada facto `a+b=c`); divisão deriva de multiplicação
+  do mesmo modo. Herdam a `base_difficulty` do facto de origem.
+- RLS: leitura pública para `authenticated`.
 
-| level | xp_required | title (PT) |
-|---|---|---|
-| 1 | 0 | Explorador |
-| 10 | ~8,000 | Explorador |
-| 11 | ~8,500 | Aventureiro |
-| 12 | ~9,000 | Herói da Matemática |
-| 13 | ~9,550 | Mago Aprendiz |
-| 14 | ~10,200 | ? |
-| 15 | ~11,000 | Mestre dos Números |
-| 18 | ~13,500 | ? |
-| 20 | ~15,000 | Lenda Matemática |
-| 50 | TBD | Math Legend (PRD) |
-
-Full table must be defined by product before Phase 3 starts.
+**`multiplication_facts` (DEPRECATED)**: mantida só para rollback seguro (100 rows, só
+multiplicação). Não apagada, não usada por nenhuma Edge Function desde a migration 013 — todas
+as FKs (`child_fact_mastery.fact_id`, `challenge_answers.fact_id`) apontam para
+`arithmetic_facts`. Remover numa migration futura depois de confirmar produção estável.
 
 ---
 
-### `level_rewards` (static catalog)
+### `child_fact_mastery`
+
+Mastery por criança × facto — estado NEW→LEARNING→REVIEWING→MASTERED←→WEAK. Ver
+`docs/adaptive-multiplication-system.md` para o algoritmo completo.
 
 ```sql
-CREATE TABLE level_rewards (
-  id            TEXT PRIMARY KEY,
-  name_key      TEXT NOT NULL,
-  reward_type   TEXT NOT NULL CHECK (reward_type IN ('frame','outfit','medal','trophy_variant','celebration')),
-  unlock_level  SMALLINT NOT NULL REFERENCES level_thresholds(level),
-  icon_asset    TEXT NOT NULL,
-  sort_order    INTEGER NOT NULL DEFAULT 0
+create table child_fact_mastery (
+  child_id                  uuid not null references child_profiles(id) on delete cascade,
+  fact_id                   text not null references arithmetic_facts(id),  -- repontado na 013
+  state                     text not null default 'NEW' check (state in ('NEW','LEARNING','REVIEWING','MASTERED','WEAK')),
+  times_seen                integer not null default 0,
+  times_correct             integer not null default 0,
+  times_wrong               integer not null default 0,
+  distinct_sessions_correct integer not null default 0,
+  consecutive_correct       integer not null default 0,
+  consecutive_wrong         integer not null default 0,
+  last_seen_at              timestamptz,
+  last_correct_at           timestamptz,
+  last_wrong_at             timestamptz,
+  last_correct_local_date   date,     -- timezone da criança (DP-7)
+  strength                  real not null default 0 check (strength between 0 and 1),
+  next_review_at            timestamptz,
+  updated_at                timestamptz not null default now(),
+  primary key (child_id, fact_id)
 );
+
+create index idx_mastery_state on child_fact_mastery (child_id, state);
+create index idx_mastery_next_review on child_fact_mastery (child_id, next_review_at) where next_review_at is not null;
 ```
 
-**Known rewards** (from designs):
-
-| id | type | unlock_level |
-|---|---|---|
-| moldura_estrelas | frame | 10 |
-| capa_magica | outfit | 11 |
-| medalha_prata | medal | 12 |
-| trofe_brilhante | trophy_variant | 13 |
-| moldura_arco_iris | frame | 14 |
-| chapeu_galactico | outfit | 15 |
-| medalha_ouro | medal | 18 |
-| fogos_dourados | celebration | 20 |
+**RLS**: pai lê mastery dos próprios filhos; só `service_role` escreve (via `start_challenge`/
+`complete_challenge`/`recompute_mastery`).
 
 ---
 
-### `child_level_rewards`
+### `child_fact_retest` (migration 017)
+
+Reteste **persistente e cross-challenge** — independente de `child_fact_mastery`/`WEAK`. Um
+erro marca o facto (+ par comutativo, se aplicável) para reteste obrigatório em desafios
+futuros, até acumular acertos em sessões/dias distintos.
 
 ```sql
-CREATE TABLE child_level_rewards (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  child_id    UUID NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-  reward_id   TEXT NOT NULL REFERENCES level_rewards(id),
-  unlocked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (child_id, reward_id)
+create table child_fact_retest (
+  child_id                uuid not null references child_profiles(id) on delete cascade,
+  fact_id                 text not null references arithmetic_facts(id),
+  a_retestar              boolean not null default true,
+  retest_correct_streak   integer not null default 0,
+  retest_wrong_count      integer not null default 0,
+  last_correct_local_date date,
+  first_flagged_at        timestamptz not null default now(),
+  cleared_at              timestamptz,     -- preenchido ao atingir o limiar; linha nunca apagada
+  updated_at              timestamptz not null default now(),
+  primary key (child_id, fact_id)
+);
+
+create index idx_retest_active on child_fact_retest (child_id, first_flagged_at) where a_retestar = true;
+```
+
+`start_challenge` reserva `round(question_count × retest_percentage)` vagas para factos
+`a_retestar=true` (mais antigos primeiro) **antes** da seleção adaptativa normal — garantia, não
+peso probabilístico. Ao atingir `retest_correct_threshold` (config global, ver `app_config`), a
+flag limpa. **Achado de QA não corrigido**: a injeção de reteste ignora se o tier do facto está
+desbloqueado para a criança — na prática só ocorre via regressão de mastery (`WEAK`), portanto
+raro, mas é um gap de design conhecido.
+
+**RLS**: pai lê retestes dos próprios filhos; só `service_role` escreve.
+
+---
+
+### `app_config` (migration 017)
+
+Configuração global key/value, editável em runtime pela tela Developer (`parent-area/developers.tsx`).
+
+```sql
+create table app_config (
+  key         text primary key,
+  value       jsonb not null,
+  updated_at  timestamptz not null default now()
 );
 ```
+
+Seeds: `retest_correct_threshold` (5), `retest_percentage` (0.25). Leitura pública para
+`authenticated` (não é dado sensível); escrita só via Edge Function `update_app_config`
+(`service_role`), chamada por um pai autenticado atrás do PIN 120380 no cliente.
 
 ---
 
 ### `friendships`
 
-Bidirectional friendship: always two rows per pair (`A→B` and `B→A`). Simpler to query than single-row with ordering trick.
-
 ```sql
-CREATE TABLE friendships (
-  child_id    UUID NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-  friend_id   UUID NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  PRIMARY KEY (child_id, friend_id),
-  CHECK (child_id <> friend_id)
+create table friendships (
+  child_id    uuid not null references child_profiles(id) on delete cascade,
+  friend_id   uuid not null references child_profiles(id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  primary key (child_id, friend_id),
+  check (child_id <> friend_id)
 );
 
-CREATE INDEX idx_friendships_child ON friendships(child_id);
+create index idx_friendships_child  on friendships (child_id);
+create index idx_friendships_friend on friendships (friend_id);
 ```
 
-**RLS**: child reads own friendships only. Writes only via Edge Function (on request acceptance).
+Bidirecional: aceitar um pedido insere duas linhas (`A→B` e `B→A`).
+
+**RLS relevante (migration 010)**: além de "pai lê as próprias amizades", existe
+`friend_ids_of()`/`my_child_ids()` (funções `security definer`, evita recursão RLS) que
+permitem a um pai ler o `child_profiles` (colunas públicas) de um **amigo** do filho — necessário
+para o embed `friendships → friend:friend_id(...)` no ranking.
 
 ---
 
 ### `friend_requests`
 
 ```sql
-CREATE TABLE friend_requests (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  from_child_id   UUID NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-  to_child_id     UUID NOT NULL REFERENCES child_profiles(id) ON DELETE CASCADE,
-  status          TEXT NOT NULL DEFAULT 'pending'
-                    CHECK (status IN ('pending','accepted','rejected','cancelled')),
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  responded_at    TIMESTAMPTZ,
-  UNIQUE (from_child_id, to_child_id),
-  CHECK (from_child_id <> to_child_id)
+create table friend_requests (
+  id              uuid primary key default gen_random_uuid(),
+  from_child_id   uuid not null references child_profiles(id) on delete cascade,
+  to_child_id     uuid not null references child_profiles(id) on delete cascade,
+  status          text not null default 'pending' check (status in ('pending','accepted','rejected','cancelled')),
+  created_at      timestamptz not null default now(),
+  responded_at    timestamptz,
+  check (from_child_id <> to_child_id)
 );
 
-CREATE INDEX idx_friend_requests_to ON friend_requests(to_child_id, status)
-  WHERE status = 'pending';            -- partial index — only pending requests need fast lookup
-CREATE INDEX idx_friend_requests_from ON friend_requests(from_child_id);
+create index idx_friend_requests_to on friend_requests (to_child_id, status);
 ```
 
-**Anti-abuse rule**: after a request is rejected, the same `from_child_id` cannot send another request to the same `to_child_id` for 24 hours. Enforced in the `send_friend_request` Edge Function (check `responded_at`).
+Escrita só via Edge Functions `send_friend_request` / `respond_friend_request` /
+`cancel_friend_request` (nunca insert/update direto do cliente).
 
 ---
 
-## Removed Tables ⚠️
+### `messages` (chat entre amigos — migration 003)
 
-The following tables were evaluated and removed:
+⚠️ Não documentado em nenhuma versão anterior deste ficheiro nem em `architecture.md` —
+existe e está ativo (`app/(app)/friends/chat/[friendId].tsx`, `src/services/chat.service.ts`).
 
-**`weekly_rankings` / `monthly_rankings`**: Premature optimization. Computed via indexed queries on `child_xp_ledger`. Re-evaluate only if query latency exceeds 200ms in production.
+```sql
+create table messages (
+  id          uuid primary key default gen_random_uuid(),
+  from_id     uuid not null references child_profiles(id) on delete cascade,
+  to_id       uuid not null references child_profiles(id) on delete cascade,
+  content     text not null check (char_length(content) between 1 and 500),
+  read        boolean not null default false,
+  created_at  timestamptz not null default now(),
+  check (from_id <> to_id)
+);
 
-**`child_streaks` (history table)**: Not needed for any MVP feature. `last_challenge_date` on `child_profiles` is sufficient for streak continuity logic. Analytics use case deferred.
+create index idx_messages_conversation on messages (least(from_id, to_id), greatest(from_id, to_id), created_at desc);
+create index idx_messages_to_unread on messages (to_id, read) where read = false;
+```
 
-**`child_credentials`**: Removed entirely. Children do not log in independently — the parent authenticates via Supabase Auth (email + password) and selects a child profile via the switcher. No child password exists. Child profile data is protected by the parent's RLS context.
+**RLS**: pai lê mensagens onde o próprio filho é remetente OU destinatário; só o pai do
+remetente pode inserir; só o pai do destinatário pode marcar como lida (`with check (read = true)`
+— a única mutação permitida). **Realtime ativo** (`supabase_realtime` publication).
 
 ---
 
-## Security Checklist
+### WhatsApp — `whatsapp_notification_log`, `whatsapp_events`
 
-| Concern | Mitigation |
+Ver `docs/WHATSAPP_INTEGRATION_ROADMAP.md` e a secção WhatsApp em `CLAUDE.md` para o desenho
+completo (Evolution API self-hosted, Vault, cron horário).
+
+```sql
+create table whatsapp_notification_log (
+  id                    uuid primary key default gen_random_uuid(),
+  parent_id             uuid not null references parent_profiles(id) on delete cascade,
+  child_id              uuid references child_profiles(id) on delete cascade,
+  target                text not null check (target in ('parent', 'child')),
+  notification_type     text not null check (notification_type in ('daily_reminder', 'unfinished_warning', 'completed_notice', 'weekly_summary')),
+  recipient_phone       text not null,
+  send_date             date not null,
+  status                text not null default 'sent' check (status in ('sent', 'failed', 'skipped')),
+  evolution_message_id  text,
+  error_detail          text,
+  created_at            timestamptz not null default now()
+);
+-- unique parcial por (parent, child, target, tipo, dia) quando child_id not null,
+-- e por (parent, target, tipo, dia) quando child_id is null — dedup de envios.
+
+create table whatsapp_events (
+  id          uuid primary key default gen_random_uuid(),
+  event       text not null,          -- connection.update, qrcode.updated, messages.upsert, ...
+  instance    text,
+  data        jsonb not null default '{}'::jsonb,
+  created_at  timestamptz not null default now()
+);
+```
+
+`whatsapp_events`: só `service_role` (nunca exposta ao cliente — o ecrã Developer lê
+status/QR sempre via proxy `evolution-dev`, nunca esta tabela diretamente).
+
+**Vault**: segredos da Evolution API (`evolution_api_url`, `evolution_api_key`,
+`evolution_instance_name`) vivem em `supabase_vault`, lidos só por `get_evolution_config()`/
+`get_vault_secrets()` — funções `security definer` com `execute` restrito a `service_role`
+desde a criação (ao contrário do projeto LukaPsi, que teve um leak deste tipo e corrigiu depois).
+
+---
+
+## RPCs / funções auxiliares
+
+| Função | Definida em | Uso |
+|---|---|---|
+| `handle_new_user()` | 001 | Trigger — cria `parent_profiles` no signup |
+| `get_challenge_counts_for_gamification(child_id, date)` | 008 | Contagens semana/mês para trophies em `complete_challenge` |
+| `my_child_ids()` / `friend_ids_of(ids)` | 010 | RLS de `child_profiles` — evita recursão 42P17 |
+| `get_evolution_config()` / `get_vault_secrets(names)` | 018 | Vault, só `service_role` |
+
+---
+
+## Edge Functions que escrevem nestas tabelas
+
+| Edge Function | Tabelas principais |
 |---|---|
-| Child password hash exposure | Isolated in `child_credentials`; `SELECT` denied via RLS for all app roles |
-| Parent PIN hash exposure | In `parent_profiles.pin_hash`; never returned by any API (RLS `SELECT` column exclusion or separate table) |
-| XP manipulation | `xp_total`, `level`, `current_streak` — never writable by app client directly |
-| Replay attacks on `complete_challenge` | Session UUID is idempotency key; duplicate submissions return same XP, no double-award |
-| Cross-parent data access | All queries filtered by `auth.uid()` → `parent_profiles.id` → `child_profiles.parent_id` |
-| Social privacy (children) | Username search only; no personal info (birth date, parent email) exposed in friend/search context |
-| Friend request spam | Rate limit + 24h cooldown after rejection in Edge Function |
+| `start_challenge` | `challenge_sessions` (insert/resume), lê `child_fact_mastery`/`child_fact_retest`/`arithmetic_facts` |
+| `complete_challenge` | `challenge_sessions`, `challenge_answers`, `child_profiles` (progressão), `child_xp_ledger`, `calendar_days`, `child_trophies`, `child_achievements`, `child_level_rewards`, `child_fact_mastery`, `child_fact_retest` |
+| `recompute_mastery` | `child_fact_mastery` (replay idempotente a partir de `challenge_answers`) |
+| `verify_parent_pin` | `parent_profiles.pin_hash` |
+| `send_friend_request` / `respond_friend_request` / `cancel_friend_request` | `friend_requests`, `friendships` |
+| `delete_child` | `child_profiles` + cascade em todas as tabelas relacionadas (irreversível) |
+| `update_app_config` | `app_config` |
+| `send-whatsapp-notifications` (cron) | `whatsapp_notification_log`, lê `notification_preferences`/`child_notification_settings`/`calendar_days` |
+| `evolution-dev` / `evolution-webhook` / `test-whatsapp-message` | `whatsapp_events`, Vault |
 
 ---
+
+## Removido / nunca existiu
+
+- **`weekly_rankings` / `monthly_rankings`**: nunca criadas. Ranking é sempre query on-demand
+  (ver `architecture.md`).
+- **`child_streaks` (tabela de histórico)**: nunca criada. `last_challenge_date` em
+  `child_profiles` basta para a lógica de streak.
+- **`child_credentials`**: nunca existiu. Crianças não têm login nem password — ver `Auth` em
+  `CLAUDE.md`.
+
+## Segurança — resumo
+
+| Risco | Mitigação |
+|---|---|
+| Manipulação de XP | `xp_total`/`level`/`current_streak`/mastery/retest só escritos por Edge Functions (`service_role`) |
+| Replay em `complete_challenge` | `session_id` é chave de idempotência |
+| Acesso cross-parent | Todas as policies filtram por `auth.uid() → parent_profiles.id → child_profiles.parent_id` |
+| Segredos WhatsApp | Vault + RPCs `security definer` restritas a `service_role` desde o dia 1 |
+| Spam de pedidos de amizade | Cooldown de 24h após rejeição, enforced na Edge Function |
 
 ## Migration Strategy
 
-All schema changes must be managed via Supabase migrations (`supabase/migrations/`). Never apply changes directly to the production DB. Migrations must be:
-- Backward-compatible (add columns with defaults, never drop columns in MVP)
-- Tested in `dev` environment before applying to `prod`
-- Reviewed for RLS policy impact before applying
+Todas as alterações de schema vivem em `backend/migrations/*.sql`, numeradas sequencialmente,
+aplicadas via `supabase db push` ou `--use-api` (sem Docker — ver CLAUDE.md). Nunca aplicar SQL
+diretamente via Studio/Management API sem versionar o ficheiro — os catálogos de gamificação
+foram perdidos assim uma vez (sessão 7, projeto antigo apagado).

@@ -1,14 +1,15 @@
 # Sistema Adaptativo de Tabuadas — Design final
 
-> Status: **Decisões fechadas em 2026-06-11.** Pronto para implementação na Phase 2.5.
-> Documento companheiro: `docs/phase-2.5-implementation-handoff.md` (guia executável de implementação).
+> Status: **Decisões fechadas em 2026-06-11.** Implementado na Phase 2.5, depois estendido pela
+> Fase E (2026-07-17/18) e pela migration 017 (reteste persistente, 2026-07-18/19).
+> Documento companheiro: `docs/phase-2.5-implementation-handoff.md` (guia executável da
+> implementação original — histórico, não atualizado).
 >
-> ⚠️ **Desatualizado desde a Fase E (2026-07-17/18).** O design abaixo descreve corretamente o
-> algoritmo (buckets por mastery, pesos, tiers T1-T5, comutatividade), mas `multiplication_facts`
-> foi generalizada para `arithmetic_facts` (coluna `operation`: multiplication/addition/
-> subtraction/division), e `start_challenge` agora corre o mesmo algoritmo **uma vez por operação
-> activada** e combina + reembaralha o resultado. Ver `CLAUDE.md` secção "Challenge" para o estado
-> actual; este documento fica como referência do algoritmo base, não do schema literal.
+> As secções 1–10 abaixo descrevem corretamente o **algoritmo base** (buckets por mastery,
+> pesos, tiers T1-T5, comutatividade) tal como implementado. A **secção 13** descreve as duas
+> extensões que vieram depois e que estas secções não cobrem: multi-operação (Fase E) e reteste
+> persistente cross-challenge (migration 017). Atualizado em 2026-08-05 a partir do código real
+> — atualizar a secção 13 sempre que o motor mudar, em vez de reescrever 1–10.
 
 ## 1. Resumo executivo
 
@@ -265,3 +266,70 @@ Implementação executável passo-a-passo está em **`docs/phase-2.5-implementat
 - Lista exata de arquivos a criar/modificar.
 - Ordem de execução por sprint.
 - Critérios de aceitação por sprint.
+
+---
+
+## 13. Extensões pós-Phase-2.5 (estado real, 2026-08-05)
+
+### 13.1 Fase E — multi-operação (2026-07-17/18)
+
+`multiplication_facts` (100 questões, só multiplicação) foi generalizada em
+`arithmetic_facts` (migration 013), 400 questões: 100 por operação (multiplicação, adição,
+subtração, divisão), mesmos ids preservados para multiplicação (`fact_1x1`..`fact_10x10`) para
+não perder o histórico de mastery já acumulado.
+
+**Adição/subtração** (migrations 014/015) usam a mesma escala de dificuldade T1–T5 do §4, com
+critério próprio (ex.: adição T1 = soma com operando 1; T5 = soma 17–20). Subtração deriva de
+adição (`c-a=b`), divisão deriva de multiplicação (`c/a=b`) — ambas não-comutativas
+(`fact_group_id = null`, sem transferência de mastery entre pares), herdando a dificuldade do
+facto de origem.
+
+`child_profiles.enabled_operations` (array, mín. 1) + `mix_operations` (migration 016)
+controlam a oferta por criança:
+- `mix_operations=true` → uma sessão mistura questões de todas as ativadas, `module_id` fica
+  `'mixed'`.
+- `mix_operations=false` + 1 ativada → usa-a diretamente.
+- `mix_operations=false` + >1 ativadas → o cliente escolhe uma ao calhas (`Math.random()`, sem
+  perguntar à criança) e manda-a como `module_id` — a Edge Function persiste a escolha no
+  payload da sessão, por isso fica estável ao reabrir o mesmo dia.
+
+O algoritmo de seleção do §7 **não mudou** — corre uma vez por operação ativa (mastery/tiers
+não fazem sentido misturados entre operações) e os resultados são combinados + reembaralhados
+(seed = `session_id`) na ordem final antes de persistir em `questions_payload`.
+
+### 13.2 Reteste persistente cross-challenge (migration 017, 2026-07-18/19)
+
+Substitui o antigo `retestQueue` client-side (efémero, só durava até ao fim da sessão) por uma
+tabela persistente, **independente** de `child_fact_mastery`/`WEAK` — mastery mede domínio de
+longo prazo; reteste garante correção de erros específicos.
+
+```
+Erro num fato (em complete_challenge)
+  → child_fact_retest.a_retestar = true (upsert)
+  → par comutativo (mult/adição) também marcado, sem contar como tentativa direta
+  → retest_correct_streak reseta a 0
+
+Acerto num fato marcado (sessão/dia calendário distinto do último acerto contado)
+  → retest_correct_streak += 1
+  → streak >= retest_correct_threshold (app_config, default 5) → a_retestar = false,
+    cleared_at preenchido (linha nunca apagada, fica como histórico)
+
+start_challenge
+  → reserva round(question_count × retest_percentage) vagas (default 25%) para fatos
+    a_retestar=true, mais antigos primeiro (até 2× cada) — GARANTIA, não peso probabilístico
+    como os buckets do §7 — antes de rodar a seleção adaptativa normal para preencher o resto
+```
+
+**Ordem de resolução dentro de `complete_challenge`** (`_shared/retest.ts`): todos os `fact_id`
+atingidos por erro nesta sessão (diretos + pares comutativos propagados) são marcados
+`flagWrong` **antes** de qualquer `flagCorrect` ser aplicado — evita um resultado não-
+determinístico quando um par tem um lado certo e outro errado na mesma sessão.
+
+**Achado de QA não corrigido** (sessão 16, 2026-07-19): a injeção de reteste **ignora se o
+tier do facto está desbloqueado** para a criança (testado: facto tier 4 injetado numa criança
+só com tier 1+2 desbloqueados). Só é alcançável na prática via regressão de mastery (`WEAK`
+"re-tranca" um tier já desbloqueado), portanto raro — mas é um gap de design conhecido, nunca
+corrigido.
+
+Settings globais (`retest_correct_threshold`, `retest_percentage`) editáveis em runtime em
+`parent-area/developers.tsx` via Edge Function `update_app_config` (tabela `app_config`).

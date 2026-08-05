@@ -165,9 +165,13 @@ não mexer no projeto deles agora.
 3. **Conta Resend para alertas de ops** (opcional, mesma limitação que o LukaPsi tem hoje —
    sandbox mode, só chega ao email da conta) — não bloqueia a funcionalidade principal,
    só os alertas de queda de servidor. Não implementado nesta fase.
-4. **Testar por toque na UI** — acesso ao Simulator recusado nesta sessão; verificação só
-   estática (type-check, bundle, screenshot). Conceder acesso numa próxima sessão para validar
-   visualmente Notificações e Developer > Integração WhatsApp.
+4. **Testar por toque na UI** — ✅ parcialmente feito em 2026-08-05: login, dashboard e um
+   desafio completo testados por toque no Simulator (via `xcrun simctl` + `computer-use`, sem
+   integração nativa do Simulator — `xcode-select` do host ficou desconfigurado por outro
+   projeto e a conta local não tem sudo para corrigir). Confirmou que o bundle publicado
+   (Reanimated 4, motor multi-operação) corre sem crashes no Expo Go. **Ainda por fazer**:
+   toque especificamente nos ecrãs Notificações (`parent-area/notifications.tsx`) e
+   Developer > Integração WhatsApp (`developer-whatsapp.tsx`).
 
 ## Nota operacional — perda de ficheiros locais não commitados (2026-07-19)
 

@@ -2,6 +2,13 @@
 
 Each phase produces a working, testable vertical slice. Phases are ordered by dependency and risk.
 
+> ⚠️ **Atualizado em 2026-08-05.** Este documento descreve o plano original — a implementação
+> real avançou fora de ordem: Fases 3–7 já estão largamente feitas (gamificação, calendário,
+> social incluindo chat, settings), enquanto Fase 8 (offline) foi **deliberadamente abandonada**
+> (ver `architecture.md` §4.3) e Fase 9 (QA/launch) nunca começou. Cada fase abaixo tem agora uma
+> nota "**Estado real**" — o resto do texto (goals/deliverables) fica como referência do desenho
+> original, não reescrito linha a linha.
+
 ---
 
 ## Phase 0 — Foundation (Week 1–2)
@@ -104,6 +111,10 @@ Decisões de design em `docs/adaptive-multiplication-system.md`. Implementação
 
 ## Phase 3 — Gamification Core (Week 8–9)
 
+**Estado real: ✅ Feito**, com valores de XP diferentes do estimado aqui (2/resposta + 4
+conclusão + 10 perfeito, não 10/resposta — ver `architecture.md` §5.1) e níveis até 100 (não
+até 20). Troféu "Madrugador" continua sem condição de desbloqueio definida (OQ-11).
+
 **Goal**: XP, levels, streaks, trophies, achievements all update correctly after challenges.
 
 Backend (Edge Functions / DB triggers):
@@ -132,6 +143,9 @@ Testing:
 
 ## Phase 4 — Calendar (Week 10)
 
+**Estado real: ✅ Feito**, incluindo `is_retroactive` (migration 009, correção de um bug de
+estado que não estava previsto aqui).
+
 **Goal**: Calendar screen fully functional with all day states.
 
 Screens:
@@ -151,6 +165,13 @@ Testing:
 ---
 
 ## Phase 5 — Social (Week 11–12)
+
+**Estado real: ✅ Feito, e mais do que o planeado aqui.** Além de amigos/pedidos/ranking, existe
+**chat 1:1** entre amigos (`messages`, migration 003 — nunca previsto neste doc) e **bloqueio de
+amigos** (`friends/blocked.tsx` — mas guardado em `AsyncStorage`, não numa tabela Supabase; ver
+`application-flows.md` §5.3). Ranking usa Realtime para deteção de ultrapassagem (migration
+010) — o plano abaixo assumia só uma tabela `weekly_rankings` pré-computada, que **nunca foi
+criada** (fica como query on-demand, ver `architecture.md` §6).
 
 **Goal**: Friends system, friend requests, friend rankings.
 
@@ -176,6 +197,10 @@ Testing:
 
 ## Phase 6 — Dashboard & Home Polish (Week 13)
 
+**Estado real: ✅ Feito.** Nota: o título do cartão de desafio ("Multiplication Mountain") ficou
+como texto fixo no código, não reflete a operação real do desafio nem é traduzido — ver
+`application-flows.md` §2.
+
 **Goal**: Home dashboard fully assembled with all sections.
 
 Screens:
@@ -190,6 +215,12 @@ Polish:
 ---
 
 ## Phase 7 — Settings & Parent Controls (Week 14)
+
+**Estado real: ✅ Feito, e expandido.** Além do previsto: `question_count`,
+`enabled_operations`/`mix_operations`, `timer_auto` são todos configuráveis por criança; existe
+uma 2ª camada "Developer" (`developers.tsx`, password fixa `120380` hardcoded no cliente) com
+ferramentas internas (settings do reteste em runtime) e a integração WhatsApp
+(`developer-whatsapp.tsx`) que não existiam neste plano.
 
 **Goal**: Settings screen and parent area fully functional.
 
@@ -210,6 +241,13 @@ Testing:
 
 ## Phase 8 — Offline Support & Sync (Week 15)
 
+**Estado real: ❌ Deliberadamente abandonada, não "pendente".** A geração de questões é
+server-side e adaptativa (depende de mastery, que só existe no servidor) desde a Phase 2.5 —
+não é possível gerar localmente para sincronizar depois, como este plano assumia. Decisão:
+challenges são **online-only**; sem SQLite, sem fila de sync. Ver `architecture.md` §4.3 e
+`docs/adaptive-multiplication-system.md` §3. Não reconsiderar sem mudar a arquitetura do motor
+adaptativo primeiro.
+
 **Goal**: App works without internet; data syncs when reconnected.
 
 Implementation:
@@ -227,6 +265,11 @@ Testing:
 ---
 
 ## Phase 9 — QA, Performance & Launch Prep (Week 16–17)
+
+**Estado real: ❌ Não iniciada.** Nenhum item desta lista foi feito. Nenhum build nativo iOS
+foi bem-sucedido até hoje (3 tentativas erradas, 2026-06-12); a distribuição atual é via Expo Go
++ EAS Update OTA, não builds instalados (ver `CLAUDE.md`). QA feito até agora foi manual, por
+sessão (ver handoffs), não automatizado.
 
 - E2E tests (Detox): registration → challenge → level up flow
 - Performance: FlatList virtualization for calendar, friends list

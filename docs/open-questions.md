@@ -1,5 +1,9 @@
 # Math Hero Kids — Open Questions & Inconsistencies
 
+> Revisto em 2026-08-05 contra o código real — ver anotações "**Verificado 2026-08-05**" nos
+> itens ainda abertos. Vários já estavam de facto resolvidos pela implementação sem o documento
+> ter sido atualizado; isso está marcado explicitamente abaixo, distinto de "ainda em aberto".
+
 ---
 
 ## ✅ Resolved — Critical
@@ -58,26 +62,26 @@
 
 ---
 
-### OQ-07: Streak — Day Boundary and Timezone
+### OQ-07: Streak — Day Boundary and Timezone ✅ Resolvido (verificado 2026-08-05)
 
-**Questions**:
-- What timezone is used for streak day boundaries? Device local time or UTC?
-- If a family is traveling across timezones, can they "game" the streak?
-- If a child completes a challenge at 11:59 PM local time, does it count for that day?
-
-**Recommendation**: Use the device's local calendar date for day assignment, stored in UTC with the local date offset. Display in local time.
+**Decisão implementada**: `child_profiles.timezone` (default `'America/Sao_Paulo'`, migration
+007) guarda o timezone da criança; "sessão distinta"/dia calendário é sempre calculado nesse
+timezone (`toLocalDate()` em `_shared/retest.ts` e equivalente em `mastery.ts`), não em UTC nem
+no timezone do dispositivo no momento da chamada. Isto é DP-7 em
+`docs/adaptive-multiplication-system.md`. Viajar de timezone não altera o cálculo — o timezone
+é uma propriedade fixa da criança, não inferida do dispositivo a cada request.
 
 ---
 
-### OQ-08: Challenge Generation — Randomness and Fairness
+### OQ-08: Challenge Generation — Randomness and Fairness ✅ Resolvido (verificado 2026-08-05)
 
-**Questions**:
-- Are multiplication pairs generated randomly within the configured range?
-- Is there a guarantee of no repeats within a session (20 questions)?
-- Is there seeding by date (same questions for everyone on a given day, like Wordle)?
-- Does the generator avoid "easy" questions clustering at the start?
-
-**Impact**: Question generator algorithm, `challenge_answers` schema (needs seed if date-based).
+**Decisão implementada** (Phase 2.5, `start_challenge`): geração **server-side adaptativa**, não
+aleatória num range fixo nem seeded por data global. Cada criança recebe questões selecionadas
+por buckets de mastery (WEAK/LEARNING/REVIEWING/NEW/MASTERED, pesos em `adaptive-rules.json`),
+sem repetição dentro da sessão, com cooldown cross-sessão (não repete um facto usado nos
+últimos K desafios). A ordem final é reembaralhada com seed = `session_id` (aleatoriedade real
+por sessão, não por dia/global) — evita agrupar as mais difíceis no fim. Ver
+`docs/adaptive-multiplication-system.md` §7.
 
 ---
 
@@ -93,15 +97,26 @@
 
 ---
 
-### OQ-11: "Madrugador" Trophy — Requirement Unknown
+### OQ-11: "Madrugador" Trophy — Requirement Unknown 🟡 Ainda em aberto (verificado 2026-08-05)
 
 **Observation**: The trophy room shows a "Madrugador" (early bird) trophy alongside the Troféu Diário. Its requirement is not documented in the PRD.
+
+**Verificado 2026-08-05**: continua sem condição de desbloqueio implementada no backend. O nome
+existe nas traduções (`src/locales/*.json`) e é mostrado na Sala de Troféus, mas não há lógica
+de "hora do dia" em `complete_challenge` nem em nenhum `requirement_type` conhecido — é, na
+prática, um troféu inalcançável hoje.
 
 **Decision needed**: Is it for completing challenges before a specific time (e.g., before 8 AM)? If so, this introduces time-of-day logic not present in the rest of the system.
 
 ---
 
-### OQ-12: Friend Suggestions Algorithm
+### OQ-12: Friend Suggestions Algorithm ✅ Resolvido (verificado 2026-08-05)
+
+**Implementado** (`social.service.ts`): amigos-dos-amigos como fonte primária (via
+`friendships`, excluindo já-amigos e o próprio), limitado a 10. **Sem nenhum amigo ainda**, cai
+para sugestão por **nível próximo** (±2 níveis do nível atual da criança), também limitado a
+10 — fallback diferente do que esta secção previa ("recently active"), mas resolve o mesmo
+problema (lista vazia para quem acabou de se registar).
 
 The "Add Friend" screen shows "Sugestões para você" with suggested friends. The algorithm is undefined.
 
@@ -124,40 +139,100 @@ The "Add Friend" screen shows "Sugestões para você" with suggested friends. Th
 
 ## 🟢 Minor — Can Defer to Implementation
 
-### OQ-14: Guest Mode — Definition and Scope
+### OQ-14: Guest Mode — Definition and Scope 🟢 Ainda em aberto (verificado 2026-08-05)
 
 **PRD §9**: Guest Mode allows local-only progress, no cloud sync, no social.
+
+**Verificado 2026-08-05**: nenhum vestígio no código (`grep -r "guest"` não encontra nada em
+`src/`/`app/`). Ou foi abandonado como conceito, ou continua genuinamente por fazer — decisão de
+produto pendente, não uma questão técnica.
 
 No guest mode designs exist. Is it:
 - A "try before you register" flow?
 - A parent-less operation mode?
 - Still required for MVP?
 
-### OQ-15: Push Notifications — Content and Schedule
+### OQ-15: Push Notifications — Content and Schedule ✅ Resolvido de forma diferente (verificado 2026-08-05)
 
-Notifications are mentioned in Parent Controls but not designed. What triggers a notification? Daily reminder at what time? Who controls the time?
+**Push nativo (`expo-notifications`) nunca foi implementado.** Em vez disso, as notificações do
+produto são todas via **WhatsApp** (Evolution API self-hosted) — ver
+`docs/WHATSAPP_INTEGRATION_ROADMAP.md`. 4 tipos configuráveis pelo pai (`daily_reminder`,
+`unfinished_warning`, `completed_notice`, `weekly_summary`) + 2 pela própria criança
+(`daily_reminder`, `unfinished_warning`), horários configuráveis por hora cheia (cron corre
+1×/hora). Responde à pergunta original de forma completamente diferente do que se esperava.
 
-### OQ-16: "Perfect Block" XP Source
+### OQ-16: "Perfect Block" XP Source ✅ Resolvido (verificado 2026-08-05)
 
 **PRD §19**: "Perfect Blocks" are an XP source. But the designs only show milestone XP at Q5/Q10/Q15/Q20. Are these the same thing? Is a "perfect block" 5/5 correct with bonus XP on top of the milestone XP?
+
+**Verificado 2026-08-05**: não existe XP por bloco perfeito nem por milestone (Q5/Q10/Q15)
+separado — `src/constants/config.ts` `CHALLENGE` só define 3 fontes: `XP_PER_CORRECT_ANSWER`
+(+2), `XP_COMPLETION_BONUS` (+4, uma vez por sessão), `XP_PERFECT_BONUS` (+10, uma vez, se
+100%). Blocos de 5 continuam a existir como agrupamento visual/milestone de UI, mas sem XP
+próprio — a ideia de "Perfect Blocks" como fonte de XP distinta do PRD original não foi
+implementada assim.
 
 ### OQ-17: Avatar — Fixed Set or Expandable
 
 The designs show exactly 6 avatar options. The PRD mentions custom avatars as a future monetization feature. The current schema stores `avatar_id TEXT`. This is fine — ensure the avatar catalog is data-driven (not hardcoded), even if it only has 6 entries in MVP.
 
-### OQ-18: Ranking Scope — Friends-only or Global?
+**Verificado 2026-08-05**: continua com exatamente 6 (`AVATAR_IDS` em `config.ts`: sofia, lucas,
+luna, mia, pedro, theo) — mas é uma constante hardcoded no cliente, não um catálogo em tabela
+Supabase. "Data-driven" no sentido pretendido pelo doc original não foi implementado.
+
+### OQ-18: Ranking Scope — Friends-only or Global? ✅ Resolvido (verificado 2026-08-05)
 
 **PRD §24**: Rankings display position, avatar, XP, streak. The designs show a "Friends Ranking" screen. Is there also a global ranking (all users)? The dashboard preview shows friends ranking only. Global ranking is not in the designs but may be implied by the PRD.
 
-### OQ-19: Weekly Challenge Completion XP
+**Verificado 2026-08-05**: só ranking de amigos, confirmado. Sem nenhum ranking global —
+`friends/ranking.tsx` é a única tela de ranking, sempre filtrada a `friendships` do próprio
+filho. Não há plano documentado para adicionar um global.
+
+### OQ-19: Weekly Challenge Completion XP ✅ Confirmado como NÃO implementado (verificado 2026-08-05)
 
 **PRD §19**: "Weekly Completion" is an XP source. No design shows this being awarded. What constitutes a complete week (7/7 days)? When is it awarded (end of Sunday)? How much XP?
 
-### OQ-20: Multiplication Configuration — Both Operands Configurable?
+**Verificado 2026-08-05**: `get_challenge_counts_for_gamification()` (migration 008) calcula
+`week_count`/`month_count` para **progresso de troféus** (`challenges_in_week`,
+`challenges_in_month` como `requirement_type`), não para XP. Não existe nenhuma fonte de XP
+"semana completa" em `child_xp_ledger.source` (só `correct_answer`, `challenge_completion`,
+`achievement`, `trophy`). Confirmado: nunca foi implementado como XP, só como condição de
+troféu/achievement.
+
+### OQ-20: Multiplication Configuration — Both Operands Configurable? ⚠️ Resolvido, mas revela um bug (verificado 2026-08-05)
 
 **PRD §14**: Ranges are described as "1–10", "1–12", etc. Does this mean both operands range from 1 to N, or is one operand fixed (e.g., "tabuada do 7")?
 
 The settings screen shows "Multiplicar até: 10" (multiply up to 10), implying both operands are in [1, N]. Confirm this is correct.
+
+**Verificado 2026-08-05 — achado, não só resposta**: sim, ambos os operandos estariam em
+`[1, N]` — mas isto ficou **morto** desde a Phase 2.5. `arithmetic_facts` (o catálogo real
+usado pelo motor adaptativo) está fixo em `1..10` para todas as operações (`operand_a`/
+`operand_b smallint`, seed só gera `1..10`). `start_challenge` **hardcodes**
+`multiplication_max: 10` no payload de resposta (linha 317), independentemente do valor
+guardado em `child_profiles.multiplication_max` (que ainda aceita 10/12/15/20 via CHECK e
+continua editável na UI de settings). Ou seja: **o seletor "Multiplicar até: 12/15/20" na app
+não tem efeito nenhum** desde que o motor passou a ser adaptativo — parece configurável mas não
+é. Nunca corrigido nem removido da UI.
+
+---
+
+### OQ-21: Bloqueio de amigos vive em AsyncStorage, não em Supabase 🟡 Achado novo (2026-08-05)
+
+`friends/blocked.tsx` tem uma lista de bloqueados totalmente funcional na UI, mas persistida
+localmente (`AsyncStorage`), com uma migração para tabela `blocked_users` já prevista em
+comentário no próprio ficheiro mas nunca feita. Consequência real: bloqueios não sincronizam
+entre dispositivos da mesma família, e `send_friend_request` (Edge Function) não sabe de
+bloqueios — nada impede um pedido de amizade de alguém bloqueado localmente chegar à criança
+noutro aparelho.
+
+### OQ-22: `multiplication_max` é um seletor morto desde a Phase 2.5 🟡 Achado novo (2026-08-05)
+
+Ver OQ-20 acima — `start_challenge` hardcoda `multiplication_max: 10` na resposta,
+independentemente do que está guardado em `child_profiles.multiplication_max`. O seletor
+"Tabuada: 1–10 / 1–12 / 1–15 / 1–20" continua na UI de settings e continua a gravar na DB, mas
+não tem efeito nenhum na geração de questões — o catálogo `arithmetic_facts` está fixo em
+`1..10`. Ou remover o seletor da UI, ou expandir o catálogo para suportar os outros ranges.
 
 ---
 
@@ -171,17 +246,19 @@ The settings screen shows "Multiplicar até: 10" (multiply up to 10), implying b
 | OQ-04 | ✅ Resolved | Timer: discrete pills 10/15/20/30/∞; PRD updated | — |
 | OQ-05 | ✅ Resolved | Custom range deferred to Phase 2 | — |
 | OQ-06 | ✅ Resolved | Block retry: current block only; XP once per question; no gate | — |
-| OQ-07 | 🟡 Important | Streak timezone handling | Engineering |
-| OQ-08 | 🟡 Important | Question generation algorithm | Engineering/Product |
+| OQ-07 | ✅ Resolved | Streak timezone: `child_profiles.timezone`, DP-7 | — |
+| OQ-08 | ✅ Resolved | Question generation: server-side adaptativo (Phase 2.5) | — |
 | OQ-09 | ✅ Resolved | Achievements: avatar tap → Profile Menu bottom sheet | — |
 | OQ-10 | ✅ Resolved | Level Progression: avatar tap → Profile Menu; XP bar tap | — |
-| OQ-11 | 🟡 Important | Madrugador trophy requirement | Product |
-| OQ-12 | 🟡 Important | Friend suggestion algorithm | Engineering |
+| OQ-11 | 🟡 Important | Madrugador trophy — ainda sem condição implementada | Product |
+| OQ-12 | ✅ Resolved | Friend suggestions: amigos-de-amigos + fallback por nível | — |
 | OQ-13 | ✅ Resolved | Search: global + exact match; social_enabled toggle; no parental approval/MVP | — |
-| OQ-14 | 🟢 Minor | Guest mode scope | Product |
-| OQ-15 | 🟢 Minor | Push notification schedule | Product |
-| OQ-16 | 🟢 Minor | Perfect block XP definition | Product |
-| OQ-17 | 🟢 Minor | Avatar catalog extensibility | Engineering |
-| OQ-18 | 🟢 Minor | Global vs. friends-only ranking | Product |
-| OQ-19 | 🟢 Minor | Weekly completion XP amount | Product |
-| OQ-20 | 🟢 Minor | Multiplication operand ranges | Product |
+| OQ-14 | 🟢 Minor | Guest mode — sem nenhum vestígio no código | Product |
+| OQ-15 | ✅ Resolved (diferente) | Notificações são via WhatsApp, não push nativo | — |
+| OQ-16 | ✅ Resolved | Sem XP de "perfect block"; só 3 fontes de XP (2/4/10) | — |
+| OQ-17 | ✅ Resolved | 6 avatares hardcoded no cliente (não data-driven) | — |
+| OQ-18 | ✅ Resolved | Só ranking de amigos, sem global | — |
+| OQ-19 | ✅ Confirmed not implemented | Sem XP de "semana completa"; só conta p/ troféus | — |
+| OQ-20 | ⚠️ Bug achado | `multiplication_max` é um seletor morto — ver OQ-22 | Engineering |
+| OQ-21 | 🟡 Achado novo | Bloqueio de amigos em AsyncStorage, não sincroniza | Engineering |
+| OQ-22 | 🟡 Achado novo | `multiplication_max` sem efeito desde Phase 2.5 | Engineering |
