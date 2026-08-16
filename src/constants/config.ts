@@ -111,6 +111,26 @@ export function getLevelXpCeil(level: number): number {
   return LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]?.xpRequired ?? 0;
 }
 
+// ─── Tabuada Semanal Premiada ───────────────────────────────────────────────
+// Módulo independente do desafio diário adaptativo: 100 questões por dia — SEMPRE a
+// tabuada completa 1-10 × 1-10 (as 100 combinações, cada uma exactamente uma vez, sem
+// repetição — independente do multiplication_max configurável do desafio normal),
+// repartidas em 5 blocos fixos de 20, cada um exigindo >=70% de acerto para passar. Sem
+// XP — a recompensa é a "medalha" ao completar 7 dias seguidos (segunda a domingo), sinal
+// para o pai depositar a mesada. Estes valores são só de exibição — a fonte autoritativa é
+// a Edge Function submit_tabuada_block (backend/functions/submit_tabuada_block/index.ts).
+export const WEEKLY_TABUADA = {
+  QUESTIONS_PER_DAY: 100,
+  BLOCKS_PER_DAY: 5,
+  QUESTIONS_PER_BLOCK: 20,
+  TIME_PER_QUESTION_SECONDS: 10,
+  PASS_THRESHOLD: 0.7,
+  DAYS_TO_COMPLETE_WEEK: 7,
+} as const;
+
+/** Segunda-feira (0) a domingo (6) — mesma convenção usada nos rótulos do calendário. */
+export const WEEK_DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+
 export const MODULE_ID = {
   MULTIPLICATION: 'multiplication',
   DIVISION: 'division',

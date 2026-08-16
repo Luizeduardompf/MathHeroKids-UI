@@ -759,7 +759,10 @@
       "dailyReminderLabel": "Lembrete para fazer o desafio",
       "dailyReminderHint": "Enviado se o desafio de hoje ainda não foi feito",
       "unfinishedLabel": "Aviso de desafio não feito",
-      "unfinishedHint": "Segundo aviso, mais tarde no dia"
+      "unfinishedHint": "Segundo aviso, mais tarde no dia",
+      "tabuadaReminderLabel": "Lembretes da Tabuada Semanal Premiada",
+      "tabuadaReminderHint": "Avisa a criança se ainda não fez a tabuada de hoje",
+      "tabuadaReminderPickHint": "Escolhe até 4 horários ({{count}}/4 escolhidos)"
     },
     "editProfile": "Editar perfil",
     "editProfileSub": "Dados do responsável",
@@ -829,6 +832,8 @@
         "fri": "Sex",
         "sat": "Sáb"
       },
+      "tabuadaMedalLabel": "Medalha da Tabuada Semanal Premiada",
+      "tabuadaMedalHint": "Avisa-te assim que o teu filho completar os 7 dias — sinal para depositares a mesada",
       "saveBtn": "Guardar",
       "saved": "✓ Guardado com sucesso!",
       "numberHint": "As notificações são enviadas para o teu número de WhatsApp, definido em Editar perfil."
@@ -877,6 +882,33 @@
     "genio": "Gênio da Matemática",
     "genio_supremo": "Gênio Supremo",
     "imortal": "Imortal da Matemática"
+  },
+  "tabuadaSemanal": {
+    "title": "Tabuada Semanal Premiada",
+    "homeCardTitle": "Tabuada Semanal Premiada",
+    "miloEncourage": "Faz os 5 blocos de hoje sem falhar nenhum dia — 7 dias seguidos ganham a medalha da semana!",
+    "miloDayDone": "Boa! Já fizeste a tabuada de hoje toda. Volta amanhã para continuares a sequência!",
+    "miloMedalEarned": "Uau, medalha desta semana conquistada! Pede ao teu pai ou mãe a tua mesada. 🏅",
+    "medalEarnedTitle": "Medalha da semana conquistada!",
+    "medalEarnedSubtitle": "7 dias seguidos completos — já podes pedir a mesada!",
+    "weekProgress": "{{days}}/{{total}} dias esta semana",
+    "weekDays": {
+      "mon": "Seg",
+      "tue": "Ter",
+      "wed": "Qua",
+      "thu": "Qui",
+      "fri": "Sex",
+      "sat": "Sáb",
+      "sun": "Dom"
+    },
+    "todayBlocks": "Blocos de hoje",
+    "blockLabel": "Bloco {{n}}",
+    "blockScore": "{{correct}}/{{total}}",
+    "playBlockCta": "Jogar bloco {{n}}",
+    "submitting": "A enviar respostas…",
+    "blockPassedTitle": "Bloco concluído!",
+    "blockFailedTitle": "Quase lá — tenta outra vez!",
+    "dayCompleteBanner": "Tabuada de hoje completa! 🎉"
   },
   "rewards": {
     "frame_star": {

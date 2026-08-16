@@ -34,6 +34,31 @@ function HourPicker({ value, onChange }: { value: number; onChange: (h: number) 
   );
 }
 
+function ToggleRow({
+  icon, label, hint, enabled, onToggle,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  hint: string;
+  enabled: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <Pressable style={[s.settingCard, s.settingHeader]} onPress={onToggle}>
+      <View style={s.settingIcon}>
+        <Ionicons name={icon} size={18} color={colors.primary} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text variant="label">{label}</Text>
+        <Text variant="caption" color={colors.text.secondary}>{hint}</Text>
+      </View>
+      <View style={[s.toggle, enabled && s.toggleOn]}>
+        <View style={[s.toggleThumb, enabled && s.toggleThumbOn]} />
+      </View>
+    </Pressable>
+  );
+}
+
 function ToggleTimeRow({
   icon, label, hint, enabled, onToggle, hour, onHourChange,
 }: {
@@ -86,6 +111,7 @@ export default function NotificationsScreen() {
   const [weeklyEnabled, setWeeklyEnabled] = useState(false);
   const [weeklyHour, setWeeklyHour] = useState(19);
   const [weeklyWeekday, setWeeklyWeekday] = useState(0);
+  const [tabuadaMedalNoticeEnabled, setTabuadaMedalNoticeEnabled] = useState(true);
 
   useEffect(() => {
     if (!prefs) return;
@@ -99,6 +125,7 @@ export default function NotificationsScreen() {
     setWeeklyEnabled(prefs.weekly_summary_enabled);
     setWeeklyHour(timeStringToHour(prefs.weekly_summary_time, 19));
     setWeeklyWeekday(prefs.weekly_summary_weekday);
+    setTabuadaMedalNoticeEnabled(prefs.tabuada_medal_notice_enabled);
   }, [prefs]);
 
   const mutation = useMutation({
@@ -113,6 +140,7 @@ export default function NotificationsScreen() {
       weekly_summary_enabled: weeklyEnabled,
       weekly_summary_time: hourToTimeString(weeklyHour),
       weekly_summary_weekday: weeklyWeekday,
+      tabuada_medal_notice_enabled: tabuadaMedalNoticeEnabled,
     }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['notification-preferences', parentId] });
@@ -223,6 +251,14 @@ export default function NotificationsScreen() {
                 </>
               ) : null}
             </View>
+
+            <ToggleRow
+              icon="medal-outline"
+              label={t('parentArea.notifications.tabuadaMedalLabel')}
+              hint={t('parentArea.notifications.tabuadaMedalHint')}
+              enabled={tabuadaMedalNoticeEnabled}
+              onToggle={() => setTabuadaMedalNoticeEnabled((v) => !v)}
+            />
           </View>
 
           {mutation.isError ? (

@@ -14,8 +14,9 @@ import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import { childService } from '@/services/child.service';
 import { challengeService } from '@/services/challenge.service';
+import { tabuadaSemanalService } from '@/services/tabuada-semanal.service';
 import { supabase } from '@/lib/supabase';
-import { CHALLENGE, getLevelXpFloor, getLevelXpCeil, resolveQuestionCount } from '@/constants/config';
+import { CHALLENGE, WEEKLY_TABUADA, getLevelXpFloor, getLevelXpCeil, resolveQuestionCount } from '@/constants/config';
 import { APP_VERSION } from '@/constants/version';
 import { colors, fontFamily, radius, space } from '@/theme';
 import type { ChildProfile } from '@/types';
@@ -41,6 +42,14 @@ function isoWeekKey(dateStr: string): string {
 
 function monthKey(dateStr: string): string {
   return dateStr.slice(0, 7); // YYYY-MM
+}
+
+function mondayOfWeek(isoDate: string): string {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  const day = d.getUTCDay();
+  const diffToMonday = (day + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - diffToMonday);
+  return d.toISOString().slice(0, 10);
 }
 
 async function fetchStats(childId: string): Promise<ChildStats> {
@@ -133,12 +142,20 @@ export default function HomeScreen() {
     staleTime: 60_000,
   });
 
+  const todayDate  = new Date().toISOString().split('T')[0]!;
+  const weekStart  = mondayOfWeek(todayDate);
+  const { data: tabuadaWeek } = useQuery({
+    queryKey: ['tabuada-week-status', child?.id, weekStart],
+    queryFn:  () => tabuadaSemanalService.getWeekStatus(child!.id, weekStart),
+    enabled:  !!child?.id,
+    staleTime: 60_000,
+  });
+
   if (!child) return null;
 
   const xpFloor    = getLevelXpFloor(child.level);
   const xpCeil     = getLevelXpCeil(child.level);
   const xpProgress = xpCeil > xpFloor ? (child.xp_total - xpFloor) / (xpCeil - xpFloor) : 1;
-  const todayDate  = new Date().toISOString().split('T')[0]!;
 
   function handleSelectChild(c: ChildProfile) {
     if (c.id === child!.id) return; // already active — don't re-set
@@ -396,6 +413,39 @@ export default function HomeScreen() {
             />
           )}
         </LinearGradient>
+
+        {/* Section 3b — Tabuada Semanal Premiada */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => router.push('/(app)/tabuada-semanal')}
+        >
+          <LinearGradient
+            colors={[colors.trophy.gold, '#B8860B']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.tabuadaCard}
+          >
+            <View style={styles.tabuadaIconWrap}>
+              <Ionicons name="medal" size={26} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="h3" color={colors.text.inverse}>{t('tabuadaSemanal.homeCardTitle')}</Text>
+              <Text variant="caption" color="rgba(255,255,255,0.85)">
+                {t('tabuadaSemanal.weekProgress', {
+                  days: tabuadaWeek?.days_completed ?? 0,
+                  total: WEEKLY_TABUADA.DAYS_TO_COMPLETE_WEEK,
+                })}
+              </Text>
+              <ProgressBar
+                value={(tabuadaWeek?.days_completed ?? 0) / WEEKLY_TABUADA.DAYS_TO_COMPLETE_WEEK}
+                color="#fff"
+                trackColor="rgba(255,255,255,0.3)"
+                style={{ marginTop: space.xs }}
+              />
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.85)" />
+          </LinearGradient>
+        </TouchableOpacity>
 
         {/* Section 4 — Recent Trophies (Phase 3 will populate) */}
         <View style={styles.sectionHeader}>
@@ -695,6 +745,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
   } as import('react-native').TextStyle,
   challengeTitle: { marginTop: 2 },
+
+  // ── Tabuada Semanal Premiada ──────────────────────────────────────────────────
+  tabuadaCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    borderRadius: radius['2xl'],
+    padding: space.md,
+    ...({
+      shadowColor: '#7A5A00',
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 6,
+    } as object),
+  },
+  tabuadaIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   // ── Trophies ────────────────────────────────────────────────────────────────
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

@@ -159,6 +159,33 @@
     "logoutMessage": "Vous devrez vous reconnecter.",
     "logoutConfirm": "Quitter"
   },
+  "tabuadaSemanal": {
+    "title": "Défi Hebdo des Tables",
+    "homeCardTitle": "Défi Hebdo des Tables",
+    "miloEncourage": "Termine les 5 blocs d'aujourd'hui sans manquer un jour — 7 jours d'affilée gagnent la médaille de la semaine !",
+    "miloDayDone": "Bien joué ! Tu as fini toutes les tables d'aujourd'hui. Reviens demain pour continuer la série !",
+    "miloMedalEarned": "Waouh, médaille de la semaine gagnée ! Demande ton argent de poche à tes parents. 🏅",
+    "medalEarnedTitle": "Médaille de la semaine gagnée !",
+    "medalEarnedSubtitle": "7 jours d'affilée complétés — tu peux demander l'argent de poche !",
+    "weekProgress": "{{days}}/{{total}} jours cette semaine",
+    "weekDays": {
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mer",
+      "thu": "Jeu",
+      "fri": "Ven",
+      "sat": "Sam",
+      "sun": "Dim"
+    },
+    "todayBlocks": "Blocs d'aujourd'hui",
+    "blockLabel": "Bloc {{n}}",
+    "blockScore": "{{correct}}/{{total}}",
+    "playBlockCta": "Jouer le bloc {{n}}",
+    "submitting": "Envoi des réponses…",
+    "blockPassedTitle": "Bloc terminé !",
+    "blockFailedTitle": "Presque — réessaie !",
+    "dayCompleteBanner": "Tables du jour complètes ! 🎉"
+  },
   "rewards": {
     "frame_star": {
       "name": "Cadre Étoile"
@@ -497,7 +524,10 @@
       "dailyReminderLabel": "Rappel pour faire le défi",
       "dailyReminderHint": "Envoyé si le défi du jour n'a pas encore été fait",
       "unfinishedLabel": "Avertissement de défi non fait",
-      "unfinishedHint": "Second rappel, plus tard dans la journée"
+      "unfinishedHint": "Second rappel, plus tard dans la journée",
+      "tabuadaReminderLabel": "Rappels du Défi Hebdo des Tables",
+      "tabuadaReminderHint": "Alerte l'enfant si les tables du jour ne sont pas encore faites",
+      "tabuadaReminderPickHint": "Choisis jusqu'à 4 horaires ({{count}}/4 choisis)"
     },
     "controls": {
       "title": "Contrôle parental"
@@ -584,6 +614,8 @@
         "fri": "Ven",
         "sat": "Sam"
       },
+      "tabuadaMedalLabel": "Médaille du Défi Hebdo des Tables",
+      "tabuadaMedalHint": "T'alerte dès que ton enfant complète les 7 jours — c'est le moment de verser l'argent de poche",
       "saveBtn": "Enregistrer",
       "saved": "✓ Enregistré avec succès !",
       "numberHint": "Les notifications sont envoyées à ton numéro WhatsApp, défini dans Modifier le profil."

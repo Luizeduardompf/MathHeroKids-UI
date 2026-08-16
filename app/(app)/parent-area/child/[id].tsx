@@ -124,6 +124,8 @@ function ChildNotificationsSection({ childId }: { childId: string }) {
   const [dailyReminderHour, setDailyReminderHour] = useState(16);
   const [unfinishedEnabled, setUnfinishedEnabled] = useState(false);
   const [unfinishedHour, setUnfinishedHour] = useState(19);
+  const [tabuadaReminderEnabled, setTabuadaReminderEnabled] = useState(false);
+  const [tabuadaReminderHours, setTabuadaReminderHours] = useState<number[]>([]);
 
   useEffect(() => {
     if (!settings) return;
@@ -132,7 +134,17 @@ function ChildNotificationsSection({ childId }: { childId: string }) {
     setDailyReminderHour(timeStringToHour(settings.daily_reminder_time, 16));
     setUnfinishedEnabled(settings.unfinished_warning_enabled);
     setUnfinishedHour(timeStringToHour(settings.unfinished_warning_time, 19));
+    setTabuadaReminderEnabled(settings.tabuada_reminder_enabled);
+    setTabuadaReminderHours(settings.tabuada_reminder_hours ?? []);
   }, [settings]);
+
+  function toggleTabuadaHour(h: number) {
+    setTabuadaReminderHours((prev) => {
+      if (prev.includes(h)) return prev.filter((x) => x !== h);
+      if (prev.length >= 4) return prev; // máx. 4 lembretes/dia (limite da coluna na BD)
+      return [...prev, h].sort((a, b) => a - b);
+    });
+  }
 
   const mutation = useMutation({
     mutationFn: () => notificationSettingsService.updateChildSettings(childId, {
@@ -141,6 +153,8 @@ function ChildNotificationsSection({ childId }: { childId: string }) {
       daily_reminder_time: hourToTimeString(dailyReminderHour),
       unfinished_warning_enabled: unfinishedEnabled,
       unfinished_warning_time: hourToTimeString(unfinishedHour),
+      tabuada_reminder_enabled: tabuadaReminderEnabled,
+      tabuada_reminder_hours: tabuadaReminderHours,
     }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['child-notification-settings', childId] }),
   });
@@ -200,6 +214,33 @@ function ChildNotificationsSection({ childId }: { childId: string }) {
                 </Pressable>
               ))}
             </View>
+          ) : null}
+
+          <Pressable style={styles.autoTimerRow} onPress={() => setTabuadaReminderEnabled((v) => !v)}>
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.child.tabuadaReminderLabel')}</Text>
+              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.tabuadaReminderHint')}</Text>
+            </View>
+            <View style={[styles.toggle, tabuadaReminderEnabled && styles.toggleOn]}>
+              <View style={[styles.toggleThumb, tabuadaReminderEnabled && styles.toggleThumbOn]} />
+            </View>
+          </Pressable>
+          {tabuadaReminderEnabled ? (
+            <>
+              <Text variant="caption" color={colors.text.tertiary}>
+                {t('parentArea.child.tabuadaReminderPickHint', { count: tabuadaReminderHours.length })}
+              </Text>
+              <View style={styles.optionRow}>
+                {NOTIFICATION_HOURS.map((h) => {
+                  const selected = tabuadaReminderHours.includes(h);
+                  return (
+                    <Pressable key={h} style={[styles.optionBtn, selected && styles.optionBtnActive]} onPress={() => toggleTabuadaHour(h)}>
+                      <RNText style={[styles.optionText, selected && styles.optionTextActive]}>{String(h).padStart(2, '0')}h</RNText>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
           ) : null}
         </>
       ) : null}

@@ -212,6 +212,8 @@ export interface NotificationPreferences {
   weekly_summary_enabled: boolean;
   weekly_summary_weekday: number; // 0 = domingo ... 6 = sábado
   weekly_summary_time: string;
+  // Aviso único (sem horário) quando o filho completa a Tabuada Semanal Premiada — migration 020
+  tabuada_medal_notice_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -223,8 +225,73 @@ export interface ChildNotificationSettings {
   daily_reminder_time: string;
   unfinished_warning_enabled: boolean;
   unfinished_warning_time: string;
+  // Lembretes da Tabuada Semanal Premiada — até 4 horas (0-23), migration 020
+  tabuada_reminder_enabled: boolean;
+  tabuada_reminder_hours: number[];
   created_at: string;
   updated_at: string;
+}
+
+// ─── Tabuada Semanal Premiada (migration 020) ──────────────────────────────────
+// Módulo independente do desafio diário — ver comentário em src/constants/config.ts
+// (WEEKLY_TABUADA) e no topo da migration para o racional completo.
+
+export interface TabuadaQuestion {
+  position: number; // 1..100
+  block_number: number; // 1..5
+  fact_id: string;
+  operand_a: number;
+  operand_b: number;
+}
+
+export type TabuadaBlockStatus = 'pending' | 'passed';
+
+export interface TabuadaBlockState {
+  block_number: number;
+  status: TabuadaBlockStatus;
+  attempts: number;
+  best_correct_count: number;
+  passed_at: string | null;
+}
+
+export interface WeeklyTabuadaDay {
+  id: string;
+  child_id: string;
+  day_date: string; // ISO date
+  questions_payload: TabuadaQuestion[];
+  blocks_state: TabuadaBlockState[];
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WeeklyTabuadaWeek {
+  id: string;
+  child_id: string;
+  week_start_date: string; // ISO date, sempre segunda-feira
+  days_completed: number;
+  medal_earned_at: string | null;
+  medal_notified_at: string | null;
+  updated_at: string;
+}
+
+export interface StartTabuadaDayResponse {
+  dayDate: string;
+  status: 'new' | 'resumed' | 'completed';
+  questions: TabuadaQuestion[];
+  blocksState: TabuadaBlockState[];
+}
+
+export interface SubmitTabuadaBlockResponse {
+  dayCompleted: boolean;
+  blockPassed: boolean;
+  correctCount: number;
+  blocksState: TabuadaBlockState[];
+  weekStatus: {
+    weekStartDate: string;
+    daysCompleted: number;
+    medalEarned: boolean;
+  };
 }
 
 // ─── API Response shapes ───────────────────────────────────────────────────────

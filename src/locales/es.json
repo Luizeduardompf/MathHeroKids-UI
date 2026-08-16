@@ -256,6 +256,33 @@
     "logoutMessage": "Deberás iniciar sesión nuevamente.",
     "logoutConfirm": "Salir"
   },
+  "tabuadaSemanal": {
+    "title": "Tabla Semanal Premiada",
+    "homeCardTitle": "Tabla Semanal Premiada",
+    "miloEncourage": "Completa los 5 bloques de hoy sin fallar ningún día — ¡7 días seguidos ganan la medalla de la semana!",
+    "miloDayDone": "¡Bien! Ya hiciste toda la tabla de hoy. ¡Vuelve mañana para seguir la racha!",
+    "miloMedalEarned": "¡Wow, medalla de esta semana conseguida! Pide la paga a tus padres. 🏅",
+    "medalEarnedTitle": "¡Medalla de la semana conseguida!",
+    "medalEarnedSubtitle": "7 días seguidos completos — ¡ya puedes pedir la paga!",
+    "weekProgress": "{{days}}/{{total}} días esta semana",
+    "weekDays": {
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mié",
+      "thu": "Jue",
+      "fri": "Vie",
+      "sat": "Sáb",
+      "sun": "Dom"
+    },
+    "todayBlocks": "Bloques de hoy",
+    "blockLabel": "Bloque {{n}}",
+    "blockScore": "{{correct}}/{{total}}",
+    "playBlockCta": "Jugar bloque {{n}}",
+    "submitting": "Enviando respuestas…",
+    "blockPassedTitle": "¡Bloque completado!",
+    "blockFailedTitle": "Casi lo tienes — ¡inténtalo de nuevo!",
+    "dayCompleteBanner": "¡Tabla de hoy completa! 🎉"
+  },
   "rewards": {
     "frame_star": {
       "name": "Marco Estrella"
@@ -525,7 +552,10 @@
       "dailyReminderLabel": "Recordatorio para hacer el desafío",
       "dailyReminderHint": "Se envía si el desafío de hoy aún no se ha hecho",
       "unfinishedLabel": "Aviso de desafío sin hacer",
-      "unfinishedHint": "Segundo aviso, más tarde en el día"
+      "unfinishedHint": "Segundo aviso, más tarde en el día",
+      "tabuadaReminderLabel": "Recordatorios de la Tabla Semanal Premiada",
+      "tabuadaReminderHint": "Avisa al niño si aún no ha hecho la tabla de hoy",
+      "tabuadaReminderPickHint": "Elige hasta 4 horarios ({{count}}/4 elegidos)"
     },
     "controls": {
       "title": "Control parental"
@@ -612,6 +642,8 @@
         "fri": "Vie",
         "sat": "Sáb"
       },
+      "tabuadaMedalLabel": "Medalla de la Tabla Semanal Premiada",
+      "tabuadaMedalHint": "Te avisa en cuanto tu hijo complete los 7 días — es hora de darle la paga",
       "saveBtn": "Guardar",
       "saved": "✓ ¡Guardado con éxito!",
       "numberHint": "Las notificaciones se envían a tu número de WhatsApp, definido en Editar perfil."

@@ -236,6 +236,8 @@ export default function AppLayout() {
         <Stack.Screen name="achievements" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="progression" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="rewards" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="tabuada-semanal/index" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="tabuada-semanal/play/[block]" options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="friends/ranking" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="friends/add" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="friends/list" options={{ animation: 'slide_from_right' }} />

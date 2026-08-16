@@ -754,7 +754,10 @@
       "dailyReminderLabel": "Reminder to do the challenge",
       "dailyReminderHint": "Sent if today's challenge hasn't been done yet",
       "unfinishedLabel": "Unfinished challenge warning",
-      "unfinishedHint": "A second, later reminder for the same day"
+      "unfinishedHint": "A second, later reminder for the same day",
+      "tabuadaReminderLabel": "Weekly Rewarded Times-Table reminders",
+      "tabuadaReminderHint": "Alerts the child if today's times-table isn't done yet",
+      "tabuadaReminderPickHint": "Pick up to 4 times ({{count}}/4 picked)"
     },
     "editProfile": "Edit profile",
     "editProfileSub": "Parent's data",
@@ -824,6 +827,8 @@
         "fri": "Fri",
         "sat": "Sat"
       },
+      "tabuadaMedalLabel": "Weekly Rewarded Times-Table medal",
+      "tabuadaMedalHint": "Alerts you as soon as your child completes the 7 days — time to pay the allowance",
       "saveBtn": "Save",
       "saved": "✓ Saved successfully!",
       "numberHint": "Notifications are sent to your WhatsApp number, set in Edit profile."
@@ -872,6 +877,33 @@
     "genio": "Math Genius",
     "genio_supremo": "Supreme Genius",
     "imortal": "Math Immortal"
+  },
+  "tabuadaSemanal": {
+    "title": "Weekly Rewarded Times-Table",
+    "homeCardTitle": "Weekly Rewarded Times-Table",
+    "miloEncourage": "Finish today's 5 blocks without missing a day — 7 days in a row earn this week's medal!",
+    "miloDayDone": "Nice! You've finished today's whole times-table. Come back tomorrow to keep the streak going!",
+    "miloMedalEarned": "Whoa, this week's medal is yours! Ask your parent for your allowance. 🏅",
+    "medalEarnedTitle": "This week's medal earned!",
+    "medalEarnedSubtitle": "7 days in a row complete — you can ask for your allowance now!",
+    "weekProgress": "{{days}}/{{total}} days this week",
+    "weekDays": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "todayBlocks": "Today's blocks",
+    "blockLabel": "Block {{n}}",
+    "blockScore": "{{correct}}/{{total}}",
+    "playBlockCta": "Play block {{n}}",
+    "submitting": "Sending answers…",
+    "blockPassedTitle": "Block complete!",
+    "blockFailedTitle": "Almost there — try again!",
+    "dayCompleteBanner": "Today's times-table complete! 🎉"
   },
   "rewards": {
     "frame_star": {
