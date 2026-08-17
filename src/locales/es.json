@@ -288,7 +288,8 @@
     "dailyChallengePending": "Todavía no hecho hoy",
     "dailyChallengeCta": "Jugar",
     "miloAlmostDone": "¡Ya hiciste los 5 bloques de la tabla! Solo falta el reto diario de hoy para cerrar el día. 💪",
-    "almostDoneBanner": "¡Solo falta el reto diario de hoy!"
+    "almostDoneBanner": "¡Solo falta el reto diario de hoy!",
+    "blockLocked": "Bloqueado — termina el anterior primero"
   },
   "rewards": {
     "frame_star": {

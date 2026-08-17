@@ -915,7 +915,8 @@
     "dailyChallengePending": "Ainda não feito hoje",
     "dailyChallengeCta": "Jogar",
     "miloAlmostDone": "Já fizeste os 5 blocos da tabuada! Só falta o desafio diário de hoje para fechar o dia. 💪",
-    "almostDoneBanner": "Só falta o desafio diário de hoje!"
+    "almostDoneBanner": "Só falta o desafio diário de hoje!",
+    "blockLocked": "Bloqueado — termina o anterior primeiro"
   },
   "rewards": {
     "frame_star": {

@@ -1,8 +1,10 @@
 /**
  * Tabuada Semanal Premiada — visão geral da semana.
  *
- * Mostra a grelha de 7 dias (segunda a domingo), os 6 "blocos" de hoje (5 blocos da
- * tabuada + o desafio diário normal, que conta como o 6º) e a medalha se a semana já
+ * Mostra a grelha de 7 dias (segunda a domingo) e os 6 "blocos" de hoje — 5 blocos da
+ * tabuada + o desafio diário normal, que conta como o 6º — numa lista vertical, um por
+ * linha, com desbloqueio sequencial: só o próximo bloco por fazer fica jogável, os
+ * seguintes ficam "Bloqueado" até o anterior passar. Mostra a medalha se a semana já
  * estiver completa. Módulo independente do desafio diário quanto a XP/mastery — mas o dia
  * só fecha (e conta para os 7 dias da medalha) quando os 6 estiverem feitos, ver
  * backend/functions/_shared/tabuada.ts:tryCompleteDay.
@@ -60,33 +62,44 @@ async function fetchTodayCalendarState(childId: string, today: string): Promise<
 
 // ─── Cards ──────────────────────────────────────────────────────────────────────
 
-function TabuadaBlockCard({ block, onPress }: { block: TabuadaBlockState; onPress: () => void }) {
+function TabuadaBlockCard({ block, locked, onPress }: { block: TabuadaBlockState; locked: boolean; onPress: () => void }) {
   const { t } = useTranslation();
   const passed = block.status === 'passed';
 
   return (
     <TouchableOpacity
-      activeOpacity={0.85}
-      disabled={passed}
+      activeOpacity={passed || locked ? 1 : 0.85}
+      disabled={passed || locked}
       onPress={onPress}
-      style={styles.blockCard}
+      style={[styles.blockCard, locked && styles.blockCardLocked]}
     >
-      <Image
-        source={passed ? MILO_CELEBRATE : TABUADA_FRAME}
-        style={styles.blockCardArt}
-        resizeMode="cover"
-      />
+      <View style={styles.blockCardArtWrap}>
+        <Image
+          source={passed ? MILO_CELEBRATE : TABUADA_FRAME}
+          style={styles.blockCardArt}
+          resizeMode="cover"
+        />
+        {locked && (
+          <View style={styles.blockCardLockOverlay}>
+            <Ionicons name="lock-closed" size={30} color="#fff" />
+          </View>
+        )}
+      </View>
       <View style={styles.blockCardPanel}>
         <View style={styles.blockCardBadgeRow}>
-          <View style={[styles.blockCardBadge, passed && styles.blockCardBadgeSuccess]}>
-            <Ionicons name={passed ? 'checkmark' : 'star'} size={16} color="#fff" />
+          <View style={[styles.blockCardBadge, passed && styles.blockCardBadgeSuccess, locked && styles.blockCardBadgeLocked]}>
+            <Ionicons name={locked ? 'lock-closed' : passed ? 'checkmark' : 'star'} size={16} color="#fff" />
           </View>
-          <Text variant="label" numberOfLines={1} style={{ flex: 1 }}>
+          <Text variant="label" numberOfLines={1} color={locked ? colors.text.tertiary : undefined} style={{ flex: 1 }}>
             {t('tabuadaSemanal.blockLabel', { n: block.block_number })}
           </Text>
         </View>
 
-        {passed ? (
+        {locked ? (
+          <Text variant="bodySmall" color={colors.text.tertiary}>
+            {t('tabuadaSemanal.blockLocked')}
+          </Text>
+        ) : passed ? (
           <>
             <Text variant="bodySmall" color={colors.success} style={styles.blockCardCompleteText}>
               {t('tabuadaSemanal.blockCompleteBadge')}
@@ -124,28 +137,44 @@ function TabuadaBlockCard({ block, onPress }: { block: TabuadaBlockState; onPres
   );
 }
 
-function DailyChallengeBlockCard({ done, onPress }: { done: boolean; onPress: () => void }) {
+function DailyChallengeBlockCard({ done, locked, onPress }: { done: boolean; locked: boolean; onPress: () => void }) {
   const { t } = useTranslation();
   return (
-    <TouchableOpacity activeOpacity={0.85} disabled={done} onPress={onPress} style={styles.blockCard}>
-      <LinearGradient
-        colors={done ? [colors.success, '#166534'] : ['#16A34A', '#14532D']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.blockCardArt}
-      >
-        <Ionicons name={done ? 'checkmark-circle' : 'flash'} size={40} color="rgba(255,255,255,0.95)" />
-      </LinearGradient>
+    <TouchableOpacity
+      activeOpacity={done || locked ? 1 : 0.85}
+      disabled={done || locked}
+      onPress={onPress}
+      style={[styles.blockCard, locked && styles.blockCardLocked]}
+    >
+      <View style={styles.blockCardArtWrap}>
+        <LinearGradient
+          colors={done ? [colors.success, '#166534'] : ['#16A34A', '#14532D']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.blockCardArt}
+        >
+          <Ionicons name={done ? 'checkmark-circle' : 'flash'} size={40} color="rgba(255,255,255,0.95)" />
+        </LinearGradient>
+        {locked && (
+          <View style={styles.blockCardLockOverlay}>
+            <Ionicons name="lock-closed" size={30} color="#fff" />
+          </View>
+        )}
+      </View>
       <View style={styles.blockCardPanel}>
         <View style={styles.blockCardBadgeRow}>
-          <View style={[styles.blockCardBadge, { backgroundColor: '#16A34A' }]}>
-            <Ionicons name={done ? 'checkmark' : 'flash'} size={16} color="#fff" />
+          <View style={[styles.blockCardBadge, { backgroundColor: '#16A34A' }, locked && styles.blockCardBadgeLocked]}>
+            <Ionicons name={locked ? 'lock-closed' : done ? 'checkmark' : 'flash'} size={16} color="#fff" />
           </View>
-          <Text variant="label" numberOfLines={1} style={{ flex: 1 }}>
+          <Text variant="label" numberOfLines={1} color={locked ? colors.text.tertiary : undefined} style={{ flex: 1 }}>
             {t('tabuadaSemanal.dailyChallengeLabel')}
           </Text>
         </View>
-        {done ? (
+        {locked ? (
+          <Text variant="bodySmall" color={colors.text.tertiary}>
+            {t('tabuadaSemanal.blockLocked')}
+          </Text>
+        ) : done ? (
           <Text variant="bodySmall" color={colors.success} style={styles.blockCardCompleteText}>
             {t('tabuadaSemanal.dailyChallengeDone')}
           </Text>
@@ -168,6 +197,10 @@ function DailyChallengeBlockCard({ done, onPress }: { done: boolean; onPress: ()
 }
 
 // ─── Screen ─────────────────────────────────────────────────────────────────────
+
+type OrderedItem =
+  | { kind: 'tabuada'; block: TabuadaBlockState }
+  | { kind: 'daily'; done: boolean };
 
 export default function TabuadaSemanalScreen() {
   const { t } = useTranslation();
@@ -213,8 +246,20 @@ export default function TabuadaSemanalScreen() {
 
   const blocksState: TabuadaBlockState[] = dayData?.blocksState ?? [];
   const tabuadaBlocksPassed = blocksState.length > 0 && blocksState.every((b) => b.status === 'passed');
-  const nextPendingBlock = blocksState.find((b) => b.status === 'pending')?.block_number ?? null;
   const onlyDailyChallengeLeft = tabuadaBlocksPassed && !dailyChallengeDone;
+
+  // Desbloqueio sequencial: cada item só fica jogável quando o anterior está feito.
+  const orderedItems: OrderedItem[] = [
+    ...blocksState.map((block): OrderedItem => ({ kind: 'tabuada', block })),
+    { kind: 'daily', done: dailyChallengeDone },
+  ];
+  let unlockedSoFar = true;
+  const itemsWithLock = orderedItems.map((item) => {
+    const done = item.kind === 'tabuada' ? item.block.status === 'passed' : item.done;
+    const locked = !unlockedSoFar;
+    unlockedSoFar = unlockedSoFar && done;
+    return { item, locked };
+  });
 
   const miloMessage = medalEarned
     ? t('tabuadaSemanal.miloMedalEarned')
@@ -292,38 +337,34 @@ export default function TabuadaSemanalScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Blocos de hoje — 5 da tabuada + o desafio diário normal (o "6º bloco") */}
+      {/* Blocos de hoje — 5 da tabuada + o desafio diário normal (o "6º bloco"), um por linha */}
       <Text variant="h3">{t('tabuadaSemanal.todayBlocks')}</Text>
 
       {loadingDay ? (
         <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: space.lg }} />
       ) : (
-        <View style={styles.blockGrid}>
-          {blocksState.map((b) => (
-            <TabuadaBlockCard
-              key={b.block_number}
-              block={b}
-              onPress={() => router.push(`/(app)/tabuada-semanal/play/${b.block_number}`)}
-            />
-          ))}
-          <DailyChallengeBlockCard
-            done={dailyChallengeDone}
-            onPress={() => router.push(`/(app)/challenge/${today}`)}
-          />
+        <View style={styles.blockList}>
+          {itemsWithLock.map(({ item, locked }) => {
+            if (item.kind === 'tabuada') {
+              return (
+                <TabuadaBlockCard
+                  key={`block-${item.block.block_number}`}
+                  block={item.block}
+                  locked={locked}
+                  onPress={() => router.push(`/(app)/tabuada-semanal/play/${item.block.block_number}`)}
+                />
+              );
+            }
+            return (
+              <DailyChallengeBlockCard
+                key="daily-challenge"
+                done={item.done}
+                locked={locked}
+                onPress={() => router.push(`/(app)/challenge/${today}`)}
+              />
+            );
+          })}
         </View>
-      )}
-
-      {nextPendingBlock && (
-        <TouchableOpacity
-          style={styles.playCta}
-          activeOpacity={0.85}
-          onPress={() => router.push(`/(app)/tabuada-semanal/play/${nextPendingBlock}`)}
-        >
-          <Ionicons name="play" size={20} color={colors.text.inverse} />
-          <Text variant="button" color={colors.text.inverse}>
-            {t('tabuadaSemanal.playBlockCta', { n: nextPendingBlock })}
-          </Text>
-        </TouchableOpacity>
       )}
     </AuthScreen>
   );
@@ -362,24 +403,36 @@ const styles = StyleSheet.create({
     padding: space.md,
   },
 
-  // ── Cards dos blocos ─────────────────────────────────────────────────────────
-  blockGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  // ── Cards dos blocos — lista vertical, um por linha ───────────────────────────
+  blockList: { gap: space.sm },
   blockCard: {
-    width: '47%',
+    width: '100%',
+    flexDirection: 'row',
     backgroundColor: colors.background.card,
     borderRadius: radius.xl,
     overflow: 'hidden',
     ...shadows.sm,
   },
+  blockCardLocked: { opacity: 0.75 },
+  blockCardArtWrap: { width: 96, height: 96 },
   blockCardArt: {
     width: '100%',
-    height: 96,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  blockCardLockOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(26,31,54,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   blockCardPanel: {
+    flex: 1,
     padding: space.sm,
     gap: 4,
+    justifyContent: 'center',
   },
   blockCardBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   blockCardBadge: {
@@ -391,6 +444,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   blockCardBadgeSuccess: { backgroundColor: colors.success },
+  blockCardBadgeLocked: { backgroundColor: colors.text.tertiary },
   blockCardCompleteText: { fontFamily: fontFamily.bold } as import('react-native').TextStyle,
   blockCardScoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
   blockCardPlayBtn: {
@@ -407,15 +461,4 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#fff',
   } as import('react-native').TextStyle,
-
-  playCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.sm,
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    height: 56,
-    marginTop: space.sm,
-  },
 });

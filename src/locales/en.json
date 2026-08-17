@@ -910,7 +910,8 @@
     "dailyChallengePending": "Not done yet today",
     "dailyChallengeCta": "Play",
     "miloAlmostDone": "You've finished all 5 times-table blocks! Just today's daily challenge left to close out the day. 💪",
-    "almostDoneBanner": "Just today's daily challenge left!"
+    "almostDoneBanner": "Just today's daily challenge left!",
+    "blockLocked": "Locked — finish the previous one first"
   },
   "rewards": {
     "frame_star": {

@@ -191,7 +191,8 @@
     "dailyChallengePending": "Pas encore fait aujourd'hui",
     "dailyChallengeCta": "Jouer",
     "miloAlmostDone": "Tu as fini les 5 blocs des tables ! Il ne reste que le défi du jour pour boucler la journée. 💪",
-    "almostDoneBanner": "Il ne reste que le défi du jour !"
+    "almostDoneBanner": "Il ne reste que le défi du jour !",
+    "blockLocked": "Verrouillé — termine le précédent d'abord"
   },
   "rewards": {
     "frame_star": {
