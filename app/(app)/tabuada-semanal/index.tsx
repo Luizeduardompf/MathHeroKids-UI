@@ -277,9 +277,10 @@ export default function TabuadaSemanalScreen() {
   ];
   let unlockedSoFar = true;
   const itemsWithLock = orderedItems.map((item) => {
-    const done = item.kind === 'tabuada' ? item.block.status === 'passed' : item.done;
+    // O desafio diário é o módulo padrão do app — independente, nunca bloqueado por aqui.
+    if (item.kind === 'daily') return { item, locked: false };
     const locked = !unlockedSoFar;
-    unlockedSoFar = unlockedSoFar && done;
+    unlockedSoFar = unlockedSoFar && item.block.status === 'passed';
     return { item, locked };
   });
 
