@@ -939,7 +939,14 @@
     "dailyChallengeCta": "Play",
     "miloAlmostDone": "You've finished all 5 times-table blocks! Just today's daily challenge left to close out the day. 💪",
     "almostDoneBanner": "Just today's daily challenge left!",
-    "blockLocked": "Locked — finish the previous one first"
+    "blockLocked": "Locked — finish the previous one first",
+    "dayCompleteModal": {
+      "titleDay": "Day complete! 🎉",
+      "titleMedal": "This week's medal! 🏅",
+      "subtitleDay": "You finished all 5 blocks plus today's challenge!",
+      "subtitleMedal": "7 days in a row — this week's allowance is all yours!",
+      "parentNotified": "Dad's going to get a message that you finished today — he'll be so happy! 💌"
+    }
   },
   "rewards": {
     "frame_star": {

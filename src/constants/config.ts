@@ -156,6 +156,15 @@ export function capTabuadaCents(rawCents: number, weeklyRewardEuros: number): nu
   return Math.min(rawCents, eurosToCents(weeklyRewardEuros));
 }
 
+/** Soma em cêntimos o ganho dos blocos de um dia (já cap'ada ao valor total da semana). */
+export function sumTabuadaBlocksEarnedCents(
+  blocksState: Array<{ best_correct_count: number }>,
+  weeklyRewardEuros: number,
+): number {
+  const raw = blocksState.reduce((sum, b) => sum + tabuadaBlockEarnedCents(weeklyRewardEuros, b.best_correct_count), 0);
+  return capTabuadaCents(raw, weeklyRewardEuros);
+}
+
 /** Segunda-feira (0) a domingo (6) — mesma convenção usada nos rótulos do calendário. */
 export const WEEK_DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 

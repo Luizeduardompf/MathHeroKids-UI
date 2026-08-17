@@ -29,6 +29,7 @@ import { Easing } from 'react-native-reanimated'; // eslint-disable-line
 import { withDelay } from 'react-native-reanimated'; // eslint-disable-line
 import { Ionicons } from '@expo/vector-icons';
 import { useShallow } from 'zustand/react/shallow';
+import { useQuery } from '@tanstack/react-query';
 
 import { Text } from '@/components/ui';
 import { colors, fontFamily, radius, space, shadows } from '@/theme';
@@ -37,6 +38,7 @@ import { CompletedScreen } from '@/components/challenge/CompletedScreen';
 import { CelebrationTransition } from '@/components/challenge/CelebrationTransition';
 import { LevelUpModal } from '@/components/challenge/LevelUpModal';
 import { TrophyEarnedModal } from '@/components/challenge/TrophyEarnedModal';
+import { TabuadaDayCompleteModal } from '@/components/challenge/TabuadaDayCompleteModal';
 import type { Achievement, LevelReward, Trophy } from '@/types/database.types';
 import {
   TimeExpiredScreen,
@@ -44,6 +46,7 @@ import {
   BlockEndScreen,
 } from '@/components/challenge/StatusScreens';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
+import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import {
   useChallengeStore,
   selectCurrentQuestion,
@@ -53,6 +56,8 @@ import {
   selectUniqueCorrectCount,
 } from '@/stores/challenge.store';
 import { challengeService } from '@/services/challenge.service';
+import { notificationSettingsService } from '@/services/notification-settings.service';
+import { sumTabuadaBlocksEarnedCents } from '@/constants/config';
 import { useNetworkStatus } from '@/hooks/use-network-status';
 import {
   MODULE_ID, CHALLENGE, resolveTimerSeconds, computeAnswer,
@@ -720,6 +725,19 @@ export default function ChallengeScreen() {
   const [earnedItems, setEarnedItems] = useState<
     Array<{ type: 'trophy'; data: Trophy } | { type: 'achievement'; data: Achievement }>
   >([]);
+  // Tabuada Semanal Premiada — o desafio diário normal é o "6º bloco"; se terminá-lo agora
+  // fechou o dia da tabuada (ver complete_challenge → tabuada_day_just_completed), mostra
+  // esta celebração dedicada depois de trophies/achievements, antes de navegar. Módulo
+  // opcional e independente de XP — nunca bloqueia o fluxo normal se algo aqui falhar.
+  const [tabuadaCelebration, setTabuadaCelebration] = useState<{ earnedCents: number; medalEarned: boolean } | null>(null);
+  const parentId = useAuthStore(selectParentId);
+  const { data: notifPrefs } = useQuery({
+    queryKey: ['notification-preferences', parentId],
+    queryFn: () => notificationSettingsService.getParentPreferences(parentId!),
+    enabled: !!parentId,
+    staleTime: 60_000,
+  });
+  const tabuadaParentWillBeNotified = !!notifPrefs?.whatsapp_enabled && !!notifPrefs?.tabuada_day_completed_enabled;
   const pendingNavRef = useRef<(() => void) | null>(null);
   // Coordena o fim da animação do troféu (3s) com o fim da submissão real —
   // só esconde a tela de troféu quando AMBOS terminarem, para nunca voltar a
@@ -920,16 +938,31 @@ export default function ChallengeScreen() {
         router.replace('/(app)/(tabs)/');
       };
 
+      // Tabuada Semanal Premiada — se este desafio (o "6º bloco") fechou o dia da tabuada
+      // agora, mostra a celebração dedicada por último, antes de navegar.
+      const showTabuadaOrNavigate = () => {
+        if (result.tabuada_day_just_completed && result.tabuada_blocks_state) {
+          const weeklyReward = Number(child.tabuada_weekly_reward ?? 0);
+          setTabuadaCelebration({
+            earnedCents: sumTabuadaBlocksEarnedCents(result.tabuada_blocks_state, weeklyReward),
+            medalEarned: result.tabuada_week_status?.medalEarned ?? false,
+          });
+          pendingNavRef.current = navigate;
+        } else {
+          navigate();
+        }
+      };
+
       const items: Array<{ type: 'trophy'; data: Trophy } | { type: 'achievement'; data: Achievement }> = [
         ...(result.trophies_earned ?? []).map(t => ({ type: 'trophy' as const, data: t })),
         ...(result.achievements_earned ?? []).map(a => ({ type: 'achievement' as const, data: a })),
       ];
 
       if (result.level_up && result.new_level) {
-        // Level up → depois trophies/achievements → depois navega
+        // Level up → depois trophies/achievements → depois tabuada (se aplicável) → depois navega
         pendingNavRef.current = items.length > 0
-          ? () => { setEarnedItems(items); pendingNavRef.current = navigate; }
-          : navigate;
+          ? () => { setEarnedItems(items); pendingNavRef.current = showTabuadaOrNavigate; }
+          : showTabuadaOrNavigate;
         setLevelUpData({
           newLevel: result.new_level,
           xpEarned: result.session.xp_awarded,
@@ -937,10 +970,10 @@ export default function ChallengeScreen() {
         });
       } else if (items.length > 0) {
         // Sem level up mas há trophies/achievements
-        pendingNavRef.current = navigate;
+        pendingNavRef.current = showTabuadaOrNavigate;
         setEarnedItems(items);
       } else {
-        navigate();
+        showTabuadaOrNavigate();
       }
 
       submissionDoneRef.current = true;
@@ -1140,6 +1173,18 @@ export default function ChallengeScreen() {
         items={earnedItems}
         onDone={() => {
           setEarnedItems([]);
+          const next = pendingNavRef.current;
+          pendingNavRef.current = null;
+          next?.();
+        }}
+      />
+      <TabuadaDayCompleteModal
+        visible={tabuadaCelebration !== null}
+        earnedCents={tabuadaCelebration?.earnedCents ?? 0}
+        medalEarned={tabuadaCelebration?.medalEarned ?? false}
+        parentWillBeNotified={tabuadaParentWillBeNotified}
+        onContinue={() => {
+          setTabuadaCelebration(null);
           const next = pendingNavRef.current;
           pendingNavRef.current = null;
           next?.();

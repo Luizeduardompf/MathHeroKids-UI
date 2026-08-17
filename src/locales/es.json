@@ -295,7 +295,14 @@
     "dailyChallengeCta": "Jugar",
     "miloAlmostDone": "¡Ya hiciste los 5 bloques de la tabla! Solo falta el reto diario de hoy para cerrar el día. 💪",
     "almostDoneBanner": "¡Solo falta el reto diario de hoy!",
-    "blockLocked": "Bloqueado — termina el anterior primero"
+    "blockLocked": "Bloqueado — termina el anterior primero",
+    "dayCompleteModal": {
+      "titleDay": "¡Día completo! 🎉",
+      "titleMedal": "¡Medalla de la semana! 🏅",
+      "subtitleDay": "¡Hiciste los 5 bloques más el reto de hoy!",
+      "subtitleMedal": "7 días seguidos — ¡la paga de esta semana es toda tuya!",
+      "parentNotified": "Papá va a recibir un mensaje diciendo que completaste hoy — ¡se va a poner muy feliz! 💌"
+    }
   },
   "rewards": {
     "frame_star": {

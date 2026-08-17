@@ -295,6 +295,8 @@ export interface StartTabuadaDayResponse {
 
 export interface SubmitTabuadaBlockResponse {
   dayCompleted: boolean;
+  /** true só na chamada que fechou o dia agora — dispara a celebração de "dia concluído" uma única vez. */
+  justCompleted: boolean;
   /** true quando os 5 blocos da tabuada passaram, mesmo que dayCompleted ainda seja false (falta o desafio diário normal, o "6º bloco"). */
   tabuadaBlocksPassed: boolean;
   blockPassed: boolean;
@@ -319,4 +321,9 @@ export interface CompleteChallengeResponse {
   unlocked_reward: LevelReward | null;
   trophies_earned: Trophy[];
   achievements_earned: Achievement[];
+  // Tabuada Semanal Premiada — o desafio diário normal é o "6º bloco". true só quando este
+  // pedido fechou o dia da tabuada agora (ver _shared/tabuada.ts:tryCompleteDay.justCompleted).
+  tabuada_day_just_completed: boolean;
+  tabuada_blocks_state: TabuadaBlockState[] | null;
+  tabuada_week_status: { weekStartDate: string; daysCompleted: number; medalEarned: boolean } | null;
 }

@@ -23,6 +23,7 @@
  * }
  * Response: {
  *   dayCompleted: boolean;
+ *   justCompleted: boolean; // true só na chamada que fechou o dia agora — dispara a celebração no cliente
  *   tabuadaBlocksPassed: boolean; // true quando os 5 blocos passaram, mesmo que o dia ainda não tenha fechado (falta o desafio normal)
  *   blockPassed: boolean;
  *   correctCount: number;
@@ -99,6 +100,7 @@ Deno.serve(async (req: Request) => {
       const weekStatus = await loadWeekStatus(supabase, child_id, mondayOfWeek(today));
       return jsonOk({
         dayCompleted: true,
+        justCompleted: false,
         tabuadaBlocksPassed: true,
         blockPassed: true,
         correctCount: QUESTIONS_PER_BLOCK,
@@ -163,6 +165,7 @@ Deno.serve(async (req: Request) => {
 
     return jsonOk({
       dayCompleted: completion?.dayCompleted ?? false,
+      justCompleted: completion?.justCompleted ?? false,
       tabuadaBlocksPassed: completion?.tabuadaBlocksPassed ?? blocksState.every(b => b.status === 'passed'),
       blockPassed,
       correctCount,

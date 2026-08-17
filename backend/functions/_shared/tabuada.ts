@@ -226,7 +226,17 @@ export async function tryCompleteDay(
   supabase: SupabaseLike,
   childId: string,
   dayDate: string,
-): Promise<{ dayCompleted: boolean; tabuadaBlocksPassed: boolean; weekStatus: TabuadaWeekStatus } | null> {
+): Promise<{
+  dayCompleted: boolean;
+  // true só na chamada que efectivamente fechou o dia agora (transição false→true) — usado
+  // pelo cliente para disparar a celebração de "dia concluído" uma única vez, mesmo que
+  // submit_tabuada_block/complete_challenge voltem a chamar isto depois (ex: retry de um
+  // bloco já passado, dentro do mesmo dia já completo).
+  justCompleted: boolean;
+  tabuadaBlocksPassed: boolean;
+  weekStatus: TabuadaWeekStatus;
+  blocksState: BlockState[] | null;
+} | null> {
   const { data: day } = await supabase
     .from('weekly_tabuada_days')
     .select('blocks_state, completed_at')
@@ -236,15 +246,21 @@ export async function tryCompleteDay(
   if (!day) return null;
 
   const weekStartDate = mondayOfWeek(dayDate);
+  const blocksState = day.blocks_state as BlockState[];
 
   if (day.completed_at) {
-    return { dayCompleted: true, tabuadaBlocksPassed: true, weekStatus: await loadWeekStatus(supabase, childId, weekStartDate) };
+    return {
+      dayCompleted: true, justCompleted: false, tabuadaBlocksPassed: true,
+      weekStatus: await loadWeekStatus(supabase, childId, weekStartDate), blocksState,
+    };
   }
 
-  const blocksState = day.blocks_state as BlockState[];
   const tabuadaBlocksPassed = blocksState.every((b) => b.status === 'passed');
   if (!tabuadaBlocksPassed) {
-    return { dayCompleted: false, tabuadaBlocksPassed: false, weekStatus: await loadWeekStatus(supabase, childId, weekStartDate) };
+    return {
+      dayCompleted: false, justCompleted: false, tabuadaBlocksPassed: false,
+      weekStatus: await loadWeekStatus(supabase, childId, weekStartDate), blocksState,
+    };
   }
 
   const { data: calDay } = await supabase
@@ -255,7 +271,10 @@ export async function tryCompleteDay(
     .maybeSingle();
   const dailyChallengeDone = calDay?.state === 'completed';
   if (!dailyChallengeDone) {
-    return { dayCompleted: false, tabuadaBlocksPassed: true, weekStatus: await loadWeekStatus(supabase, childId, weekStartDate) };
+    return {
+      dayCompleted: false, justCompleted: false, tabuadaBlocksPassed: true,
+      weekStatus: await loadWeekStatus(supabase, childId, weekStartDate), blocksState,
+    };
   }
 
   await supabase
@@ -265,5 +284,5 @@ export async function tryCompleteDay(
     .eq('day_date', dayDate);
 
   const weekStatus = await recomputeWeek(supabase, childId, weekStartDate);
-  return { dayCompleted: true, tabuadaBlocksPassed: true, weekStatus };
+  return { dayCompleted: true, justCompleted: true, tabuadaBlocksPassed: true, weekStatus, blocksState };
 }

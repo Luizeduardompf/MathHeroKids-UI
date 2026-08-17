@@ -32,6 +32,7 @@ import {
   centsToEuroLabel,
   tabuadaBlockEarnedCents,
   capTabuadaCents,
+  sumTabuadaBlocksEarnedCents,
 } from '@/constants/config';
 import { colors, fontFamily, radius, shadows, space } from '@/theme';
 import type { TabuadaBlockState } from '@/types/database.types';
@@ -65,11 +66,6 @@ async function fetchTodayCalendarState(childId: string, today: string): Promise<
     .eq('day_date', today)
     .maybeSingle();
   return data?.state === 'completed';
-}
-
-/** Soma em cêntimos o ganho dos blocos de um dia — proporcional ao melhor resultado de cada um. */
-function sumBlocksEarnedCents(blocksState: TabuadaBlockState[], weeklyReward: number): number {
-  return blocksState.reduce((sum, b) => sum + tabuadaBlockEarnedCents(weeklyReward, b.best_correct_count), 0);
 }
 
 // ─── Cards ──────────────────────────────────────────────────────────────────────
@@ -148,7 +144,7 @@ function TabuadaBlockCard({ block, locked, weeklyReward, onPress }: {
         )}
       </View>
       <View style={styles.blockCardTrailing}>
-        {!maxed && !locked && (
+        {!maxed && !locked && !passed && (
           <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
         )}
       </View>
@@ -289,14 +285,13 @@ export default function TabuadaSemanalScreen() {
   });
 
   const weeklyReward = Number(child.tabuada_weekly_reward ?? 0);
-  const todayEarnedCentsRaw = sumBlocksEarnedCents(blocksState, weeklyReward);
+  const todayEarnedCents = sumTabuadaBlocksEarnedCents(blocksState, weeklyReward);
   const weekEarnedCentsRaw = weekDays.reduce((sum, d) => {
     if (d.day_date === today) return sum; // hoje entra pela via ao vivo (dayData), não pela cópia de weekDays
-    return sum + sumBlocksEarnedCents(d.blocks_state, weeklyReward);
-  }, todayEarnedCentsRaw);
+    return sum + sumTabuadaBlocksEarnedCents(d.blocks_state, weeklyReward);
+  }, todayEarnedCents);
   // Limite duro: mesmo com deriva de arredondamento ao somar até 35 blocos, o total exibido
   // nunca pode ultrapassar o valor configurado pelo pai.
-  const todayEarnedCents = capTabuadaCents(todayEarnedCentsRaw, weeklyReward);
   const weekEarnedCents = capTabuadaCents(weekEarnedCentsRaw, weeklyReward);
 
   const miloMessage = medalEarned

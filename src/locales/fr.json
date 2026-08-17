@@ -198,7 +198,14 @@
     "dailyChallengeCta": "Jouer",
     "miloAlmostDone": "Tu as fini les 5 blocs des tables ! Il ne reste que le défi du jour pour boucler la journée. 💪",
     "almostDoneBanner": "Il ne reste que le défi du jour !",
-    "blockLocked": "Verrouillé — termine le précédent d'abord"
+    "blockLocked": "Verrouillé — termine le précédent d'abord",
+    "dayCompleteModal": {
+      "titleDay": "Jour complété ! 🎉",
+      "titleMedal": "Médaille de la semaine ! 🏅",
+      "subtitleDay": "Tu as fait les 5 blocs plus le défi d'aujourd'hui !",
+      "subtitleMedal": "7 jours d'affilée — l'argent de poche de la semaine est à toi !",
+      "parentNotified": "Papa va recevoir un message disant que tu as terminé aujourd'hui — il va être super content ! 💌"
+    }
   },
   "rewards": {
     "frame_star": {

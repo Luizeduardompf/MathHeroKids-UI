@@ -560,9 +560,17 @@ Deno.serve(async (req: Request) => {
     // gravados acima. Usa a data de hoje no timezone da criança (não session.challenge_date
     // — retroativos não fecham o dia de hoje da tabuada, mas o hook em si é seguro correr
     // sempre, já que só actua sobre o dia "hoje").
+    let tabuadaDayJustCompleted = false;
+    let tabuadaBlocksState = null;
+    let tabuadaWeekStatus = null;
     try {
       const tabuadaToday = toLocalDate(new Date(), childTimezone);
-      await tryCompleteDay(supabase, childId, tabuadaToday);
+      const tabuadaCompletion = await tryCompleteDay(supabase, childId, tabuadaToday);
+      if (tabuadaCompletion) {
+        tabuadaDayJustCompleted = tabuadaCompletion.justCompleted;
+        tabuadaBlocksState = tabuadaCompletion.blocksState;
+        tabuadaWeekStatus = tabuadaCompletion.weekStatus;
+      }
     } catch (tabuadaErr) {
       console.error('Tabuada Semanal completion hook error (non-fatal):', tabuadaErr);
     }
@@ -577,6 +585,12 @@ Deno.serve(async (req: Request) => {
       unlocked_reward: unlockedReward,
       trophies_earned: trophiesEarned,
       achievements_earned: achievementsEarned,
+      // Tabuada Semanal Premiada — o desafio diário normal é o "6º bloco"; se isto fechou o
+      // dia da tabuada agora, o cliente mostra uma celebração dedicada (ver
+      // TabuadaDayCompleteModal). Não-fatal por design, ver comentário acima.
+      tabuada_day_just_completed: tabuadaDayJustCompleted,
+      tabuada_blocks_state: tabuadaBlocksState,
+      tabuada_week_status: tabuadaWeekStatus,
     });
 
   } catch (err: unknown) {

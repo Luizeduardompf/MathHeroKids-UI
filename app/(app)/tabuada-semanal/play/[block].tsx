@@ -19,11 +19,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 
 import { Text } from '@/components/ui';
 import { colors, fontFamily, radius, shadows, space } from '@/theme';
 import { WrongAnswerScreen } from '@/components/challenge/StatusScreens';
+import { TabuadaDayCompleteModal } from '@/components/challenge/TabuadaDayCompleteModal';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
+import { useAuthStore, selectParentId } from '@/stores/auth.store';
 import {
   useTabuadaSemanalStore,
   selectCurrentQuestion,
@@ -31,8 +34,9 @@ import {
   selectCorrectCount,
 } from '@/stores/tabuada-semanal.store';
 import { tabuadaSemanalService } from '@/services/tabuada-semanal.service';
+import { notificationSettingsService } from '@/services/notification-settings.service';
 import { queryClient } from '@/lib/query-client';
-import { WEEKLY_TABUADA, centsToEuroLabel, tabuadaBlockEarnedCents } from '@/constants/config';
+import { WEEKLY_TABUADA, centsToEuroLabel, tabuadaBlockEarnedCents, sumTabuadaBlocksEarnedCents } from '@/constants/config';
 import type { SubmitTabuadaBlockResponse } from '@/types/database.types';
 
 // ─── Timer hook (cópia enxuta de challenge/[date].tsx) ─────────────────────────
@@ -145,8 +149,18 @@ export default function TabuadaBlockPlayScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [result, setResult] = useState<SubmitTabuadaBlockResponse | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [dayCompleteDismissed, setDayCompleteDismissed] = useState(false);
   const initedRef = useRef(false);
   const submittingRef = useRef(false);
+
+  const parentId = useAuthStore(selectParentId);
+  const { data: notifPrefs } = useQuery({
+    queryKey: ['notification-preferences', parentId],
+    queryFn: () => notificationSettingsService.getParentPreferences(parentId!),
+    enabled: !!parentId,
+    staleTime: 60_000,
+  });
+  const parentWillBeNotified = !!notifPrefs?.whatsapp_enabled && !!notifPrefs?.tabuada_day_completed_enabled;
 
   const loadBlock = useCallback(async () => {
     if (!child || !Number.isFinite(blockNumber)) return;
@@ -324,9 +338,18 @@ export default function TabuadaBlockPlayScreen() {
     const weeklyReward = Number(child?.tabuada_weekly_reward ?? 0);
     const earnedCents = tabuadaBlockEarnedCents(weeklyReward, result.correctCount);
     const blockMaxCents = tabuadaBlockEarnedCents(weeklyReward, WEEKLY_TABUADA.QUESTIONS_PER_BLOCK);
+    const todayEarnedCents = sumTabuadaBlocksEarnedCents(result.blocksState, weeklyReward);
+    const showDayCompleteModal = result.dayCompleted && result.justCompleted && !dayCompleteDismissed;
 
     return (
       <SafeAreaView style={[gs.resultRoot, { backgroundColor: passed ? '#ECFDF5' : '#FFFBEB' }]}>
+        <TabuadaDayCompleteModal
+          visible={showDayCompleteModal}
+          earnedCents={todayEarnedCents}
+          medalEarned={result.weekStatus.medalEarned}
+          parentWillBeNotified={parentWillBeNotified}
+          onContinue={() => setDayCompleteDismissed(true)}
+        />
         <View style={gs.resultBody}>
           <View style={[gs.resultIconWrap, { backgroundColor: passed ? colors.success : colors.warning }]}>
             <Ionicons name={passed ? 'checkmark' : 'refresh'} size={44} color="#fff" />
