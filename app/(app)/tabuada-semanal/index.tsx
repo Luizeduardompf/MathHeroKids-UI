@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.sm,
   },
-  blockCardTrailing: { width: 20, marginRight: space.md, alignItems: 'center', justifyContent: 'center' },
+  blockCardTrailing: { width: 20, marginRight: space.xs, alignItems: 'center', justifyContent: 'center' },
   blockCardEarnedBadge: { fontFamily: fontFamily.extraBold } as import('react-native').TextStyle,
   blockCardLocked: { opacity: 0.75 },
   blockCardArtWrap: { width: 96, height: 96 },
