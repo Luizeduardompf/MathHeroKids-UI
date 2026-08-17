@@ -33,6 +33,7 @@ export default function AppLayout() {
   const status = useAuthStore(selectAuthStatus);
   const hasActiveChild = useProfileStore(selectHasActiveChild);
   const activeChild = useProfileStore(selectActiveChild);
+  const setActiveChild = useProfileStore((s) => s.setActiveChild);
   const router = useRouter();
   const segments = useSegments();
   const { t } = useTranslation();
@@ -44,6 +45,34 @@ export default function AppLayout() {
   useEffect(() => {
     configureNotificationHandler();
   }, []);
+
+  // Resincroniza o activeChild persistido localmente com o servidor: apanha alterações
+  // feitas noutro dispositivo enquanto este esteve fechado (ex.: pai activou a tabuada
+  // semanal premiada no telemóvel dele). A subscrição realtime abaixo cobre o resto —
+  // alterações que cheguem enquanto ambas as apps estão abertas.
+  useEffect(() => {
+    const childId = activeChild?.id;
+    if (!childId) return;
+
+    childService.getChild(childId)
+      .then((fresh) => {
+        if (fresh) setActiveChild(fresh);
+      })
+      .catch(() => {
+        // Sem rede / falha transitória — mantém o que já está persistido localmente
+      });
+  }, [activeChild?.id, setActiveChild]);
+
+  useEffect(() => {
+    const childId = activeChild?.id;
+    if (!childId) return;
+
+    const unsubscribe = childService.subscribeToProfileChanges(childId, (fresh) => {
+      setActiveChild(fresh);
+    });
+
+    return unsubscribe;
+  }, [activeChild?.id, setActiveChild]);
 
   // Register push token + update last_seen_at when active child is set
   useEffect(() => {

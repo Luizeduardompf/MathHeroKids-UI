@@ -1,3 +1,4 @@
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import type { ChildProfile } from '@/types';
 import type { AvatarId, TimerOption, MultiplicationRange, QuestionCountOption, ModuleId } from '@/constants/config';
@@ -169,6 +170,22 @@ export const childService = {
   },
 
   /**
+   * Fetch a single child profile by id — usado para resincronizar o `activeChild` persistido
+   * localmente com o servidor no arranque da app (definições editadas noutro dispositivo
+   * enquanto este estava fechado só chegam por aqui; a subscrição realtime cobre o resto).
+   */
+  async getChild(childId: string): Promise<ChildProfile | null> {
+    const { data, error } = await supabase
+      .from('child_profiles')
+      .select('*')
+      .eq('id', childId)
+      .maybeSingle();
+
+    if (error) throw new Error(mapChildError(error));
+    return data as ChildProfile | null;
+  },
+
+  /**
    * Updates last_seen_at for a child. Called on each app open / child selection.
    * Non-throwing — failure is silently ignored (non-critical field).
    */
@@ -181,5 +198,36 @@ export const childService = {
     } catch {
       // Non-critical — never fail the app over this
     }
+  },
+
+  /**
+   * Realtime: qualquer campo de `child_profiles` do filho activo mudou noutro dispositivo
+   * (ex.: o pai editou definições no telemóvel dele enquanto a criança usa outro). UPDATE
+   * envia sempre a row completa como `new` (REPLICA IDENTITY DEFAULT só limita o `old`),
+   * por isso o payload já serve para substituir `activeChild` directamente.
+   */
+  subscribeToProfileChanges(
+    childId: string,
+    onUpdate: (row: ChildProfile) => void,
+  ): () => void {
+    const channel: RealtimeChannel = supabase
+      .channel(`child_profile_${childId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'child_profiles',
+          filter: `id=eq.${childId}`,
+        },
+        (payload) => {
+          onUpdate(payload.new as ChildProfile);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   },
 };
