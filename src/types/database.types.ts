@@ -253,6 +253,7 @@ export interface TabuadaQuestion {
   fact_id: string;
   operand_a: number;
   operand_b: number;
+  operation: ModuleId;
 }
 
 export type TabuadaBlockStatus = 'pending' | 'passed';

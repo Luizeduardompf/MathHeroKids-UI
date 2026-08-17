@@ -33,9 +33,9 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { buildDayPayload, initialBlocksState, toLocalDate } from '../_shared/tabuada.ts';
-import type { BlockState, TabuadaFact } from '../_shared/tabuada.ts';
+import type { BlockState, TabuadaFact, TabuadaOperation } from '../_shared/tabuada.ts';
 
-type Operation = 'multiplication' | 'addition' | 'subtraction' | 'division';
+type Operation = TabuadaOperation;
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -112,7 +112,7 @@ Deno.serve(async (req: Request) => {
       if (opFactsErr) {
         return jsonError(500, 'FACTS_FETCH_FAILED', opFactsErr.message);
       }
-      pool = ((allOpFacts ?? []) as Array<TabuadaFact & { operation: Operation }>).filter(
+      pool = ((allOpFacts ?? []) as TabuadaFact[]).filter(
         (f) => f.operation !== 'multiplication' || (f.operand_a <= max && f.operand_b <= max),
       );
     } else {
@@ -128,7 +128,7 @@ Deno.serve(async (req: Request) => {
       if (factsErr) {
         return jsonError(500, 'FACTS_FETCH_FAILED', factsErr.message);
       }
-      pool = (rangedFacts ?? []) as TabuadaFact[];
+      pool = (rangedFacts ?? []).map((f) => ({ ...f, operation: 'multiplication' as const }));
     }
 
     if (pool.length < 100) {

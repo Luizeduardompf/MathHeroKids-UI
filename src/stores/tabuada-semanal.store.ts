@@ -10,7 +10,7 @@
 
 import { create } from 'zustand';
 import type { TabuadaQuestion } from '@/types/database.types';
-import { WEEKLY_TABUADA } from '@/constants/config';
+import { WEEKLY_TABUADA, computeAnswer } from '@/constants/config';
 
 export type TabuadaPlayPhase =
   | 'idle'
@@ -23,7 +23,7 @@ export type TabuadaPlayPhase =
   | 'error';
 
 export interface TabuadaPlayQuestion extends TabuadaQuestion {
-  correct_answer: number; // computado localmente (a×b) — só para feedback imediato
+  correct_answer: number; // computado localmente via computeAnswer(operation, a, b) — só para feedback imediato
 }
 
 export interface TabuadaAnswerDraft {
@@ -31,6 +31,7 @@ export interface TabuadaAnswerDraft {
   fact_id: string;
   operand_a: number;
   operand_b: number;
+  operation: TabuadaQuestion['operation'];
   correct_answer: number;
   child_answer: number | null; // null = timeout
 }
@@ -46,7 +47,7 @@ interface TabuadaPlayState {
   lastAnswerCorrect: boolean | null;
   lastCorrectAnswer: number | null;
   lastUserAnswer: number | null;
-  lastAnsweredQuestion: { operand_a: number; operand_b: number; correct_answer: number } | null;
+  lastAnsweredQuestion: { operand_a: number; operand_b: number; operation: TabuadaQuestion['operation']; correct_answer: number } | null;
   errorMessage: string | null;
 
   startBlock: (blockNumber: number, questions: TabuadaQuestion[]) => void;
@@ -76,7 +77,7 @@ const initialState = {
   lastAnswerCorrect: null as boolean | null,
   lastCorrectAnswer: null as number | null,
   lastUserAnswer: null as number | null,
-  lastAnsweredQuestion: null as { operand_a: number; operand_b: number; correct_answer: number } | null,
+  lastAnsweredQuestion: null as { operand_a: number; operand_b: number; operation: TabuadaQuestion['operation']; correct_answer: number } | null,
   errorMessage: null as string | null,
 };
 
@@ -86,7 +87,7 @@ export const useTabuadaSemanalStore = create<TabuadaPlayState>()((set, get) => (
   startBlock: (blockNumber, questions) => {
     const playQuestions: TabuadaPlayQuestion[] = questions.map((q) => ({
       ...q,
-      correct_answer: q.operand_a * q.operand_b,
+      correct_answer: computeAnswer(q.operation, q.operand_a, q.operand_b),
     }));
     set({
       blockNumber,
@@ -119,6 +120,7 @@ export const useTabuadaSemanalStore = create<TabuadaPlayState>()((set, get) => (
       fact_id: question.fact_id,
       operand_a: question.operand_a,
       operand_b: question.operand_b,
+      operation: question.operation,
       correct_answer: question.correct_answer,
       child_answer: childAnswer,
     };
@@ -136,6 +138,7 @@ export const useTabuadaSemanalStore = create<TabuadaPlayState>()((set, get) => (
         lastAnsweredQuestion: {
           operand_a: question.operand_a,
           operand_b: question.operand_b,
+          operation: question.operation,
           correct_answer: question.correct_answer,
         },
         phase: childAnswer === null ? 'timeout' : 'wrong',

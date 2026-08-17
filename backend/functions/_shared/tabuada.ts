@@ -26,11 +26,14 @@ export function centsToEuroLabel(cents: number): string {
   return `€${(cents / 100).toFixed(2)}`;
 }
 
+export type TabuadaOperation = 'multiplication' | 'addition' | 'subtraction' | 'division';
+
 export interface TabuadaFact {
   id: string;
   operand_a: number;
   operand_b: number;
   answer: number;
+  operation: TabuadaOperation;
 }
 
 export interface TabuadaQuestion {
@@ -39,6 +42,7 @@ export interface TabuadaQuestion {
   fact_id: string;
   operand_a: number;
   operand_b: number;
+  operation: TabuadaOperation;
 }
 
 export type BlockStatus = 'pending' | 'passed';
@@ -105,6 +109,7 @@ export function buildDayPayload(pool: TabuadaFact[], seed: string): TabuadaQuest
     fact_id: f.id,
     operand_a: f.operand_a,
     operand_b: f.operand_b,
+    operation: f.operation,
   }));
 }
 

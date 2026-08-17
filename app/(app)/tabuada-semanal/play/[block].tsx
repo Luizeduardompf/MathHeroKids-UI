@@ -20,6 +20,15 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+// @ts-expect-error reanimated Easing named-export quirk in this TS config
+import { Easing } from 'react-native-reanimated'; // eslint-disable-line
+import { playSound } from '@/services/sound.service';
 
 import { Text } from '@/components/ui';
 import { colors, fontFamily, radius, shadows, space } from '@/theme';
@@ -36,7 +45,7 @@ import {
 import { tabuadaSemanalService } from '@/services/tabuada-semanal.service';
 import { notificationSettingsService } from '@/services/notification-settings.service';
 import { queryClient } from '@/lib/query-client';
-import { WEEKLY_TABUADA, centsToEuroLabel, tabuadaBlockEarnedCents, sumTabuadaBlocksEarnedCents } from '@/constants/config';
+import { WEEKLY_TABUADA, centsToEuroLabel, tabuadaBlockEarnedCents, sumTabuadaBlocksEarnedCents, OPERATION_SYMBOLS, MODULE_ID } from '@/constants/config';
 import type { SubmitTabuadaBlockResponse } from '@/types/database.types';
 
 // ─── Timer hook (cópia enxuta de challenge/[date].tsx) ─────────────────────────
@@ -115,6 +124,65 @@ function NumericKeypad({ onDigit, onDelete, onSubmit, hasInput, disabled }: {
     </View>
   );
 }
+
+// ─── Check de "correto" — grande, centrado no ecrã, com zoom-out dinâmico ──────
+
+const CORRECT_CIRCLE = 168;
+
+function CorrectCheckBurst() {
+  const scale = useSharedValue(2.6);
+  const opacity = useSharedValue(0);
+  const ringScale = useSharedValue(0.6);
+  const ringOpacity = useSharedValue(0.55);
+
+  useEffect(() => {
+    playSound('correct');
+    opacity.value = withTiming(1, { duration: 90 });
+    scale.value = withSpring(1, { damping: 10, stiffness: 220, mass: 0.8 });
+    ringScale.value = withTiming(1.9, { duration: 430, easing: Easing.out(Easing.quad) });
+    ringOpacity.value = withTiming(0, { duration: 430, easing: Easing.out(Easing.quad) });
+    const fadeOut = setTimeout(() => {
+      opacity.value = withTiming(0, { duration: 140 });
+    }, 420);
+    return () => clearTimeout(fadeOut);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const circleAnim = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+  }));
+  const ringAnim = useAnimatedStyle(() => ({
+    opacity: ringOpacity.value,
+    transform: [{ scale: ringScale.value }],
+  }));
+
+  return (
+    <View style={cc.overlay} pointerEvents="none">
+      <Animated.View style={[cc.ring, ringAnim] as StyleProp<ViewStyle>} />
+      <Animated.View style={[cc.circle, circleAnim] as StyleProp<ViewStyle>}>
+        <Ionicons name="checkmark" size={92} color="#fff" />
+      </Animated.View>
+    </View>
+  );
+}
+
+const cc = StyleSheet.create({
+  overlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    alignItems: 'center', justifyContent: 'center', zIndex: 10,
+  },
+  ring: {
+    position: 'absolute', width: CORRECT_CIRCLE, height: CORRECT_CIRCLE,
+    borderRadius: CORRECT_CIRCLE / 2, borderWidth: 5, borderColor: colors.success,
+  },
+  circle: {
+    width: CORRECT_CIRCLE, height: CORRECT_CIRCLE, borderRadius: CORRECT_CIRCLE / 2,
+    backgroundColor: colors.success, alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#166534', shadowOpacity: 0.3, shadowRadius: 18, shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
+  },
+});
 
 const kp = StyleSheet.create({
   keypad: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingBottom: 4 },
@@ -223,7 +291,7 @@ export default function TabuadaBlockPlayScreen() {
       if (useTabuadaSemanalStore.getState().phase === 'correct') {
         useTabuadaSemanalStore.getState().setPhase('playing');
       }
-    }, 450);
+    }, 600);
     return () => clearTimeout(timer);
   }, [phase]);
 
@@ -265,7 +333,10 @@ export default function TabuadaBlockPlayScreen() {
     });
   }, []);
   useEffect(() => {
-    if (inputDigits.length === 3) handleSubmit();
+    if (inputDigits.length === 0) return;
+    if (inputDigits.length === 3) { handleSubmit(); return; }
+    const q = selectCurrentQuestion(useTabuadaSemanalStore.getState());
+    if (q && parseInt(inputDigits.join(''), 10) === q.correct_answer) handleSubmit();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputDigits]);
 
@@ -299,6 +370,7 @@ export default function TabuadaBlockPlayScreen() {
         operandB={q?.operand_b ?? 0}
         correctAnswer={q?.correct_answer ?? 0}
         userAnswer={lastUserAnswer}
+        operation={q?.operation}
         onContinue={() => useTabuadaSemanalStore.getState().advanceAfterWrong()}
       />
     );
@@ -461,7 +533,7 @@ export default function TabuadaBlockPlayScreen() {
         {question ? (
           <View style={gs.equationRow}>
             <Text style={gs.operandText}>{question.operand_a}</Text>
-            <Text style={gs.operatorText}>×</Text>
+            <Text style={gs.operatorText}>{OPERATION_SYMBOLS[question.operation ?? MODULE_ID.MULTIPLICATION]}</Text>
             <Text style={gs.operandText}>{question.operand_b}</Text>
             <Text style={gs.operatorText}>=</Text>
             <View style={[gs.answerBox, inputDigits.length > 0 ? gs.answerBoxActive : null] as StyleProp<ViewStyle>}>
@@ -469,12 +541,6 @@ export default function TabuadaBlockPlayScreen() {
             </View>
           </View>
         ) : null}
-
-        {phase === 'correct' && (
-          <View style={gs.correctFlash} pointerEvents="none">
-            <Ionicons name="checkmark-circle" size={72} color={colors.success} />
-          </View>
-        )}
       </View>
 
       <NumericKeypad
@@ -484,6 +550,8 @@ export default function TabuadaBlockPlayScreen() {
         hasInput={inputDigits.length > 0 && phase === 'playing'}
         disabled={phase !== 'playing'}
       />
+
+      {phase === 'correct' && <CorrectCheckBurst />}
     </View>
   );
 }
@@ -512,8 +580,6 @@ const gs = StyleSheet.create({
   answerBox: { minWidth: 96, height: 96, borderRadius: 24, borderWidth: 4, borderColor: '#C8CEFF', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
   answerBoxActive: { borderStyle: 'solid', borderColor: '#2B52E5', backgroundColor: '#DCE2FF' },
   answerBoxText: { fontFamily: fontFamily.extraBold, fontSize: 72, lineHeight: 88, color: '#2B52E5', fontVariant: ['tabular-nums'] } as import('react-native').TextStyle,
-
-  correctFlash: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
 
   resultRoot: { flex: 1, paddingHorizontal: 24, paddingTop: 56, paddingBottom: 32 },
   resultBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md },
