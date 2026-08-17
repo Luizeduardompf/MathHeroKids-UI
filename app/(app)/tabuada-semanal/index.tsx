@@ -122,17 +122,13 @@ function TabuadaBlockCard({ block, locked, onPress }: { block: TabuadaBlockState
             <ProgressBar
               value={block.best_correct_count / WEEKLY_TABUADA.QUESTIONS_PER_BLOCK}
               height={6}
-              style={{ marginBottom: space.sm }}
             />
-            <View style={styles.blockCardPlayBtn}>
-              <Ionicons name="play" size={12} color="#fff" />
-              <Text style={styles.blockCardPlayBtnText} numberOfLines={1}>
-                {t('tabuadaSemanal.playBlockCta', { n: block.block_number })}
-              </Text>
-            </View>
           </>
         )}
       </View>
+      {!passed && !locked && (
+        <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} style={styles.blockCardChevron} />
+      )}
     </TouchableOpacity>
   );
 }
@@ -179,19 +175,14 @@ function DailyChallengeBlockCard({ done, locked, onPress }: { done: boolean; loc
             {t('tabuadaSemanal.dailyChallengeDone')}
           </Text>
         ) : (
-          <>
-            <Text variant="caption" color={colors.text.secondary} style={{ marginBottom: space.sm }}>
-              {t('tabuadaSemanal.dailyChallengePending')}
-            </Text>
-            <View style={[styles.blockCardPlayBtn, { backgroundColor: '#16A34A' }]}>
-              <Ionicons name="play" size={12} color="#fff" />
-              <Text style={styles.blockCardPlayBtnText} numberOfLines={1}>
-                {t('tabuadaSemanal.dailyChallengeCta')}
-              </Text>
-            </View>
-          </>
+          <Text variant="caption" color={colors.text.secondary}>
+            {t('tabuadaSemanal.dailyChallengePending')}
+          </Text>
         )}
       </View>
+      {!done && !locked && (
+        <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} style={styles.blockCardChevron} />
+      )}
     </TouchableOpacity>
   );
 }
@@ -408,11 +399,13 @@ const styles = StyleSheet.create({
   blockCard: {
     width: '100%',
     flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.background.card,
     borderRadius: radius.xl,
     overflow: 'hidden',
     ...shadows.sm,
   },
+  blockCardChevron: { marginRight: space.md },
   blockCardLocked: { opacity: 0.75 },
   blockCardArtWrap: { width: 96, height: 96 },
   blockCardArt: {
@@ -447,18 +440,4 @@ const styles = StyleSheet.create({
   blockCardBadgeLocked: { backgroundColor: colors.text.tertiary },
   blockCardCompleteText: { fontFamily: fontFamily.bold } as import('react-native').TextStyle,
   blockCardScoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
-  blockCardPlayBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    paddingVertical: 8,
-  },
-  blockCardPlayBtnText: {
-    fontFamily: fontFamily.bold,
-    fontSize: 12,
-    color: '#fff',
-  } as import('react-native').TextStyle,
 });
