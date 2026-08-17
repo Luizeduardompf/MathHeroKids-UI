@@ -32,7 +32,7 @@ import {
 } from '@/stores/tabuada-semanal.store';
 import { tabuadaSemanalService } from '@/services/tabuada-semanal.service';
 import { queryClient } from '@/lib/query-client';
-import { WEEKLY_TABUADA } from '@/constants/config';
+import { WEEKLY_TABUADA, centsToEuroLabel, tabuadaBlockEarnedCents } from '@/constants/config';
 import type { SubmitTabuadaBlockResponse } from '@/types/database.types';
 
 // ─── Timer hook (cópia enxuta de challenge/[date].tsx) ─────────────────────────
@@ -322,10 +322,8 @@ export default function TabuadaBlockPlayScreen() {
     const passed = result.blockPassed;
     const maxed = result.correctCount === WEEKLY_TABUADA.QUESTIONS_PER_BLOCK;
     const weeklyReward = Number(child?.tabuada_weekly_reward ?? 0);
-    const blockValue = weeklyReward > 0
-      ? (weeklyReward / WEEKLY_TABUADA.DAYS_TO_COMPLETE_WEEK) / WEEKLY_TABUADA.BLOCKS_PER_DAY
-      : 0;
-    const earned = (result.correctCount / WEEKLY_TABUADA.QUESTIONS_PER_BLOCK) * blockValue;
+    const earnedCents = tabuadaBlockEarnedCents(weeklyReward, result.correctCount);
+    const blockMaxCents = tabuadaBlockEarnedCents(weeklyReward, WEEKLY_TABUADA.QUESTIONS_PER_BLOCK);
 
     return (
       <SafeAreaView style={[gs.resultRoot, { backgroundColor: passed ? '#ECFDF5' : '#FFFBEB' }]}>
@@ -340,11 +338,11 @@ export default function TabuadaBlockPlayScreen() {
             {t('tabuadaSemanal.blockScore', { correct: result.correctCount, total: WEEKLY_TABUADA.QUESTIONS_PER_BLOCK })}
           </Text>
 
-          {blockValue > 0 && (
+          {blockMaxCents > 0 && (
             <View style={gs.earnedBanner}>
               <Ionicons name="cash-outline" size={20} color="#B8860B" />
               <Text variant="label" style={{ flex: 1 }}>
-                {t('tabuadaSemanal.blockEarnedResult', { earned: `€${earned.toFixed(2)}`, total: `€${blockValue.toFixed(2)}` })}
+                {t('tabuadaSemanal.blockEarnedResult', { earned: centsToEuroLabel(earnedCents), total: centsToEuroLabel(blockMaxCents) })}
               </Text>
             </View>
           )}

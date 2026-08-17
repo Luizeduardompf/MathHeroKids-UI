@@ -27,7 +27,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getEvolutionConfig, buildWhatsAppNumber, sendWhatsAppText, getLocalNow, timeMatchesHour } from '../_shared/whatsapp.ts';
-import { mondayOfWeek } from '../_shared/tabuada.ts';
+import { mondayOfWeek, weeklySummaryEarnedCents, centsToEuroLabel } from '../_shared/tabuada.ts';
 
 const TIMEZONE = Deno.env.get('NOTIFICATIONS_TIMEZONE') ?? 'Europe/Lisbon';
 const TABUADA_WEEKLY_SUMMARY_WEEKDAY = 0; // domingo
@@ -234,12 +234,12 @@ Deno.serve(async (req: Request) => {
             .maybeSingle();
           const daysCompleted = (weekRow as any)?.days_completed ?? 0;
           const reward = Number((child as any).tabuada_weekly_reward ?? 0);
-          const earned = reward > 0 ? (daysCompleted / 7) * reward : 0;
+          const earnedCents = weeklySummaryEarnedCents(reward, daysCompleted);
 
           await trySend(supabaseAdmin, config, {
             parentId: parent.id, childId: child.id, target: 'parent',
             notificationType: 'tabuada_weekly_summary', number,
-            text: t.tabuadaWeeklySummaryParent(child.display_name, daysCompleted, `€${earned.toFixed(2)}`, `€${reward.toFixed(2)}`),
+            text: t.tabuadaWeeklySummaryParent(child.display_name, daysCompleted, centsToEuroLabel(earnedCents), centsToEuroLabel(Math.round(reward * 100))),
             sendDate: isoDate,
           }, summary);
         }
@@ -347,12 +347,12 @@ Deno.serve(async (req: Request) => {
           .maybeSingle();
         const daysCompleted = (weekRow as any)?.days_completed ?? 0;
         const reward = Number(child.tabuada_weekly_reward ?? 0);
-        const earned = reward > 0 ? (daysCompleted / 7) * reward : 0;
+        const earnedCents = weeklySummaryEarnedCents(reward, daysCompleted);
 
         await trySend(supabaseAdmin, config, {
           parentId: child.parent_id, childId: child.id, target: 'child',
           notificationType: 'tabuada_weekly_summary', number,
-          text: t.tabuadaWeeklySummaryChild(child.display_name, daysCompleted, `€${earned.toFixed(2)}`),
+          text: t.tabuadaWeeklySummaryChild(child.display_name, daysCompleted, centsToEuroLabel(earnedCents)),
           sendDate: isoDate,
         }, summary);
       }

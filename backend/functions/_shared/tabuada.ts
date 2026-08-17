@@ -9,6 +9,23 @@ export const QUESTIONS_PER_BLOCK = 20;
 export const PASS_THRESHOLD = 0.7; // 14/20
 export const DAYS_TO_COMPLETE_WEEK = 7;
 
+/**
+ * Cêntimos ganhos no resumo semanal — proporcional aos dias completos (não aos blocos, ver
+ * WEEKLY_TABUADA no frontend para o cálculo por bloco), com limite duro para nunca ultrapassar
+ * o valor configurado mesmo com deriva de arredondamento.
+ */
+export function weeklySummaryEarnedCents(weeklyRewardEuros: number, daysCompleted: number): number {
+  if (weeklyRewardEuros <= 0) return 0;
+  const weeklyRewardCents = Math.round(weeklyRewardEuros * 100);
+  const cappedDays = Math.min(Math.max(daysCompleted, 0), DAYS_TO_COMPLETE_WEEK);
+  const raw = Math.round((weeklyRewardCents * cappedDays) / DAYS_TO_COMPLETE_WEEK);
+  return Math.min(raw, weeklyRewardCents);
+}
+
+export function centsToEuroLabel(cents: number): string {
+  return `€${(cents / 100).toFixed(2)}`;
+}
+
 export interface TabuadaFact {
   id: string;
   operand_a: number;
