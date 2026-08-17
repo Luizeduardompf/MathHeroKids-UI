@@ -252,6 +252,9 @@ export default function TabuadaSemanalScreen() {
     return { item, locked };
   });
 
+  const weeklyReward = Number(child.tabuada_weekly_reward ?? 0);
+  const earnedThisWeek = weeklyReward > 0 ? (daysCompleted / WEEKLY_TABUADA.DAYS_TO_COMPLETE_WEEK) * weeklyReward : 0;
+
   const miloMessage = medalEarned
     ? t('tabuadaSemanal.miloMedalEarned')
     : todayFullyComplete
@@ -312,6 +315,18 @@ export default function TabuadaSemanalScreen() {
             );
           })}
         </View>
+
+        {weeklyReward > 0 && (
+          <View style={styles.rewardRow}>
+            <Ionicons name="cash-outline" size={20} color="#B8860B" />
+            <Text variant="label" style={{ flex: 1 }}>
+              {t('tabuadaSemanal.rewardEarned', {
+                earned: `€${earnedThisWeek.toFixed(2)}`,
+                total: `€${weeklyReward.toFixed(2)}`,
+              })}
+            </Text>
+          </View>
+        )}
       </Card>
 
       {onlyDailyChallengeLeft && (
@@ -384,6 +399,15 @@ const styles = StyleSheet.create({
   dayDotDone: { backgroundColor: colors.success, borderColor: colors.success },
   dayDotToday: { borderColor: colors.primary },
   dayDotFuture: { opacity: 0.4 },
+  rewardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    marginTop: space.md,
+    paddingTop: space.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.default,
+  },
 
   almostDoneBanner: {
     flexDirection: 'row',

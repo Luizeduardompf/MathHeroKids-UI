@@ -168,6 +168,7 @@
     "medalEarnedTitle": "Médaille de la semaine gagnée !",
     "medalEarnedSubtitle": "7 jours d'affilée complétés — tu peux demander l'argent de poche !",
     "weekProgress": "{{days}}/{{total}} jours cette semaine",
+    "rewardEarned": "{{earned}} gagnés cette semaine (sur {{total}})",
     "weekDays": {
       "mon": "Lun",
       "tue": "Mar",
@@ -506,6 +507,8 @@
       "timerAutoHint": "Le temps diminue à mesure que l'enfant monte de niveau",
       "tablesLabel": "Tables de multiplication jusqu'à",
       "tablesHint": "Limite maximale des multiplications",
+      "tabuadaRewardLabel": "Argent de poche du Défi Hebdo des Tables",
+      "tabuadaRewardHint": "Montant (€) pour les 7 jours complets — chaque jour vaut 1/7 de ce montant",
       "socialLabel": "Fonctionnalités sociales",
       "socialHint": "Amis, classement et chat",
       "dangerZoneTitle": "Zone de danger",
@@ -535,7 +538,9 @@
       "unfinishedHint": "Second rappel, plus tard dans la journée",
       "tabuadaReminderLabel": "Rappels du Défi Hebdo des Tables",
       "tabuadaReminderHint": "Alerte l'enfant si les tables du jour ne sont pas encore faites",
-      "tabuadaReminderPickHint": "Choisis jusqu'à 4 horaires ({{count}}/4 choisis)"
+      "tabuadaReminderPickHint": "Choisis jusqu'à 4 horaires ({{count}}/4 choisis)",
+      "tabuadaWeeklySummaryLabel": "Résumé hebdo du Défi Hebdo des Tables",
+      "tabuadaWeeklySummaryHint": "Dimanche soir — combien de jours faits et combien gagné"
     },
     "controls": {
       "title": "Contrôle parental"
@@ -624,6 +629,8 @@
       },
       "tabuadaMedalLabel": "Médaille du Défi Hebdo des Tables",
       "tabuadaMedalHint": "T'alerte dès que ton enfant complète les 7 jours — c'est le moment de verser l'argent de poche",
+      "tabuadaWeeklySummaryLabel": "Résumé hebdo du Défi Hebdo des Tables",
+      "tabuadaWeeklySummaryHint": "Dimanche soir — combien de jours ton enfant a faits et combien il a gagné",
       "saveBtn": "Enregistrer",
       "saved": "✓ Enregistré avec succès !",
       "numberHint": "Les notifications sont envoyées à ton numéro WhatsApp, défini dans Modifier le profil."

@@ -112,6 +112,7 @@ export default function NotificationsScreen() {
   const [weeklyHour, setWeeklyHour] = useState(19);
   const [weeklyWeekday, setWeeklyWeekday] = useState(0);
   const [tabuadaMedalNoticeEnabled, setTabuadaMedalNoticeEnabled] = useState(true);
+  const [tabuadaWeeklySummaryEnabled, setTabuadaWeeklySummaryEnabled] = useState(true);
 
   useEffect(() => {
     if (!prefs) return;
@@ -126,6 +127,7 @@ export default function NotificationsScreen() {
     setWeeklyHour(timeStringToHour(prefs.weekly_summary_time, 19));
     setWeeklyWeekday(prefs.weekly_summary_weekday);
     setTabuadaMedalNoticeEnabled(prefs.tabuada_medal_notice_enabled);
+    setTabuadaWeeklySummaryEnabled(prefs.tabuada_weekly_summary_enabled);
   }, [prefs]);
 
   const mutation = useMutation({
@@ -141,6 +143,7 @@ export default function NotificationsScreen() {
       weekly_summary_time: hourToTimeString(weeklyHour),
       weekly_summary_weekday: weeklyWeekday,
       tabuada_medal_notice_enabled: tabuadaMedalNoticeEnabled,
+      tabuada_weekly_summary_enabled: tabuadaWeeklySummaryEnabled,
     }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['notification-preferences', parentId] });
@@ -258,6 +261,13 @@ export default function NotificationsScreen() {
               hint={t('parentArea.notifications.tabuadaMedalHint')}
               enabled={tabuadaMedalNoticeEnabled}
               onToggle={() => setTabuadaMedalNoticeEnabled((v) => !v)}
+            />
+            <ToggleRow
+              icon="cash-outline"
+              label={t('parentArea.notifications.tabuadaWeeklySummaryLabel')}
+              hint={t('parentArea.notifications.tabuadaWeeklySummaryHint')}
+              enabled={tabuadaWeeklySummaryEnabled}
+              onToggle={() => setTabuadaWeeklySummaryEnabled((v) => !v)}
             />
           </View>
 

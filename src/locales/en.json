@@ -728,6 +728,8 @@
       "timerAutoHint": "Time decreases as the child levels up",
       "tablesLabel": "Times tables up to",
       "tablesHint": "Maximum multiplication limit",
+      "tabuadaRewardLabel": "Weekly Rewarded Times-Table allowance",
+      "tabuadaRewardHint": "Amount (€) for completing all 7 days — each day is worth 1/7 of this",
       "socialLabel": "Social features",
       "socialHint": "Friends, ranking and chat",
       "dangerZoneTitle": "Danger zone",
@@ -757,7 +759,9 @@
       "unfinishedHint": "A second, later reminder for the same day",
       "tabuadaReminderLabel": "Weekly Rewarded Times-Table reminders",
       "tabuadaReminderHint": "Alerts the child if today's times-table isn't done yet",
-      "tabuadaReminderPickHint": "Pick up to 4 times ({{count}}/4 picked)"
+      "tabuadaReminderPickHint": "Pick up to 4 times ({{count}}/4 picked)",
+      "tabuadaWeeklySummaryLabel": "Weekly Rewarded Times-Table summary",
+      "tabuadaWeeklySummaryHint": "Sunday night — how many days done and how much earned"
     },
     "editProfile": "Edit profile",
     "editProfileSub": "Parent's data",
@@ -829,6 +833,8 @@
       },
       "tabuadaMedalLabel": "Weekly Rewarded Times-Table medal",
       "tabuadaMedalHint": "Alerts you as soon as your child completes the 7 days — time to pay the allowance",
+      "tabuadaWeeklySummaryLabel": "Weekly Rewarded Times-Table summary",
+      "tabuadaWeeklySummaryHint": "Sunday night — how many days your child did and how much they earned",
       "saveBtn": "Save",
       "saved": "✓ Saved successfully!",
       "numberHint": "Notifications are sent to your WhatsApp number, set in Edit profile."
@@ -887,6 +893,7 @@
     "medalEarnedTitle": "This week's medal earned!",
     "medalEarnedSubtitle": "7 days in a row complete — you can ask for your allowance now!",
     "weekProgress": "{{days}}/{{total}} days this week",
+    "rewardEarned": "{{earned}} earned this week (of {{total}})",
     "weekDays": {
       "mon": "Mon",
       "tue": "Tue",

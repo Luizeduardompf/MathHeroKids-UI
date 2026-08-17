@@ -52,6 +52,8 @@ export interface ChildProfile {
   // WhatsApp — número próprio, opcional (nem toda criança tem telefone)
   whatsapp_phone: string | null;
   whatsapp_phone_ddi: string;
+  // Tabuada Semanal Premiada — mesada (euros) se completar os 7 dias, migration 021
+  tabuada_weekly_reward: number;
   // Management
   is_active: boolean;
   sort_order: number;
@@ -214,6 +216,8 @@ export interface NotificationPreferences {
   weekly_summary_time: string;
   // Aviso único (sem horário) quando o filho completa a Tabuada Semanal Premiada — migration 020
   tabuada_medal_notice_enabled: boolean;
+  // Resumo semanal da Tabuada — domingo 21h fixo (sem picker) — migration 021
+  tabuada_weekly_summary_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -228,6 +232,8 @@ export interface ChildNotificationSettings {
   // Lembretes da Tabuada Semanal Premiada — até 4 horas (0-23), migration 020
   tabuada_reminder_enabled: boolean;
   tabuada_reminder_hours: number[];
+  // Resumo semanal da Tabuada enviado à própria criança — mesmo horário fixo do pai — migration 021
+  tabuada_weekly_summary_enabled: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -26,6 +26,7 @@ export interface UpdateChildInput {
   mix_operations?: boolean;
   whatsapp_phone?: string | null;
   whatsapp_phone_ddi?: string;
+  tabuada_weekly_reward?: number;
 }
 
 // ─── Error mapping ────────────────────────────────────────────────────────────

@@ -733,6 +733,8 @@
       "timerAutoHint": "O tempo diminui conforme a criança sobe de nível",
       "tablesLabel": "Tabuadas até",
       "tablesHint": "Limite máximo das multiplicações",
+      "tabuadaRewardLabel": "Mesada da Tabuada Semanal Premiada",
+      "tabuadaRewardHint": "Valor (€) se completar os 7 dias — cada dia vale 1/7 deste valor",
       "socialLabel": "Funcionalidades sociais",
       "socialHint": "Amigos, ranking e chat",
       "dangerZoneTitle": "Zona de perigo",
@@ -762,7 +764,9 @@
       "unfinishedHint": "Segundo aviso, mais tarde no dia",
       "tabuadaReminderLabel": "Lembretes da Tabuada Semanal Premiada",
       "tabuadaReminderHint": "Avisa a criança se ainda não fez a tabuada de hoje",
-      "tabuadaReminderPickHint": "Escolhe até 4 horários ({{count}}/4 escolhidos)"
+      "tabuadaReminderPickHint": "Escolhe até 4 horários ({{count}}/4 escolhidos)",
+      "tabuadaWeeklySummaryLabel": "Resumo semanal da Tabuada Semanal Premiada",
+      "tabuadaWeeklySummaryHint": "Domingo à noite — quantos dias fez e quanto ganhou"
     },
     "editProfile": "Editar perfil",
     "editProfileSub": "Dados do responsável",
@@ -834,6 +838,8 @@
       },
       "tabuadaMedalLabel": "Medalha da Tabuada Semanal Premiada",
       "tabuadaMedalHint": "Avisa-te assim que o teu filho completar os 7 dias — sinal para depositares a mesada",
+      "tabuadaWeeklySummaryLabel": "Resumo semanal da Tabuada Semanal Premiada",
+      "tabuadaWeeklySummaryHint": "Domingo à noite — quantos dias o teu filho fez e quanto ganhou de mesada",
       "saveBtn": "Guardar",
       "saved": "✓ Guardado com sucesso!",
       "numberHint": "As notificações são enviadas para o teu número de WhatsApp, definido em Editar perfil."
@@ -892,6 +898,7 @@
     "medalEarnedTitle": "Medalha da semana conquistada!",
     "medalEarnedSubtitle": "7 dias seguidos completos — já podes pedir a mesada!",
     "weekProgress": "{{days}}/{{total}} dias esta semana",
+    "rewardEarned": "{{earned}} ganhos esta semana (de {{total}})",
     "weekDays": {
       "mon": "Seg",
       "tue": "Ter",

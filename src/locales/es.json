@@ -265,6 +265,7 @@
     "medalEarnedTitle": "¡Medalla de la semana conseguida!",
     "medalEarnedSubtitle": "7 días seguidos completos — ¡ya puedes pedir la paga!",
     "weekProgress": "{{days}}/{{total}} días esta semana",
+    "rewardEarned": "{{earned}} ganados esta semana (de {{total}})",
     "weekDays": {
       "mon": "Lun",
       "tue": "Mar",
@@ -534,6 +535,8 @@
       "timerAutoHint": "El tiempo disminuye a medida que el niño sube de nivel",
       "tablesLabel": "Tablas de multiplicar hasta",
       "tablesHint": "Límite máximo de multiplicaciones",
+      "tabuadaRewardLabel": "Paga de la Tabla Semanal Premiada",
+      "tabuadaRewardHint": "Valor (€) si completa los 7 días — cada día vale 1/7 de este valor",
       "socialLabel": "Funciones sociales",
       "socialHint": "Amigos, ranking y chat",
       "dangerZoneTitle": "Zona de peligro",
@@ -563,7 +566,9 @@
       "unfinishedHint": "Segundo aviso, más tarde en el día",
       "tabuadaReminderLabel": "Recordatorios de la Tabla Semanal Premiada",
       "tabuadaReminderHint": "Avisa al niño si aún no ha hecho la tabla de hoy",
-      "tabuadaReminderPickHint": "Elige hasta 4 horarios ({{count}}/4 elegidos)"
+      "tabuadaReminderPickHint": "Elige hasta 4 horarios ({{count}}/4 elegidos)",
+      "tabuadaWeeklySummaryLabel": "Resumen semanal de la Tabla Semanal Premiada",
+      "tabuadaWeeklySummaryHint": "Domingo por la noche — cuántos días hizo y cuánto ganó"
     },
     "controls": {
       "title": "Control parental"
@@ -652,6 +657,8 @@
       },
       "tabuadaMedalLabel": "Medalla de la Tabla Semanal Premiada",
       "tabuadaMedalHint": "Te avisa en cuanto tu hijo complete los 7 días — es hora de darle la paga",
+      "tabuadaWeeklySummaryLabel": "Resumen semanal de la Tabla Semanal Premiada",
+      "tabuadaWeeklySummaryHint": "Domingo por la noche — cuántos días hizo tu hijo y cuánto ganó de paga",
       "saveBtn": "Guardar",
       "saved": "✓ ¡Guardado con éxito!",
       "numberHint": "Las notificaciones se envían a tu número de WhatsApp, definido en Editar perfil."

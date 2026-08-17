@@ -126,6 +126,7 @@ function ChildNotificationsSection({ childId }: { childId: string }) {
   const [unfinishedHour, setUnfinishedHour] = useState(19);
   const [tabuadaReminderEnabled, setTabuadaReminderEnabled] = useState(false);
   const [tabuadaReminderHours, setTabuadaReminderHours] = useState<number[]>([]);
+  const [tabuadaWeeklySummaryEnabled, setTabuadaWeeklySummaryEnabled] = useState(true);
 
   useEffect(() => {
     if (!settings) return;
@@ -136,6 +137,7 @@ function ChildNotificationsSection({ childId }: { childId: string }) {
     setUnfinishedHour(timeStringToHour(settings.unfinished_warning_time, 19));
     setTabuadaReminderEnabled(settings.tabuada_reminder_enabled);
     setTabuadaReminderHours(settings.tabuada_reminder_hours ?? []);
+    setTabuadaWeeklySummaryEnabled(settings.tabuada_weekly_summary_enabled);
   }, [settings]);
 
   function toggleTabuadaHour(h: number) {
@@ -155,6 +157,7 @@ function ChildNotificationsSection({ childId }: { childId: string }) {
       unfinished_warning_time: hourToTimeString(unfinishedHour),
       tabuada_reminder_enabled: tabuadaReminderEnabled,
       tabuada_reminder_hours: tabuadaReminderHours,
+      tabuada_weekly_summary_enabled: tabuadaWeeklySummaryEnabled,
     }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['child-notification-settings', childId] }),
   });
@@ -242,6 +245,16 @@ function ChildNotificationsSection({ childId }: { childId: string }) {
               </View>
             </>
           ) : null}
+
+          <Pressable style={styles.autoTimerRow} onPress={() => setTabuadaWeeklySummaryEnabled((v) => !v)}>
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.child.tabuadaWeeklySummaryLabel')}</Text>
+              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.tabuadaWeeklySummaryHint')}</Text>
+            </View>
+            <View style={[styles.toggle, tabuadaWeeklySummaryEnabled && styles.toggleOn]}>
+              <View style={[styles.toggleThumb, tabuadaWeeklySummaryEnabled && styles.toggleThumbOn]} />
+            </View>
+          </Pressable>
         </>
       ) : null}
 
@@ -327,6 +340,7 @@ export default function EditarCriancaScreen() {
   const [enabledOperations, setEnabledOperations] = useState<ModuleId[]>(['multiplication']);
   const [mixOperations, setMixOperations] = useState(false);
   const [socialEnabled, setSocialEnabled] = useState(true);
+  const [weeklyReward, setWeeklyReward] = useState('0');
   const [whatsappDdi, setWhatsappDdi] = useState('351');
   const [whatsappPhone, setWhatsappPhone] = useState('');
   const [saving, setSaving] = useState(false);
@@ -356,6 +370,7 @@ export default function EditarCriancaScreen() {
       if (found.enabled_operations?.length) setEnabledOperations(found.enabled_operations);
       setMixOperations(found.mix_operations ?? false);
       setSocialEnabled(found.social_enabled ?? true);
+      setWeeklyReward(String(Number(found.tabuada_weekly_reward ?? 0)));
       setWhatsappDdi(found.whatsapp_phone_ddi || '351');
       setWhatsappPhone(found.whatsapp_phone ?? '');
     }).catch(() => setLoadError('Erro ao carregar perfil.')); // i18n-ignore — internal error state
@@ -400,6 +415,7 @@ export default function EditarCriancaScreen() {
         enabled_operations: enabledOperations,
         mix_operations: mixOperations,
         social_enabled: socialEnabled,
+        tabuada_weekly_reward: Math.max(0, parseFloat(weeklyReward.replace(',', '.')) || 0),
         whatsapp_phone: whatsappPhone.trim() || null,
         whatsapp_phone_ddi: whatsappDdi.trim() || '351',
       });
@@ -640,6 +656,26 @@ export default function EditarCriancaScreen() {
               </Pressable>
             ))}
           </View>
+        </View>
+
+        {/* Tabuada Semanal Premiada — mesada */}
+        <View style={styles.settingCard}>
+          <View style={styles.settingHeader}>
+            <View style={[styles.settingIcon, { backgroundColor: '#FEF3C7' }]}>
+              <Ionicons name="medal-outline" size={18} color="#B8860B" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.child.tabuadaRewardLabel')}</Text>
+              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.tabuadaRewardHint')}</Text>
+            </View>
+          </View>
+          <Input
+            value={weeklyReward}
+            onChangeText={setWeeklyReward}
+            keyboardType="decimal-pad"
+            placeholder="0.00"
+            leftIcon={<RNText style={{ fontSize: 16, color: colors.text.secondary }}>€</RNText>}
+          />
         </View>
 
         {/* Operations */}
