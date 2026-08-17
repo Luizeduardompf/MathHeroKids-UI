@@ -111,6 +111,63 @@ export function getLevelXpCeil(level: number): number {
   return LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]?.xpRequired ?? 0;
 }
 
+// ─── Tabuada Semanal Premiada ───────────────────────────────────────────────
+// Módulo independente do desafio diário adaptativo: 100 questões por dia — SEMPRE a
+// tabuada completa 1-10 × 1-10 (as 100 combinações, cada uma exactamente uma vez, sem
+// repetição — independente do multiplication_max configurável do desafio normal),
+// repartidas em 5 blocos fixos de 20, cada um exigindo >=70% de acerto para passar. Sem
+// XP — a recompensa é a "medalha" ao completar 7 dias seguidos (segunda a domingo), sinal
+// para o pai depositar a mesada. Estes valores são só de exibição — a fonte autoritativa é
+// a Edge Function submit_tabuada_block (backend/functions/submit_tabuada_block/index.ts).
+export const WEEKLY_TABUADA = {
+  QUESTIONS_PER_DAY: 100,
+  BLOCKS_PER_DAY: 5,
+  QUESTIONS_PER_BLOCK: 20,
+  TIME_PER_QUESTION_SECONDS: 10,
+  PASS_THRESHOLD: 0.7,
+  DAYS_TO_COMPLETE_WEEK: 7,
+} as const;
+
+const TABUADA_TOTAL_QUESTIONS_PER_WEEK =
+  WEEKLY_TABUADA.DAYS_TO_COMPLETE_WEEK * WEEKLY_TABUADA.BLOCKS_PER_DAY * WEEKLY_TABUADA.QUESTIONS_PER_BLOCK; // 700
+
+/** Converte euros (ex: 14.5) para cêntimos inteiros. */
+export function eurosToCents(euros: number): number {
+  return Math.round(euros * 100);
+}
+
+export function centsToEuroLabel(cents: number): string {
+  return `€${(cents / 100).toFixed(2)}`;
+}
+
+/**
+ * Cêntimos ganhos por 1 bloco (0-20 acertos) — calculado em cêntimos inteiros num único
+ * passo, nunca por soma repetida de frações, para não acumular deriva de vírgula flutuante
+ * ao longo dos até 35 blocos da semana. Ver [[tabuada-rounding-safety]].
+ */
+export function tabuadaBlockEarnedCents(weeklyRewardEuros: number, correctCount: number): number {
+  if (weeklyRewardEuros <= 0) return 0;
+  const weeklyRewardCents = eurosToCents(weeklyRewardEuros);
+  return Math.round((weeklyRewardCents * correctCount) / TABUADA_TOTAL_QUESTIONS_PER_WEEK);
+}
+
+/** Soma cêntimos já calculados, sem nunca ultrapassar o valor total configurado (limite duro). */
+export function capTabuadaCents(rawCents: number, weeklyRewardEuros: number): number {
+  return Math.min(rawCents, eurosToCents(weeklyRewardEuros));
+}
+
+/** Soma em cêntimos o ganho dos blocos de um dia (já cap'ada ao valor total da semana). */
+export function sumTabuadaBlocksEarnedCents(
+  blocksState: Array<{ best_correct_count: number }>,
+  weeklyRewardEuros: number,
+): number {
+  const raw = blocksState.reduce((sum, b) => sum + tabuadaBlockEarnedCents(weeklyRewardEuros, b.best_correct_count), 0);
+  return capTabuadaCents(raw, weeklyRewardEuros);
+}
+
+/** Segunda-feira (0) a domingo (6) — mesma convenção usada nos rótulos do calendário. */
+export const WEEK_DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+
 export const MODULE_ID = {
   MULTIPLICATION: 'multiplication',
   DIVISION: 'division',

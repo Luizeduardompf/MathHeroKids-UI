@@ -174,6 +174,19 @@ function DevelopersPanel() {
         <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
       </Pressable>
 
+      <Text variant="h3" style={s.sectionTitle}>{t('parentArea.developers.dangerSection')}</Text>
+      <Pressable
+        onPress={() => router.push('/(app)/parent-area/developer-reset')}
+        style={({ pressed }) => [s.whatsappCard, pressed && { opacity: 0.7 }]}
+      >
+        <Ionicons name="refresh-circle-outline" size={24} color={colors.error} />
+        <View style={{ flex: 1 }}>
+          <Text variant="label">{t('parentArea.developers.resetLinkLabel')}</Text>
+          <Text variant="caption" color={colors.text.secondary}>{t('parentArea.developers.resetLinkHint')}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+      </Pressable>
+
       <Text variant="h3" style={s.sectionTitle}>{t('parentArea.developers.retestSection')}</Text>
       <Card style={{ gap: space.md }}>
         <Input

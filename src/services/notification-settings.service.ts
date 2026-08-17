@@ -12,6 +12,9 @@ export interface UpdateNotificationPreferencesInput {
   weekly_summary_enabled?: boolean;
   weekly_summary_weekday?: number;
   weekly_summary_time?: string;
+  tabuada_medal_notice_enabled?: boolean;
+  tabuada_weekly_summary_enabled?: boolean;
+  tabuada_day_completed_enabled?: boolean;
 }
 
 export interface UpdateChildNotificationSettingsInput {
@@ -20,6 +23,9 @@ export interface UpdateChildNotificationSettingsInput {
   daily_reminder_time?: string;
   unfinished_warning_enabled?: boolean;
   unfinished_warning_time?: string;
+  tabuada_reminder_enabled?: boolean;
+  tabuada_reminder_hours?: number[];
+  tabuada_weekly_summary_enabled?: boolean;
 }
 
 export const notificationSettingsService = {

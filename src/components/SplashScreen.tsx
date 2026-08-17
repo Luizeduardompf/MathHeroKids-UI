@@ -98,7 +98,11 @@ function FloatingSymbol({ symbol, left, size, delay, dur, drift, alpha }: Floate
     };
   });
 
-  return <Animated.Text style={animStyle as StyleProp<TextStyle>}>{symbol}</Animated.Text>;
+  return (
+    <Animated.Text style={animStyle as StyleProp<TextStyle>} allowFontScaling={false}>
+      {symbol}
+    </Animated.Text>
+  );
 }
 
 // ─── OrbitStar ────────────────────────────────────────────────────────────────
@@ -136,7 +140,9 @@ function OrbitStar({ angle: initialAngle, radius, size, duration }: StarCfg) {
 
   return (
     <Animated.View style={animStyle}>
-      <Text style={{ color: GOLD, fontSize: size, lineHeight: size + 2 }}>★</Text>
+      <Text style={{ color: GOLD, fontSize: size, lineHeight: size + 2 }} allowFontScaling={false}>
+        ★
+      </Text>
     </Animated.View>
   );
 }
@@ -205,7 +211,11 @@ function TitleLetter({
     };
   });
 
-  return <Animated.Text style={animStyle as StyleProp<TextStyle>}>{char}</Animated.Text>;
+  return (
+    <Animated.Text style={animStyle as StyleProp<TextStyle>} allowFontScaling={false}>
+      {char}
+    </Animated.Text>
+  );
 }
 
 // ─── SplashScreen ─────────────────────────────────────────────────────────────
@@ -323,7 +333,7 @@ export default function SplashScreen() {
 
           {/* Sparkle ✦ canto superior-direito */}
           <Animated.View style={[styles.sparkle, sparkleStyle] as StyleProp<ViewStyle>}>
-            <Text style={styles.sparkleText}>✦</Text>
+            <Text style={styles.sparkleText} allowFontScaling={false}>✦</Text>
           </Animated.View>
         </View>
 
@@ -335,7 +345,7 @@ export default function SplashScreen() {
         </View>
 
         {/* Subtítulo */}
-        <Animated.Text style={subtitleStyle as StyleProp<TextStyle>}>
+        <Animated.Text style={subtitleStyle as StyleProp<TextStyle>} allowFontScaling={false}>
           Aprender é uma aventura!
         </Animated.Text>
       </View>
@@ -349,7 +359,7 @@ export default function SplashScreen() {
           <BounceDot delay={160} />
           <BounceDot delay={320} />
         </View>
-        <Text style={styles.loadingText}>Carregando...</Text>
+        <Text style={styles.loadingText} allowFontScaling={false}>Carregando...</Text>
       </View>
 
       <View style={{ height: 48 }} />
