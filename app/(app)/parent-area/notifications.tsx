@@ -113,6 +113,7 @@ export default function NotificationsScreen() {
   const [weeklyWeekday, setWeeklyWeekday] = useState(0);
   const [tabuadaMedalNoticeEnabled, setTabuadaMedalNoticeEnabled] = useState(true);
   const [tabuadaWeeklySummaryEnabled, setTabuadaWeeklySummaryEnabled] = useState(true);
+  const [tabuadaDayCompletedEnabled, setTabuadaDayCompletedEnabled] = useState(false);
 
   useEffect(() => {
     if (!prefs) return;
@@ -128,6 +129,7 @@ export default function NotificationsScreen() {
     setWeeklyWeekday(prefs.weekly_summary_weekday);
     setTabuadaMedalNoticeEnabled(prefs.tabuada_medal_notice_enabled);
     setTabuadaWeeklySummaryEnabled(prefs.tabuada_weekly_summary_enabled);
+    setTabuadaDayCompletedEnabled(prefs.tabuada_day_completed_enabled);
   }, [prefs]);
 
   const mutation = useMutation({
@@ -144,6 +146,7 @@ export default function NotificationsScreen() {
       weekly_summary_weekday: weeklyWeekday,
       tabuada_medal_notice_enabled: tabuadaMedalNoticeEnabled,
       tabuada_weekly_summary_enabled: tabuadaWeeklySummaryEnabled,
+      tabuada_day_completed_enabled: tabuadaDayCompletedEnabled,
     }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['notification-preferences', parentId] });
@@ -261,6 +264,13 @@ export default function NotificationsScreen() {
               hint={t('parentArea.notifications.tabuadaMedalHint')}
               enabled={tabuadaMedalNoticeEnabled}
               onToggle={() => setTabuadaMedalNoticeEnabled((v) => !v)}
+            />
+            <ToggleRow
+              icon="checkmark-done-outline"
+              label={t('parentArea.notifications.tabuadaDayCompletedLabel')}
+              hint={t('parentArea.notifications.tabuadaDayCompletedHint')}
+              enabled={tabuadaDayCompletedEnabled}
+              onToggle={() => setTabuadaDayCompletedEnabled((v) => !v)}
             />
             <ToggleRow
               icon="cash-outline"

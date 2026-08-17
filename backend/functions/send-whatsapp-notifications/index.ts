@@ -19,6 +19,9 @@
  *   - tabuada_medal_parent (pai)      → notificação ÚNICA (não agendada, não é por dia — ver
  *     weekly_tabuada_weeks.medal_notified_at), disparada assim que medal_earned_at fica
  *     preenchido; reivindicada atomicamente por update condicional antes de enviar.
+ *   - tabuada_day_completed (pai)     → aviso a cada dia em que o filho conclui os 5 blocos +
+ *     desafio diário (weekly_tabuada_days.completed_at), sem horário fixo — dedup natural via
+ *     whatsapp_notification_log (1 envio/dia) evita repetição entre ticks do cron.
  *   - tabuada_weekly_summary (pai + criança) → resumo da semana (dias feitos + mesada
  *     ganha, ver child_profiles.tabuada_weekly_reward), horário FIXO domingo 21h (sem
  *     picker — é sempre o fecho da semana Seg-Dom, não faz sentido ser configurável).
@@ -46,6 +49,7 @@ const TEMPLATES: Record<Lang, {
   tabuadaMedalParent: (name: string) => string;
   tabuadaWeeklySummaryParent: (name: string, days: number, earned: string, total: string) => string;
   tabuadaWeeklySummaryChild: (name: string, days: number, earned: string) => string;
+  tabuadaDayCompletedParent: (name: string) => string;
 }> = {
   pt: {
     dailyReminderParent: (n) => `Olá! 👋 Só um lembrete: ${n} ainda não fez o desafio de matemática de hoje no Math Hero Kids.`,
@@ -62,6 +66,7 @@ const TEMPLATES: Record<Lang, {
     tabuadaWeeklySummaryChild: (n, days, earned) => days >= 7
       ? `🎉 Parabéns ${n}! Fizeste os 7 dias da Tabuada Semanal Premiada esta semana e ganhaste ${earned}! 🏅`
       : `📊 ${n}, esta semana fizeste ${days}/7 dias da Tabuada Semanal Premiada e ganhaste ${earned}. Para a semana começa tudo outra vez — vamos tentar os 7 dias? 💪`,
+    tabuadaDayCompletedParent: (n) => `✅ ${n} concluiu hoje a Tabuada Semanal Premiada — os 5 blocos + o desafio diário. Mais um dia garantido para a medalha da semana! 🏅`,
   },
   en: {
     dailyReminderParent: (n) => `Hi! 👋 Just a reminder: ${n} hasn't done today's math challenge on Math Hero Kids yet.`,
@@ -78,6 +83,7 @@ const TEMPLATES: Record<Lang, {
     tabuadaWeeklySummaryChild: (n, days, earned) => days >= 7
       ? `🎉 Congrats ${n}! You did all 7 days of the Weekly Rewarded Times-Table this week and earned ${earned}! 🏅`
       : `📊 ${n}, this week you did ${days}/7 days of the Weekly Rewarded Times-Table and earned ${earned}. Fresh start next week — let's go for all 7? 💪`,
+    tabuadaDayCompletedParent: (n) => `✅ ${n} finished today's Weekly Rewarded Times-Table — all 5 blocks plus the daily challenge. One more day locked in for this week's medal! 🏅`,
   },
   es: {
     dailyReminderParent: (n) => `¡Hola! 👋 Solo un recordatorio: ${n} todavía no ha hecho el reto de matemáticas de hoy en Math Hero Kids.`,
@@ -94,6 +100,7 @@ const TEMPLATES: Record<Lang, {
     tabuadaWeeklySummaryChild: (n, days, earned) => days >= 7
       ? `🎉 ¡Felicidades ${n}! Hiciste los 7 días de la Tabla Semanal Premiada esta semana y ganaste ${earned}! 🏅`
       : `📊 ${n}, esta semana hiciste ${days}/7 días de la Tabla Semanal Premiada y ganaste ${earned}. Nueva semana, ¿vamos por los 7 días? 💪`,
+    tabuadaDayCompletedParent: (n) => `✅ ${n} completó hoy la Tabla Semanal Premiada — los 5 bloques y el reto diario. ¡Un día más asegurado para la medalla de la semana! 🏅`,
   },
   fr: {
     dailyReminderParent: (n) => `Salut ! 👋 Juste un rappel : ${n} n'a pas encore fait le défi de maths d'aujourd'hui sur Math Hero Kids.`,
@@ -110,6 +117,7 @@ const TEMPLATES: Record<Lang, {
     tabuadaWeeklySummaryChild: (n, days, earned) => days >= 7
       ? `🎉 Bravo ${n} ! Tu as fait les 7 jours du Défi Hebdo des Tables cette semaine et gagné ${earned} ! 🏅`
       : `📊 ${n}, cette semaine tu as fait ${days}/7 jours du Défi Hebdo des Tables et gagné ${earned}. Nouvelle semaine, on tente les 7 jours ? 💪`,
+    tabuadaDayCompletedParent: (n) => `✅ ${n} a terminé aujourd'hui le Défi Hebdo des Tables — les 5 blocs plus le défi quotidien. Un jour de plus assuré pour la médaille de la semaine ! 🏅`,
   },
 };
 
@@ -219,6 +227,26 @@ Deno.serve(async (req: Request) => {
                 text: t.tabuadaMedalParent(child.display_name), sendDate: isoDate,
               }, summary);
             }
+          }
+        }
+
+        // Tabuada Semanal Premiada — aviso ao pai sempre que o dia de hoje fica completo (5
+        // blocos + desafio diário, ver tryCompleteDay). Sem horário fixo — dedup natural via
+        // whatsapp_notification_log garante 1 envio por dia mesmo em vários ticks do cron.
+        if ((pref as any).tabuada_day_completed_enabled) {
+          const { data: tabuadaDayRow } = await supabaseAdmin
+            .from('weekly_tabuada_days')
+            .select('completed_at')
+            .eq('child_id', child.id)
+            .eq('day_date', isoDate)
+            .maybeSingle();
+
+          if ((tabuadaDayRow as any)?.completed_at) {
+            await trySend(supabaseAdmin, config, {
+              parentId: parent.id, childId: child.id, target: 'parent',
+              notificationType: 'tabuada_day_completed', number,
+              text: t.tabuadaDayCompletedParent(child.display_name), sendDate: isoDate,
+            }, summary);
           }
         }
 

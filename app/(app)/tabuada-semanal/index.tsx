@@ -147,9 +147,11 @@ function TabuadaBlockCard({ block, locked, weeklyReward, onPress }: {
           </>
         )}
       </View>
-      {!maxed && !locked && (
-        <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} style={styles.blockCardChevron} />
-      )}
+      <View style={styles.blockCardTrailing}>
+        {!maxed && !locked && (
+          <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+        )}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -201,9 +203,11 @@ function DailyChallengeBlockCard({ done, locked, onPress }: { done: boolean; loc
           </Text>
         )}
       </View>
-      {!done && !locked && (
-        <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} style={styles.blockCardChevron} />
-      )}
+      <View style={styles.blockCardTrailing}>
+        {!done && !locked && (
+          <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+        )}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -483,7 +487,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.sm,
   },
-  blockCardChevron: { marginRight: space.md },
+  blockCardTrailing: { width: 20, marginRight: space.md, alignItems: 'center', justifyContent: 'center' },
   blockCardEarnedBadge: { fontFamily: fontFamily.extraBold } as import('react-native').TextStyle,
   blockCardLocked: { opacity: 0.75 },
   blockCardArtWrap: { width: 96, height: 96 },

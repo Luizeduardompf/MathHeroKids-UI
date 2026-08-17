@@ -14,6 +14,7 @@ export interface UpdateNotificationPreferencesInput {
   weekly_summary_time?: string;
   tabuada_medal_notice_enabled?: boolean;
   tabuada_weekly_summary_enabled?: boolean;
+  tabuada_day_completed_enabled?: boolean;
 }
 
 export interface UpdateChildNotificationSettingsInput {

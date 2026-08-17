@@ -220,6 +220,9 @@ export interface NotificationPreferences {
   tabuada_medal_notice_enabled: boolean;
   // Resumo semanal da Tabuada — domingo 21h fixo (sem picker) — migration 021
   tabuada_weekly_summary_enabled: boolean;
+  // Aviso ao pai sempre que o filho conclui o dia da Tabuada (5 blocos + desafio diário) —
+  // sem horário fixo, mesmo padrão do medal_notice — migration 023
+  tabuada_day_completed_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
