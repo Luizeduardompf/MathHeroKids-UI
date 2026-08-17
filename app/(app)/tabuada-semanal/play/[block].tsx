@@ -328,6 +328,18 @@ export default function TabuadaBlockPlayScreen() {
               <Text variant="label" color="#7A5A00">{t('tabuadaSemanal.dayCompleteBanner')}</Text>
             </View>
           )}
+          {!result.dayCompleted && result.tabuadaBlocksPassed && (
+            <Pressable
+              style={gs.almostDoneBanner}
+              onPress={() => router.push(`/(app)/challenge/${new Date().toISOString().split('T')[0]}`)}
+            >
+              <Ionicons name="flash" size={18} color="#fff" />
+              <Text variant="label" color={colors.text.inverse} style={{ flex: 1 }}>
+                {t('tabuadaSemanal.almostDoneBanner')}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color="#fff" />
+            </Pressable>
+          )}
           {result.weekStatus.medalEarned && (
             <View style={gs.medalBanner}>
               <Ionicons name="medal" size={24} color="#fff" />
@@ -445,6 +457,7 @@ const gs = StyleSheet.create({
   resultBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md },
   resultIconWrap: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center' },
   dayCompleteBanner: { flexDirection: 'row', alignItems: 'center', gap: space.xs, backgroundColor: '#FEF3C7', borderRadius: radius.full, paddingHorizontal: space.md, paddingVertical: space.sm },
+  almostDoneBanner: { flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: '#16A34A', borderRadius: radius.xl, padding: space.md, width: '100%' },
   medalBanner: { flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: colors.trophy.gold, borderRadius: radius.xl, padding: space.md, width: '100%' },
   continueBtn: { height: 58, borderRadius: 9999, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
 });

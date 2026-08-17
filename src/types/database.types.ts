@@ -284,6 +284,8 @@ export interface StartTabuadaDayResponse {
 
 export interface SubmitTabuadaBlockResponse {
   dayCompleted: boolean;
+  /** true quando os 5 blocos da tabuada passaram, mesmo que dayCompleted ainda seja false (falta o desafio diário normal, o "6º bloco"). */
+  tabuadaBlocksPassed: boolean;
   blockPassed: boolean;
   correctCount: number;
   blocksState: TabuadaBlockState[];

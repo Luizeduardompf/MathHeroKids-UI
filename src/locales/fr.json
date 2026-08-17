@@ -184,7 +184,14 @@
     "submitting": "Envoi des réponses…",
     "blockPassedTitle": "Bloc terminé !",
     "blockFailedTitle": "Presque — réessaie !",
-    "dayCompleteBanner": "Tables du jour complètes ! 🎉"
+    "dayCompleteBanner": "Tables du jour complètes ! 🎉",
+    "blockCompleteBadge": "Terminé !",
+    "dailyChallengeLabel": "Défi du jour",
+    "dailyChallengeDone": "Fait aujourd'hui ! ✓",
+    "dailyChallengePending": "Pas encore fait aujourd'hui",
+    "dailyChallengeCta": "Jouer",
+    "miloAlmostDone": "Tu as fini les 5 blocs des tables ! Il ne reste que le défi du jour pour boucler la journée. 💪",
+    "almostDoneBanner": "Il ne reste que le défi du jour !"
   },
   "rewards": {
     "frame_star": {

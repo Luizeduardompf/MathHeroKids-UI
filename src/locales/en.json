@@ -903,7 +903,14 @@
     "submitting": "Sending answers…",
     "blockPassedTitle": "Block complete!",
     "blockFailedTitle": "Almost there — try again!",
-    "dayCompleteBanner": "Today's times-table complete! 🎉"
+    "dayCompleteBanner": "Today's times-table complete! 🎉",
+    "blockCompleteBadge": "Complete!",
+    "dailyChallengeLabel": "Daily Challenge",
+    "dailyChallengeDone": "Done today! ✓",
+    "dailyChallengePending": "Not done yet today",
+    "dailyChallengeCta": "Play",
+    "miloAlmostDone": "You've finished all 5 times-table blocks! Just today's daily challenge left to close out the day. 💪",
+    "almostDoneBanner": "Just today's daily challenge left!"
   },
   "rewards": {
     "frame_star": {

@@ -114,3 +114,134 @@ export function mondayOfWeek(isoDate: string): string {
   d.setUTCDate(d.getUTCDate() - diffToMonday);
   return d.toISOString().slice(0, 10);
 }
+
+// ─── Fecho do dia + recálculo da semana (partilhado por submit_tabuada_block e
+// complete_challenge — o dia pode fechar por qualquer ordem dos dois eventos) ───────────
+
+// deno-lint-ignore no-explicit-any
+type SupabaseLike = any;
+
+export interface TabuadaWeekStatus {
+  weekStartDate: string;
+  daysCompleted: number;
+  medalEarned: boolean;
+}
+
+export async function loadWeekStatus(
+  supabase: SupabaseLike,
+  childId: string,
+  weekStartDate: string,
+): Promise<TabuadaWeekStatus> {
+  const { data } = await supabase
+    .from('weekly_tabuada_weeks')
+    .select('days_completed, medal_earned_at')
+    .eq('child_id', childId)
+    .eq('week_start_date', weekStartDate)
+    .maybeSingle();
+  return {
+    weekStartDate,
+    daysCompleted: data?.days_completed ?? 0,
+    medalEarned: !!data?.medal_earned_at,
+  };
+}
+
+/**
+ * Recalcula days_completed a partir da fonte (weekly_tabuada_days), em vez de incrementar —
+ * evita contagem duplicada em corridas/retries, mesma filosofia de complete_challenge
+ * validar sempre contra o estado persistido.
+ */
+export async function recomputeWeek(
+  supabase: SupabaseLike,
+  childId: string,
+  weekStartDate: string,
+): Promise<TabuadaWeekStatus> {
+  const weekEndExclusive = new Date(`${weekStartDate}T00:00:00Z`);
+  weekEndExclusive.setUTCDate(weekEndExclusive.getUTCDate() + 7);
+  const weekEndIso = weekEndExclusive.toISOString().slice(0, 10);
+
+  const { count } = await supabase
+    .from('weekly_tabuada_days')
+    .select('id', { count: 'exact', head: true })
+    .eq('child_id', childId)
+    .gte('day_date', weekStartDate)
+    .lt('day_date', weekEndIso)
+    .not('completed_at', 'is', null);
+
+  const daysCompleted = count ?? 0;
+
+  const { data: existingWeek } = await supabase
+    .from('weekly_tabuada_weeks')
+    .select('medal_earned_at')
+    .eq('child_id', childId)
+    .eq('week_start_date', weekStartDate)
+    .maybeSingle();
+
+  const medalEarnedAt = existingWeek?.medal_earned_at ?? (daysCompleted >= DAYS_TO_COMPLETE_WEEK ? new Date().toISOString() : null);
+
+  await supabase
+    .from('weekly_tabuada_weeks')
+    .upsert({
+      child_id: childId,
+      week_start_date: weekStartDate,
+      days_completed: daysCompleted,
+      medal_earned_at: medalEarnedAt,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'child_id,week_start_date' });
+
+  return { weekStartDate, daysCompleted, medalEarned: !!medalEarnedAt };
+}
+
+/**
+ * Tenta fechar o dia de `dayDate`: só marca `completed_at` quando os 5 blocos da tabuada
+ * estão "passed" E o desafio diário normal desse dia está `completed` em `calendar_days`
+ * (decisão do utilizador: o 6º "bloco" — o desafio diário normal — passa a contar para a
+ * medalha semanal, não é só informativo). Chamável a partir de submit_tabuada_block (quando
+ * o último bloco da tabuada passa) e de complete_challenge (quando o desafio normal
+ * termina) — o dia fecha por qualquer ordem em que os dois eventos aconteçam. Devolve
+ * `null` se a criança ainda nem começou a tabuada desse dia (nada a fazer).
+ */
+export async function tryCompleteDay(
+  supabase: SupabaseLike,
+  childId: string,
+  dayDate: string,
+): Promise<{ dayCompleted: boolean; tabuadaBlocksPassed: boolean; weekStatus: TabuadaWeekStatus } | null> {
+  const { data: day } = await supabase
+    .from('weekly_tabuada_days')
+    .select('blocks_state, completed_at')
+    .eq('child_id', childId)
+    .eq('day_date', dayDate)
+    .maybeSingle();
+  if (!day) return null;
+
+  const weekStartDate = mondayOfWeek(dayDate);
+
+  if (day.completed_at) {
+    return { dayCompleted: true, tabuadaBlocksPassed: true, weekStatus: await loadWeekStatus(supabase, childId, weekStartDate) };
+  }
+
+  const blocksState = day.blocks_state as BlockState[];
+  const tabuadaBlocksPassed = blocksState.every((b) => b.status === 'passed');
+  if (!tabuadaBlocksPassed) {
+    return { dayCompleted: false, tabuadaBlocksPassed: false, weekStatus: await loadWeekStatus(supabase, childId, weekStartDate) };
+  }
+
+  const { data: calDay } = await supabase
+    .from('calendar_days')
+    .select('state')
+    .eq('child_id', childId)
+    .eq('day_date', dayDate)
+    .maybeSingle();
+  const dailyChallengeDone = calDay?.state === 'completed';
+  if (!dailyChallengeDone) {
+    return { dayCompleted: false, tabuadaBlocksPassed: true, weekStatus: await loadWeekStatus(supabase, childId, weekStartDate) };
+  }
+
+  await supabase
+    .from('weekly_tabuada_days')
+    .update({ completed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq('child_id', childId)
+    .eq('day_date', dayDate);
+
+  const weekStatus = await recomputeWeek(supabase, childId, weekStartDate);
+  return { dayCompleted: true, tabuadaBlocksPassed: true, weekStatus };
+}

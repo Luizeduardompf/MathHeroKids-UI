@@ -21,6 +21,7 @@ import { getRules } from '../_shared/adaptive-rules.ts';
 import { updateMastery, applyCommutativity } from '../_shared/mastery.ts';
 import { getAppConfig, applyRetestOutcomes } from '../_shared/retest.ts';
 import type { RetestAnswerOutcome } from '../_shared/retest.ts';
+import { toLocalDate, tryCompleteDay } from '../_shared/tabuada.ts';
 
 // ─── XP Constants ─────────────────────────────────────────────────────────────
 // Reduzido ~5x (2026-07-17) para alongar a curva e evitar totais exorbitantes
@@ -550,6 +551,20 @@ Deno.serve(async (req: Request) => {
           unlockedReward = reward;
         }
       } catch { /* non-fatal */ }
+    }
+
+    // ── 15b. Tabuada Semanal Premiada — o desafio diário normal é o "6º bloco" ──
+    // Fecha o dia da tabuada (e a semana, se for o 7º dia) se os 5 blocos já
+    // estivessem "passed" antes deste desafio terminar. Não-fatal: a Tabuada Semanal
+    // é um módulo à parte, uma falha aqui nunca pode comprometer XP/streak/troféus já
+    // gravados acima. Usa a data de hoje no timezone da criança (não session.challenge_date
+    // — retroativos não fecham o dia de hoje da tabuada, mas o hook em si é seguro correr
+    // sempre, já que só actua sobre o dia "hoje").
+    try {
+      const tabuadaToday = toLocalDate(new Date(), childTimezone);
+      await tryCompleteDay(supabase, childId, tabuadaToday);
+    } catch (tabuadaErr) {
+      console.error('Tabuada Semanal completion hook error (non-fatal):', tabuadaErr);
     }
 
     // ── 16. Resposta (sessao ja marcada completa no passo 14) ──────────────

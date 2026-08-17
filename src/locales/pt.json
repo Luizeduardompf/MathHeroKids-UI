@@ -908,7 +908,14 @@
     "submitting": "A enviar respostas…",
     "blockPassedTitle": "Bloco concluído!",
     "blockFailedTitle": "Quase lá — tenta outra vez!",
-    "dayCompleteBanner": "Tabuada de hoje completa! 🎉"
+    "dayCompleteBanner": "Tabuada de hoje completa! 🎉",
+    "blockCompleteBadge": "Completo!",
+    "dailyChallengeLabel": "Desafio Diário",
+    "dailyChallengeDone": "Feito hoje! ✓",
+    "dailyChallengePending": "Ainda não feito hoje",
+    "dailyChallengeCta": "Jogar",
+    "miloAlmostDone": "Já fizeste os 5 blocos da tabuada! Só falta o desafio diário de hoje para fechar o dia. 💪",
+    "almostDoneBanner": "Só falta o desafio diário de hoje!"
   },
   "rewards": {
     "frame_star": {

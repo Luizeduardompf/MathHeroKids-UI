@@ -4,11 +4,14 @@
  * Valida as 20 respostas de um bloco contra o payload persistido por start_tabuada_day
  * (nunca confia na correção declarada pelo cliente — mesmo padrão de complete_challenge).
  * Bloco passa com >=70% de acerto; se falhar, fica "pending" e pode ser retentado (mesmas
- * 20 questões, sem gerar um conjunto novo — não há sobra no pool de 100/dia). Quando os 5
- * blocos do dia ficam "passed", marca o dia completo e recalcula weekly_tabuada_weeks
- * (segunda a domingo); ao atingir 7 dias completos na semana, marca medal_earned_at (a
- * notificação ao pai é responsabilidade do cron send-whatsapp-notifications, não desta EF —
- * mantém os segredos do WhatsApp isolados das funções de gameplay).
+ * 20 questões, sem gerar um conjunto novo — não há sobra no pool de 100/dia). O dia só
+ * fica completo quando os 5 blocos estão "passed" E o desafio diário normal (o "6º bloco")
+ * também está completed em calendar_days — ver _shared/tabuada.ts:tryCompleteDay, que é o
+ * mesmo hook chamado por complete_challenge quando o desafio normal termina primeiro. Ao
+ * fechar o dia, recalcula weekly_tabuada_weeks (segunda a domingo); ao atingir 7 dias
+ * completos na semana, marca medal_earned_at (a notificação ao pai é responsabilidade do
+ * cron send-whatsapp-notifications, não desta EF — mantém os segredos do WhatsApp isolados
+ * das funções de gameplay).
  *
  * Este módulo NÃO concede XP nem escreve em child_fact_mastery — ver migration
  * 020_weekly_tabuada.sql para o racional.
@@ -20,6 +23,7 @@
  * }
  * Response: {
  *   dayCompleted: boolean;
+ *   tabuadaBlocksPassed: boolean; // true quando os 5 blocos passaram, mesmo que o dia ainda não tenha fechado (falta o desafio normal)
  *   blockPassed: boolean;
  *   correctCount: number;
  *   blocksState: BlockState[];
@@ -33,9 +37,10 @@ import {
   BLOCKS_PER_DAY,
   PASS_THRESHOLD,
   QUESTIONS_PER_BLOCK,
-  DAYS_TO_COMPLETE_WEEK,
   mondayOfWeek,
   toLocalDate,
+  loadWeekStatus,
+  tryCompleteDay,
 } from '../_shared/tabuada.ts';
 import type { BlockState, TabuadaQuestion } from '../_shared/tabuada.ts';
 
@@ -94,6 +99,7 @@ Deno.serve(async (req: Request) => {
       const weekStatus = await loadWeekStatus(supabase, child_id, mondayOfWeek(today));
       return jsonOk({
         dayCompleted: true,
+        tabuadaBlocksPassed: true,
         blockPassed: true,
         correctCount: QUESTIONS_PER_BLOCK,
         blocksState: day.blocks_state,
@@ -143,26 +149,21 @@ Deno.serve(async (req: Request) => {
       } satisfies BlockState;
     });
 
-    const allBlocksPassed = blocksState.every(b => b.status === 'passed');
-    const dayUpdate: Record<string, unknown> = { blocks_state: blocksState, updated_at: new Date().toISOString() };
-    if (allBlocksPassed) dayUpdate.completed_at = new Date().toISOString();
-
     const { error: updateErr } = await supabase
       .from('weekly_tabuada_days')
-      .update(dayUpdate)
+      .update({ blocks_state: blocksState, updated_at: new Date().toISOString() })
       .eq('child_id', child_id)
       .eq('day_date', today);
     if (updateErr) {
       return jsonError(500, 'DAY_UPDATE_FAILED', updateErr.message);
     }
 
-    let weekStatus = await loadWeekStatus(supabase, child_id, mondayOfWeek(today));
-    if (allBlocksPassed) {
-      weekStatus = await recomputeWeek(supabase, child_id, mondayOfWeek(today));
-    }
+    const completion = await tryCompleteDay(supabase, child_id, today);
+    const weekStatus = completion?.weekStatus ?? await loadWeekStatus(supabase, child_id, mondayOfWeek(today));
 
     return jsonOk({
-      dayCompleted: allBlocksPassed,
+      dayCompleted: completion?.dayCompleted ?? false,
+      tabuadaBlocksPassed: completion?.tabuadaBlocksPassed ?? blocksState.every(b => b.status === 'passed'),
       blockPassed,
       correctCount,
       blocksState,
@@ -175,76 +176,6 @@ Deno.serve(async (req: Request) => {
     return jsonError(500, 'INTERNAL_ERROR', message);
   }
 });
-
-interface WeekStatus {
-  weekStartDate: string;
-  daysCompleted: number;
-  medalEarned: boolean;
-}
-
-async function loadWeekStatus(
-  supabase: ReturnType<typeof createClient>,
-  childId: string,
-  weekStartDate: string,
-): Promise<WeekStatus> {
-  const { data } = await supabase
-    .from('weekly_tabuada_weeks')
-    .select('days_completed, medal_earned_at')
-    .eq('child_id', childId)
-    .eq('week_start_date', weekStartDate)
-    .maybeSingle();
-  return {
-    weekStartDate,
-    daysCompleted: data?.days_completed ?? 0,
-    medalEarned: !!data?.medal_earned_at,
-  };
-}
-
-/**
- * Recalcula days_completed a partir da fonte (weekly_tabuada_days), em vez de incrementar —
- * evita contagem duplicada em corridas/retries e é a mesma filosofia de complete_challenge
- * validar sempre contra o estado persistido, nunca confiar num contador incremental solto.
- */
-async function recomputeWeek(
-  supabase: ReturnType<typeof createClient>,
-  childId: string,
-  weekStartDate: string,
-): Promise<WeekStatus> {
-  const weekEndExclusive = new Date(`${weekStartDate}T00:00:00Z`);
-  weekEndExclusive.setUTCDate(weekEndExclusive.getUTCDate() + 7);
-  const weekEndIso = weekEndExclusive.toISOString().slice(0, 10);
-
-  const { count } = await supabase
-    .from('weekly_tabuada_days')
-    .select('id', { count: 'exact', head: true })
-    .eq('child_id', childId)
-    .gte('day_date', weekStartDate)
-    .lt('day_date', weekEndIso)
-    .not('completed_at', 'is', null);
-
-  const daysCompleted = count ?? 0;
-
-  const { data: existingWeek } = await supabase
-    .from('weekly_tabuada_weeks')
-    .select('medal_earned_at')
-    .eq('child_id', childId)
-    .eq('week_start_date', weekStartDate)
-    .maybeSingle();
-
-  const medalEarnedAt = existingWeek?.medal_earned_at ?? (daysCompleted >= DAYS_TO_COMPLETE_WEEK ? new Date().toISOString() : null);
-
-  await supabase
-    .from('weekly_tabuada_weeks')
-    .upsert({
-      child_id: childId,
-      week_start_date: weekStartDate,
-      days_completed: daysCompleted,
-      medal_earned_at: medalEarnedAt,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'child_id,week_start_date' });
-
-  return { weekStartDate, daysCompleted, medalEarned: !!medalEarnedAt };
-}
 
 function jsonOk(body: unknown) {
   return new Response(JSON.stringify(body), {

@@ -281,7 +281,14 @@
     "submitting": "Enviando respuestas…",
     "blockPassedTitle": "¡Bloque completado!",
     "blockFailedTitle": "Casi lo tienes — ¡inténtalo de nuevo!",
-    "dayCompleteBanner": "¡Tabla de hoy completa! 🎉"
+    "dayCompleteBanner": "¡Tabla de hoy completa! 🎉",
+    "blockCompleteBadge": "¡Completo!",
+    "dailyChallengeLabel": "Reto Diario",
+    "dailyChallengeDone": "¡Hecho hoy! ✓",
+    "dailyChallengePending": "Todavía no hecho hoy",
+    "dailyChallengeCta": "Jugar",
+    "miloAlmostDone": "¡Ya hiciste los 5 bloques de la tabla! Solo falta el reto diario de hoy para cerrar el día. 💪",
+    "almostDoneBanner": "¡Solo falta el reto diario de hoy!"
   },
   "rewards": {
     "frame_star": {
