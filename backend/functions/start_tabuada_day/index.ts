@@ -33,7 +33,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { buildDayPayload, initialBlocksState, toLocalDate } from '../_shared/tabuada.ts';
-import type { BlockState, TabuadaFact, TabuadaOperation } from '../_shared/tabuada.ts';
+import type { BlockState, TabuadaFact, TabuadaOperation, TabuadaQuestion } from '../_shared/tabuada.ts';
 
 type Operation = TabuadaOperation;
 
@@ -86,7 +86,17 @@ Deno.serve(async (req: Request) => {
       && !existing.completed_at
       && (existing.blocks_state as BlockState[]).every((b) => b.attempts === 0);
 
-    if (existing && !dayUntouched) {
+    // Auto-cura de payloads "legacy": dias criados antes do campo `operation` existir em
+    // TabuadaQuestion (commit 8d3066b) ficaram gravados sem esse campo, fazendo o cliente
+    // calcular correct_answer=undefined para TODAS as questões (respostas certas recusadas,
+    // "0" mostrado como resposta certa). Regenera mesmo com attempts>0 — o progresso desse
+    // payload já estava corrompido pelo bug, não há histórico válido a preservar. Nunca mexe
+    // num dia já completed_at (fica congelado como sempre).
+    const isLegacyPayload = !!existing
+      && !existing.completed_at
+      && (existing.questions_payload as TabuadaQuestion[]).some((q) => !q.operation);
+
+    if (existing && !dayUntouched && !isLegacyPayload) {
       return jsonOk({
         dayDate: today,
         status: existing.completed_at ? 'completed' : 'resumed',
