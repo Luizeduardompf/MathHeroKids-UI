@@ -145,7 +145,7 @@ function TabuadaBlockCard({ block, locked, weeklyReward, onPress }: {
       </View>
       <View style={styles.blockCardTrailing}>
         {!maxed && !locked && !passed && (
-          <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+          <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
         )}
       </View>
     </TouchableOpacity>
@@ -201,7 +201,7 @@ function DailyChallengeBlockCard({ done, locked, onPress }: { done: boolean; loc
       </View>
       <View style={styles.blockCardTrailing}>
         {!done && !locked && (
-          <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+          <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
         )}
       </View>
     </TouchableOpacity>
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
   // Alinha "€X hoje" com o valor em € dentro dos cards abaixo — os cards têm um recuo
   // interno (padding do painel + espaço reservado da seta, ver blockCardTrailing) que este
   // texto, por estar fora de um card, não tem por defeito.
-  todayEarnedLabel: { marginRight: space.sm + 20 + space.xs },
+  todayEarnedLabel: { marginRight: space.xs + 18 },
 
   almostDoneBanner: {
     flexDirection: 'row',
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.sm,
   },
-  blockCardTrailing: { width: 20, marginRight: space.xs, alignItems: 'center', justifyContent: 'center' },
+  blockCardTrailing: { width: 18, alignItems: 'center', justifyContent: 'center' },
   blockCardEarnedBadge: { fontFamily: fontFamily.extraBold } as import('react-native').TextStyle,
   blockCardLocked: { opacity: 0.75 },
   blockCardArtWrap: { width: 96, height: 96 },
@@ -512,7 +512,9 @@ const styles = StyleSheet.create({
   },
   blockCardPanel: {
     flex: 1,
-    padding: space.sm,
+    paddingLeft: space.sm,
+    paddingRight: space.xs,
+    paddingVertical: space.sm,
     gap: 4,
     justifyContent: 'center',
   },
