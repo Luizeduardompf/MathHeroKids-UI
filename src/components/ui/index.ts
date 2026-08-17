@@ -8,6 +8,7 @@ export { Badge } from './Badge';
 export { Avatar } from './Avatar';
 export { AvatarPicker } from './AvatarPicker';
 export { ProgressBar } from './ProgressBar';
+export { ScreenHeader } from './ScreenHeader';
 
 export type { TextVariant } from './Text';
 export { ConfirmDialog } from './ConfirmDialog';
