@@ -294,10 +294,17 @@ export default function TabuadaSemanalScreen() {
   // nunca pode ultrapassar o valor configurado pelo pai.
   const weekEarnedCents = capTabuadaCents(weekEarnedCentsRaw, weeklyReward);
 
+  // Dia fechado (conta para a medalha) não significa "nada mais a fazer" — blocos passados
+  // mas não perfeitos (ex: 19/20) continuam re-jogáveis hoje para ganhar mais dinheiro. "Volta
+  // amanhã" seria enganoso enquanto isso ainda é possível.
+  const hasImprovableBlocks = blocksState.some(
+    (b) => b.status === 'passed' && b.best_correct_count < WEEKLY_TABUADA.QUESTIONS_PER_BLOCK,
+  );
+
   const miloMessage = medalEarned
     ? t('tabuadaSemanal.miloMedalEarned')
     : todayFullyComplete
-      ? t('tabuadaSemanal.miloDayDone')
+      ? t(hasImprovableBlocks ? 'tabuadaSemanal.miloDayDoneCanImprove' : 'tabuadaSemanal.miloDayDone')
       : onlyDailyChallengeLeft
         ? t('tabuadaSemanal.miloAlmostDone')
         : t('tabuadaSemanal.miloEncourage');
