@@ -393,7 +393,7 @@ export default function TabuadaSemanalScreen() {
       <View style={styles.sectionHeaderRow}>
         <Text variant="h3">{t('tabuadaSemanal.todayBlocks')}</Text>
         {weeklyReward > 0 && (
-          <Text variant="label" color={colors.trophy.gold}>
+          <Text variant="label" color={colors.trophy.gold} style={styles.todayEarnedLabel}>
             {t('tabuadaSemanal.todayEarned', { earned: centsToEuroLabel(todayEarnedCents) })}
           </Text>
         )}
@@ -468,6 +468,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  // Alinha "€X hoje" com o valor em € dentro dos cards abaixo — os cards têm um recuo
+  // interno (padding do painel + espaço reservado da seta, ver blockCardTrailing) que este
+  // texto, por estar fora de um card, não tem por defeito.
+  todayEarnedLabel: { marginRight: space.sm + 20 + space.xs },
 
   almostDoneBanner: {
     flexDirection: 'row',
