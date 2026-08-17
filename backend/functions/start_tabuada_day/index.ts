@@ -16,6 +16,10 @@
  *   tabuada_use_general_settings=true — usa enabled_operations + multiplication_max da
  *     criança (as "regras gerais"), tal como o desafio diário normal.
  * Em ambos os casos, buildDayPayload nunca repete um facto dentro dos 5 blocos do dia.
+ * Se o pai mudar esta flag (ou multiplication_max/enabled_operations) a meio do dia mas a
+ * criança ainda não tiver respondido nada (attempts=0 em todos os blocos), o dia é
+ * regenerado nesta chamada para reflectir a definição actual — só fica "congelado" com o
+ * payload antigo depois de haver progresso real.
  *
  * Request body: { child_id: string }
  * Response: {
@@ -29,7 +33,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { buildDayPayload, initialBlocksState, toLocalDate } from '../_shared/tabuada.ts';
-import type { TabuadaFact } from '../_shared/tabuada.ts';
+import type { BlockState, TabuadaFact } from '../_shared/tabuada.ts';
 
 type Operation = 'multiplication' | 'addition' | 'subtraction' | 'division';
 
@@ -71,7 +75,18 @@ Deno.serve(async (req: Request) => {
       .eq('day_date', today)
       .maybeSingle();
 
-    if (existing) {
+    // Se o dia já existe MAS a criança ainda não respondeu nada (0 attempts em todos os
+    // blocos), regenera a partir das definições ACTUAIS em vez de devolver o payload
+    // antigo — cobre o caso de o pai ligar/desligar "seguir configurações gerais" (ou mudar
+    // multiplication_max/enabled_operations) depois do dia ter sido gerado, mas antes da
+    // criança começar a jogar. Uma vez com progresso real (attempts>0) ou já completo,
+    // mantém o payload tal como está — mudar as questões a meio destruiria o histórico do
+    // dia (blocks_state referencia posições/factos deste payload específico).
+    const dayUntouched = !!existing
+      && !existing.completed_at
+      && (existing.blocks_state as BlockState[]).every((b) => b.attempts === 0);
+
+    if (existing && !dayUntouched) {
       return jsonOk({
         dayDate: today,
         status: existing.completed_at ? 'completed' : 'resumed',
