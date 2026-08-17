@@ -91,7 +91,7 @@ function TabuadaBlockCard({ block, locked, weeklyReward, onPress }: {
     >
       <View style={styles.blockCardArtWrap}>
         <Image
-          source={maxed ? MILO_CELEBRATE : TABUADA_FRAME}
+          source={passed ? MILO_CELEBRATE : TABUADA_FRAME}
           style={styles.blockCardArt}
           resizeMode="cover"
         />
