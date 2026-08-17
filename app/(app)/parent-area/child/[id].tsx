@@ -124,9 +124,6 @@ function ChildNotificationsSection({ childId }: { childId: string }) {
   const [dailyReminderHour, setDailyReminderHour] = useState(16);
   const [unfinishedEnabled, setUnfinishedEnabled] = useState(false);
   const [unfinishedHour, setUnfinishedHour] = useState(19);
-  const [tabuadaReminderEnabled, setTabuadaReminderEnabled] = useState(false);
-  const [tabuadaReminderHours, setTabuadaReminderHours] = useState<number[]>([]);
-  const [tabuadaWeeklySummaryEnabled, setTabuadaWeeklySummaryEnabled] = useState(true);
 
   useEffect(() => {
     if (!settings) return;
@@ -135,18 +132,7 @@ function ChildNotificationsSection({ childId }: { childId: string }) {
     setDailyReminderHour(timeStringToHour(settings.daily_reminder_time, 16));
     setUnfinishedEnabled(settings.unfinished_warning_enabled);
     setUnfinishedHour(timeStringToHour(settings.unfinished_warning_time, 19));
-    setTabuadaReminderEnabled(settings.tabuada_reminder_enabled);
-    setTabuadaReminderHours(settings.tabuada_reminder_hours ?? []);
-    setTabuadaWeeklySummaryEnabled(settings.tabuada_weekly_summary_enabled);
   }, [settings]);
-
-  function toggleTabuadaHour(h: number) {
-    setTabuadaReminderHours((prev) => {
-      if (prev.includes(h)) return prev.filter((x) => x !== h);
-      if (prev.length >= 4) return prev; // máx. 4 lembretes/dia (limite da coluna na BD)
-      return [...prev, h].sort((a, b) => a - b);
-    });
-  }
 
   const mutation = useMutation({
     mutationFn: () => notificationSettingsService.updateChildSettings(childId, {
@@ -155,9 +141,6 @@ function ChildNotificationsSection({ childId }: { childId: string }) {
       daily_reminder_time: hourToTimeString(dailyReminderHour),
       unfinished_warning_enabled: unfinishedEnabled,
       unfinished_warning_time: hourToTimeString(unfinishedHour),
-      tabuada_reminder_enabled: tabuadaReminderEnabled,
-      tabuada_reminder_hours: tabuadaReminderHours,
-      tabuada_weekly_summary_enabled: tabuadaWeeklySummaryEnabled,
     }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['child-notification-settings', childId] }),
   });
@@ -218,26 +201,147 @@ function ChildNotificationsSection({ childId }: { childId: string }) {
               ))}
             </View>
           ) : null}
+        </>
+      ) : null}
 
-          <Pressable style={styles.autoTimerRow} onPress={() => setTabuadaReminderEnabled((v) => !v)}>
+      {mutation.isError ? <Text variant="bodySmall" color={colors.error}>{(mutation.error as Error).message}</Text> : null}
+      {mutation.isSuccess ? <Text variant="bodySmall" color={colors.success}>{t('parentArea.notifications.saved')}</Text> : null}
+
+      <Button
+        label={t('parentArea.notifications.saveBtn')}
+        onPress={() => mutation.mutate()}
+        loading={mutation.isPending}
+        fullWidth
+      />
+    </View>
+  );
+}
+
+// ─── Tabuada Semanal Premiada — secção consolidada ─────────────────────────────
+// Todas as definições do módulo num só sítio: habilitado, seguir regras gerais, mesada,
+// lembretes e resumo de domingo. Só mostra o resto quando habilitado. Grava em duas
+// tabelas (child_profiles + child_notification_settings) num único "Guardar".
+
+function TabuadaSettingsSection({ child, onChildUpdated }: {
+  child: ChildProfile;
+  onChildUpdated: (updated: ChildProfile) => void;
+}) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  const { data: notifSettings } = useQuery({
+    queryKey: ['child-notification-settings', child.id],
+    queryFn: () => notificationSettingsService.getChildSettings(child.id),
+  });
+
+  const [enabled, setEnabled] = useState(child.tabuada_enabled);
+  const [useGeneralSettings, setUseGeneralSettings] = useState(child.tabuada_use_general_settings);
+  const [weeklyReward, setWeeklyReward] = useState(String(Number(child.tabuada_weekly_reward ?? 0)));
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderHours, setReminderHours] = useState<number[]>([]);
+  const [weeklySummaryEnabled, setWeeklySummaryEnabled] = useState(true);
+
+  useEffect(() => {
+    setEnabled(child.tabuada_enabled);
+    setUseGeneralSettings(child.tabuada_use_general_settings);
+    setWeeklyReward(String(Number(child.tabuada_weekly_reward ?? 0)));
+  }, [child.tabuada_enabled, child.tabuada_use_general_settings, child.tabuada_weekly_reward]);
+
+  useEffect(() => {
+    if (!notifSettings) return;
+    setReminderEnabled(notifSettings.tabuada_reminder_enabled);
+    setReminderHours(notifSettings.tabuada_reminder_hours ?? []);
+    setWeeklySummaryEnabled(notifSettings.tabuada_weekly_summary_enabled);
+  }, [notifSettings]);
+
+  function toggleHour(h: number) {
+    setReminderHours((prev) => {
+      if (prev.includes(h)) return prev.filter((x) => x !== h);
+      if (prev.length >= 4) return prev; // máx. 4 lembretes/dia (limite da coluna na BD)
+      return [...prev, h].sort((a, b) => a - b);
+    });
+  }
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const [updatedChild] = await Promise.all([
+        childService.updateChild(child.id, {
+          tabuada_enabled: enabled,
+          tabuada_use_general_settings: useGeneralSettings,
+          tabuada_weekly_reward: Math.max(0, parseFloat(weeklyReward.replace(',', '.')) || 0),
+        }),
+        notificationSettingsService.updateChildSettings(child.id, {
+          tabuada_reminder_enabled: reminderEnabled,
+          tabuada_reminder_hours: reminderHours,
+          tabuada_weekly_summary_enabled: weeklySummaryEnabled,
+        }),
+      ]);
+      return updatedChild;
+    },
+    onSuccess: (updatedChild) => {
+      onChildUpdated(updatedChild);
+      void queryClient.invalidateQueries({ queryKey: ['child-notification-settings', child.id] });
+    },
+  });
+
+  return (
+    <View style={styles.settingCard}>
+      <Pressable style={styles.settingHeader} onPress={() => setEnabled((v) => !v)}>
+        <View style={[styles.settingIcon, { backgroundColor: '#FEF3C7' }]}>
+          <Ionicons name="medal-outline" size={18} color="#B8860B" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text variant="label">{t('parentArea.child.tabuadaEnabledLabel')}</Text>
+          <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.tabuadaEnabledHint')}</Text>
+        </View>
+        <View style={[styles.toggle, enabled && styles.toggleOn]}>
+          <View style={[styles.toggleThumb, enabled && styles.toggleThumbOn]} />
+        </View>
+      </Pressable>
+
+      {enabled ? (
+        <>
+          <Pressable style={styles.autoTimerRow} onPress={() => setUseGeneralSettings((v) => !v)}>
+            <View style={{ flex: 1 }}>
+              <Text variant="label">{t('parentArea.child.tabuadaUseGeneralLabel')}</Text>
+              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.tabuadaUseGeneralHint')}</Text>
+            </View>
+            <View style={[styles.toggle, useGeneralSettings && styles.toggleOn]}>
+              <View style={[styles.toggleThumb, useGeneralSettings && styles.toggleThumbOn]} />
+            </View>
+          </Pressable>
+
+          <View style={styles.dividerBlock}>
+            <Input
+              label={t('parentArea.child.tabuadaRewardLabel')}
+              hint={t('parentArea.child.tabuadaRewardHint')}
+              value={weeklyReward}
+              onChangeText={setWeeklyReward}
+              keyboardType="decimal-pad"
+              placeholder="0.00"
+              leftIcon={<RNText style={{ fontSize: 16, color: colors.text.secondary }}>€</RNText>}
+            />
+          </View>
+
+          <Pressable style={styles.autoTimerRow} onPress={() => setReminderEnabled((v) => !v)}>
             <View style={{ flex: 1 }}>
               <Text variant="label">{t('parentArea.child.tabuadaReminderLabel')}</Text>
               <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.tabuadaReminderHint')}</Text>
             </View>
-            <View style={[styles.toggle, tabuadaReminderEnabled && styles.toggleOn]}>
-              <View style={[styles.toggleThumb, tabuadaReminderEnabled && styles.toggleThumbOn]} />
+            <View style={[styles.toggle, reminderEnabled && styles.toggleOn]}>
+              <View style={[styles.toggleThumb, reminderEnabled && styles.toggleThumbOn]} />
             </View>
           </Pressable>
-          {tabuadaReminderEnabled ? (
+          {reminderEnabled ? (
             <>
               <Text variant="caption" color={colors.text.tertiary}>
-                {t('parentArea.child.tabuadaReminderPickHint', { count: tabuadaReminderHours.length })}
+                {t('parentArea.child.tabuadaReminderPickHint', { count: reminderHours.length })}
               </Text>
               <View style={styles.optionRow}>
                 {NOTIFICATION_HOURS.map((h) => {
-                  const selected = tabuadaReminderHours.includes(h);
+                  const selected = reminderHours.includes(h);
                   return (
-                    <Pressable key={h} style={[styles.optionBtn, selected && styles.optionBtnActive]} onPress={() => toggleTabuadaHour(h)}>
+                    <Pressable key={h} style={[styles.optionBtn, selected && styles.optionBtnActive]} onPress={() => toggleHour(h)}>
                       <RNText style={[styles.optionText, selected && styles.optionTextActive]}>{String(h).padStart(2, '0')}h</RNText>
                     </Pressable>
                   );
@@ -246,15 +350,19 @@ function ChildNotificationsSection({ childId }: { childId: string }) {
             </>
           ) : null}
 
-          <Pressable style={styles.autoTimerRow} onPress={() => setTabuadaWeeklySummaryEnabled((v) => !v)}>
+          <Pressable style={styles.autoTimerRow} onPress={() => setWeeklySummaryEnabled((v) => !v)}>
             <View style={{ flex: 1 }}>
               <Text variant="label">{t('parentArea.child.tabuadaWeeklySummaryLabel')}</Text>
               <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.tabuadaWeeklySummaryHint')}</Text>
             </View>
-            <View style={[styles.toggle, tabuadaWeeklySummaryEnabled && styles.toggleOn]}>
-              <View style={[styles.toggleThumb, tabuadaWeeklySummaryEnabled && styles.toggleThumbOn]} />
+            <View style={[styles.toggle, weeklySummaryEnabled && styles.toggleOn]}>
+              <View style={[styles.toggleThumb, weeklySummaryEnabled && styles.toggleThumbOn]} />
             </View>
           </Pressable>
+
+          <Text variant="caption" color={colors.text.tertiary}>
+            {t('parentArea.child.tabuadaNotifRequiresWhatsapp')}
+          </Text>
         </>
       ) : null}
 
@@ -340,7 +448,6 @@ export default function EditarCriancaScreen() {
   const [enabledOperations, setEnabledOperations] = useState<ModuleId[]>(['multiplication']);
   const [mixOperations, setMixOperations] = useState(false);
   const [socialEnabled, setSocialEnabled] = useState(true);
-  const [weeklyReward, setWeeklyReward] = useState('0');
   const [whatsappDdi, setWhatsappDdi] = useState('351');
   const [whatsappPhone, setWhatsappPhone] = useState('');
   const [saving, setSaving] = useState(false);
@@ -370,7 +477,6 @@ export default function EditarCriancaScreen() {
       if (found.enabled_operations?.length) setEnabledOperations(found.enabled_operations);
       setMixOperations(found.mix_operations ?? false);
       setSocialEnabled(found.social_enabled ?? true);
-      setWeeklyReward(String(Number(found.tabuada_weekly_reward ?? 0)));
       setWhatsappDdi(found.whatsapp_phone_ddi || '351');
       setWhatsappPhone(found.whatsapp_phone ?? '');
     }).catch(() => setLoadError('Erro ao carregar perfil.')); // i18n-ignore — internal error state
@@ -415,7 +521,6 @@ export default function EditarCriancaScreen() {
         enabled_operations: enabledOperations,
         mix_operations: mixOperations,
         social_enabled: socialEnabled,
-        tabuada_weekly_reward: Math.max(0, parseFloat(weeklyReward.replace(',', '.')) || 0),
         whatsapp_phone: whatsappPhone.trim() || null,
         whatsapp_phone_ddi: whatsappDdi.trim() || '351',
       });
@@ -658,26 +763,6 @@ export default function EditarCriancaScreen() {
           </View>
         </View>
 
-        {/* Tabuada Semanal Premiada — mesada */}
-        <View style={styles.settingCard}>
-          <View style={styles.settingHeader}>
-            <View style={[styles.settingIcon, { backgroundColor: '#FEF3C7' }]}>
-              <Ionicons name="medal-outline" size={18} color="#B8860B" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text variant="label">{t('parentArea.child.tabuadaRewardLabel')}</Text>
-              <Text variant="caption" color={colors.text.secondary}>{t('parentArea.child.tabuadaRewardHint')}</Text>
-            </View>
-          </View>
-          <Input
-            value={weeklyReward}
-            onChangeText={setWeeklyReward}
-            keyboardType="decimal-pad"
-            placeholder="0.00"
-            leftIcon={<RNText style={{ fontSize: 16, color: colors.text.secondary }}>€</RNText>}
-          />
-        </View>
-
         {/* Operations */}
         <View style={styles.settingCard}>
           <View style={styles.settingHeader}>
@@ -737,6 +822,14 @@ export default function EditarCriancaScreen() {
         </Pressable>
 
         <ChildNotificationsSection childId={child.id} />
+
+        <TabuadaSettingsSection
+          child={child}
+          onChildUpdated={(updated) => {
+            setChild(updated);
+            if (activeChild?.id === updated.id) setActiveChild(updated);
+          }}
+        />
 
         <Button
           label={t('parentArea.child.save')}
@@ -908,6 +1001,12 @@ const styles = StyleSheet.create({
   optionRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   autoTimerRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingTop: space.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.default,
+    marginTop: space.xs,
+  },
+  dividerBlock: {
     paddingTop: space.sm,
     borderTopWidth: 1,
     borderTopColor: colors.border.default,

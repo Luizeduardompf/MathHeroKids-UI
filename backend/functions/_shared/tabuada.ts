@@ -62,20 +62,25 @@ export function seededShuffle<T>(arr: T[], rng: () => number): T[] {
 }
 
 /**
- * Constrói o payload de 100 questões do dia: a tabuada completa 1-10 × 1-10, cada
- * combinação exactamente UMA VEZ (sem repetição — é a exigência do módulo: ao fim das 100
- * questões a criança fez a tabuada toda). Independente do `multiplication_max` do desafio
- * diário normal — este módulo é sempre a grelha 1-10 fixa, por isso `pool` tem de ter
- * exactamente 100 factos únicos (o caller filtra operand_a/b entre 1-10 antes de chamar
- * isto). Só embaralha a ordem — nunca repete nem descarta um facto.
+ * Constrói o payload de 100 questões do dia a partir de `pool` (sem repetição — nenhum
+ * facto aparece duas vezes nos 5 blocos do mesmo dia). Quando `tabuada_use_general_settings`
+ * está desligado (default), `pool` é sempre exactamente a tabuada 1-10 × 1-10 (100 factos) e
+ * as 100 saem todas, só a ORDEM (e por isso a divisão em blocos) muda todos os dias — ver
+ * `seed`, que inclui a data local da criança. Quando ligado, `pool` pode ser maior (várias
+ * operações activas) — nesse caso amostra 100 ao acaso sem reposição, cobrindo um subconjunto
+ * diferente a cada dia. Nunca aceita pool menor que 100 (erro de configuração/seed, não algo
+ * a disfarçar repetindo factos).
  */
 export function buildDayPayload(pool: TabuadaFact[], seed: string): TabuadaQuestion[] {
-  if (pool.length !== QUESTIONS_PER_DAY) {
-    throw new Error(`Pool de factos de multiplicação tem ${pool.length}, esperava exactamente ${QUESTIONS_PER_DAY} (tabuada 1-10 completa).`);
+  if (pool.length < QUESTIONS_PER_DAY) {
+    throw new Error(`Pool de factos tem ${pool.length}, esperava pelo menos ${QUESTIONS_PER_DAY}.`);
   }
 
+  // Duas voltas de mulberry32 antes de usar — reforça a separação entre seeds parecidas
+  // (mesma criança, datas consecutivas) mesmo que seedFromString produza hashes próximos.
   const rng = mulberry32(seedFromString(seed));
-  const shuffled = seededShuffle(pool, rng);
+  rng(); rng();
+  const shuffled = seededShuffle(pool, rng).slice(0, QUESTIONS_PER_DAY);
 
   return shuffled.map((f, idx) => ({
     position: idx + 1,

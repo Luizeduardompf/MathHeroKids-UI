@@ -52,7 +52,9 @@ export interface ChildProfile {
   // WhatsApp — número próprio, opcional (nem toda criança tem telefone)
   whatsapp_phone: string | null;
   whatsapp_phone_ddi: string;
-  // Tabuada Semanal Premiada — mesada (euros) se completar os 7 dias, migration 021
+  // Tabuada Semanal Premiada — migrations 021/022
+  tabuada_enabled: boolean;
+  tabuada_use_general_settings: boolean;
   tabuada_weekly_reward: number;
   // Management
   is_active: boolean;

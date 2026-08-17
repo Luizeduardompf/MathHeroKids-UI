@@ -60,22 +60,41 @@ async function fetchTodayCalendarState(childId: string, today: string): Promise<
   return data?.state === 'completed';
 }
 
+/** Valor de 1 bloco: 1/7 da mesada semanal, dividido pelos 5 blocos do dia. */
+function computeBlockValue(weeklyReward: number): number {
+  return weeklyReward > 0
+    ? (weeklyReward / WEEKLY_TABUADA.DAYS_TO_COMPLETE_WEEK) / WEEKLY_TABUADA.BLOCKS_PER_DAY
+    : 0;
+}
+
+/** Soma o ganho dos 5 blocos de um dia — proporcional ao melhor resultado de cada um. */
+function sumBlocksEarned(blocksState: TabuadaBlockState[], blockValue: number): number {
+  return blocksState.reduce(
+    (sum, b) => sum + (b.best_correct_count / WEEKLY_TABUADA.QUESTIONS_PER_BLOCK) * blockValue,
+    0,
+  );
+}
+
 // ─── Cards ──────────────────────────────────────────────────────────────────────
 
-function TabuadaBlockCard({ block, locked, onPress }: { block: TabuadaBlockState; locked: boolean; onPress: () => void }) {
+function TabuadaBlockCard({ block, locked, blockValue, onPress }: {
+  block: TabuadaBlockState; locked: boolean; blockValue: number; onPress: () => void;
+}) {
   const { t } = useTranslation();
   const passed = block.status === 'passed';
+  const maxed = passed && block.best_correct_count === WEEKLY_TABUADA.QUESTIONS_PER_BLOCK;
+  const earned = (block.best_correct_count / WEEKLY_TABUADA.QUESTIONS_PER_BLOCK) * blockValue;
 
   return (
     <TouchableOpacity
-      activeOpacity={passed || locked ? 1 : 0.85}
-      disabled={passed || locked}
+      activeOpacity={maxed || locked ? 1 : 0.85}
+      disabled={maxed || locked}
       onPress={onPress}
       style={[styles.blockCard, locked && styles.blockCardLocked]}
     >
       <View style={styles.blockCardArtWrap}>
         <Image
-          source={passed ? MILO_CELEBRATE : TABUADA_FRAME}
+          source={maxed ? MILO_CELEBRATE : TABUADA_FRAME}
           style={styles.blockCardArt}
           resizeMode="cover"
         />
@@ -93,40 +112,44 @@ function TabuadaBlockCard({ block, locked, onPress }: { block: TabuadaBlockState
           <Text variant="label" numberOfLines={1} color={locked ? colors.text.tertiary : undefined} style={{ flex: 1 }}>
             {t('tabuadaSemanal.blockLabel', { n: block.block_number })}
           </Text>
+          {blockValue > 0 && !locked && block.attempts > 0 && (
+            <Text variant="label" color={colors.trophy.gold} style={styles.blockCardEarnedBadge}>
+              €{earned.toFixed(2)}
+            </Text>
+          )}
         </View>
 
         {locked ? (
           <Text variant="bodySmall" color={colors.text.tertiary}>
             {t('tabuadaSemanal.blockLocked')}
           </Text>
-        ) : passed ? (
-          <>
-            <Text variant="bodySmall" color={colors.success} style={styles.blockCardCompleteText}>
-              {t('tabuadaSemanal.blockCompleteBadge')}
-            </Text>
-            <View style={styles.blockCardScoreRow}>
-              <Ionicons name="star" size={12} color={colors.trophy.gold} />
-              <Text variant="caption" color={colors.text.secondary}>
-                {t('tabuadaSemanal.blockScore', { correct: block.best_correct_count, total: WEEKLY_TABUADA.QUESTIONS_PER_BLOCK })}
-              </Text>
-            </View>
-          </>
         ) : (
           <>
             <View style={styles.blockCardScoreRow}>
-              <Ionicons name="trophy-outline" size={12} color={colors.text.tertiary} />
+              <Ionicons name={maxed ? 'star' : 'trophy-outline'} size={12} color={maxed ? colors.trophy.gold : colors.text.tertiary} />
               <Text variant="caption" color={colors.text.secondary}>
                 {t('tabuadaSemanal.blockScore', { correct: block.best_correct_count, total: WEEKLY_TABUADA.QUESTIONS_PER_BLOCK })}
               </Text>
+              {maxed ? (
+                <Text variant="bodySmall" color={colors.success} style={styles.blockCardCompleteText}>
+                  {t('tabuadaSemanal.blockCompleteBadge')}
+                </Text>
+              ) : passed ? (
+                <Text variant="caption" color={colors.success} style={styles.blockCardCompleteText}>
+                  {t('tabuadaSemanal.blockPassedRetryHint')}
+                </Text>
+              ) : null}
             </View>
-            <ProgressBar
-              value={block.best_correct_count / WEEKLY_TABUADA.QUESTIONS_PER_BLOCK}
-              height={6}
-            />
+            {!maxed && (
+              <ProgressBar
+                value={block.best_correct_count / WEEKLY_TABUADA.QUESTIONS_PER_BLOCK}
+                height={6}
+              />
+            )}
           </>
         )}
       </View>
-      {!passed && !locked && (
+      {!maxed && !locked && (
         <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} style={styles.blockCardChevron} />
       )}
     </TouchableOpacity>
@@ -200,35 +223,45 @@ export default function TabuadaSemanalScreen() {
   const today = todayLocalDate();
   const weekStart = mondayOfWeek(today);
 
+  const tabuadaEnabled = !!child?.tabuada_enabled;
+
   const { data: dayData, isLoading: loadingDay } = useQuery({
     queryKey: ['tabuada-today', child?.id, today],
     queryFn: () => tabuadaSemanalService.startDay(child!.id),
-    enabled: !!child?.id,
+    enabled: !!child?.id && tabuadaEnabled,
     staleTime: 30_000,
   });
 
   const { data: weekStatus } = useQuery({
     queryKey: ['tabuada-week-status', child?.id, weekStart],
     queryFn: () => tabuadaSemanalService.getWeekStatus(child!.id, weekStart),
-    enabled: !!child?.id,
+    enabled: !!child?.id && tabuadaEnabled,
     staleTime: 30_000,
   });
 
   const { data: weekDays = [] } = useQuery({
     queryKey: ['tabuada-week-days', child?.id, weekStart],
     queryFn: () => tabuadaSemanalService.getWeekDays(child!.id, weekStart),
-    enabled: !!child?.id,
+    enabled: !!child?.id && tabuadaEnabled,
     staleTime: 30_000,
   });
 
   const { data: dailyChallengeDone = false } = useQuery({
     queryKey: ['tabuada-daily-challenge-status', child?.id, today],
     queryFn: () => fetchTodayCalendarState(child!.id, today),
-    enabled: !!child?.id,
+    enabled: !!child?.id && tabuadaEnabled,
     staleTime: 30_000,
   });
 
   if (!child) return null;
+
+  if (!tabuadaEnabled) {
+    return (
+      <AuthScreen title={t('tabuadaSemanal.title')} subtitle="Math Hero Kids" onBack={() => router.back()}>
+        <MiloMessage message={t('tabuadaSemanal.disabledMessage')} variant="orange" />
+      </AuthScreen>
+    );
+  }
 
   const completedDates = new Set(weekDays.filter((d) => d.completed_at).map((d) => d.day_date));
   const daysCompleted = weekStatus?.days_completed ?? completedDates.size;
@@ -253,7 +286,12 @@ export default function TabuadaSemanalScreen() {
   });
 
   const weeklyReward = Number(child.tabuada_weekly_reward ?? 0);
-  const earnedThisWeek = weeklyReward > 0 ? (daysCompleted / WEEKLY_TABUADA.DAYS_TO_COMPLETE_WEEK) * weeklyReward : 0;
+  const blockValue = computeBlockValue(weeklyReward);
+  const todayEarned = sumBlocksEarned(blocksState, blockValue);
+  const weekEarnedSoFar = weekDays.reduce((sum, d) => {
+    if (d.day_date === today) return sum; // hoje entra pela via ao vivo (dayData), não pela cópia de weekDays
+    return sum + sumBlocksEarned(d.blocks_state, blockValue);
+  }, todayEarned);
 
   const miloMessage = medalEarned
     ? t('tabuadaSemanal.miloMedalEarned')
@@ -321,7 +359,7 @@ export default function TabuadaSemanalScreen() {
             <Ionicons name="cash-outline" size={20} color="#B8860B" />
             <Text variant="label" style={{ flex: 1 }}>
               {t('tabuadaSemanal.rewardEarned', {
-                earned: `€${earnedThisWeek.toFixed(2)}`,
+                earned: `€${weekEarnedSoFar.toFixed(2)}`,
                 total: `€${weeklyReward.toFixed(2)}`,
               })}
             </Text>
@@ -344,7 +382,14 @@ export default function TabuadaSemanalScreen() {
       )}
 
       {/* Blocos de hoje — 5 da tabuada + o desafio diário normal (o "6º bloco"), um por linha */}
-      <Text variant="h3">{t('tabuadaSemanal.todayBlocks')}</Text>
+      <View style={styles.sectionHeaderRow}>
+        <Text variant="h3">{t('tabuadaSemanal.todayBlocks')}</Text>
+        {weeklyReward > 0 && (
+          <Text variant="label" color={colors.trophy.gold}>
+            {t('tabuadaSemanal.todayEarned', { earned: `€${todayEarned.toFixed(2)}` })}
+          </Text>
+        )}
+      </View>
 
       {loadingDay ? (
         <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: space.lg }} />
@@ -357,6 +402,7 @@ export default function TabuadaSemanalScreen() {
                   key={`block-${item.block.block_number}`}
                   block={item.block}
                   locked={locked}
+                  blockValue={blockValue}
                   onPress={() => router.push(`/(app)/tabuada-semanal/play/${item.block.block_number}`)}
                 />
               );
@@ -409,6 +455,12 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border.default,
   },
 
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
   almostDoneBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -430,6 +482,7 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   blockCardChevron: { marginRight: space.md },
+  blockCardEarnedBadge: { fontFamily: fontFamily.extraBold } as import('react-native').TextStyle,
   blockCardLocked: { opacity: 0.75 },
   blockCardArtWrap: { width: 96, height: 96 },
   blockCardArt: {

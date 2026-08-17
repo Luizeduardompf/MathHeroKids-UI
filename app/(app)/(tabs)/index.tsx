@@ -147,7 +147,7 @@ export default function HomeScreen() {
   const { data: tabuadaWeek } = useQuery({
     queryKey: ['tabuada-week-status', child?.id, weekStart],
     queryFn:  () => tabuadaSemanalService.getWeekStatus(child!.id, weekStart),
-    enabled:  !!child?.id,
+    enabled:  !!child?.id && !!child?.tabuada_enabled,
     staleTime: 60_000,
   });
 
@@ -414,7 +414,8 @@ export default function HomeScreen() {
           )}
         </LinearGradient>
 
-        {/* Section 3b — Tabuada Semanal Premiada */}
+        {/* Section 3b — Tabuada Semanal Premiada (só quando activada nas configurações da criança) */}
+        {child.tabuada_enabled && (
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={() => router.push('/(app)/tabuada-semanal')}
@@ -446,6 +447,7 @@ export default function HomeScreen() {
             <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.85)" />
           </LinearGradient>
         </TouchableOpacity>
+        )}
 
         {/* Section 4 — Recent Trophies (Phase 3 will populate) */}
         <View style={styles.sectionHeader}>

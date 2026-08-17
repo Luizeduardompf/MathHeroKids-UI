@@ -148,27 +148,38 @@ export default function TabuadaBlockPlayScreen() {
   const initedRef = useRef(false);
   const submittingRef = useRef(false);
 
+  const loadBlock = useCallback(async () => {
+    if (!child || !Number.isFinite(blockNumber)) return;
+    try {
+      const dayData = await tabuadaSemanalService.startDay(child.id);
+      const blockQuestions = dayData.questions.filter((q) => q.block_number === blockNumber);
+      if (blockQuestions.length !== WEEKLY_TABUADA.QUESTIONS_PER_BLOCK) {
+        setLoadError('errors.generic');
+        return;
+      }
+      useTabuadaSemanalStore.getState().startBlock(blockNumber, blockQuestions);
+    } catch (e) {
+      setLoadError((e as Error).message);
+    }
+  }, [child, blockNumber]);
+
   // ─── Init: gera/retoma o dia e arranca este bloco ───────────────────────────
   useEffect(() => {
     if (!child || initedRef.current || !Number.isFinite(blockNumber)) return;
     initedRef.current = true;
-
-    (async () => {
-      try {
-        const dayData = await tabuadaSemanalService.startDay(child.id);
-        const blockQuestions = dayData.questions.filter((q) => q.block_number === blockNumber);
-        if (blockQuestions.length !== WEEKLY_TABUADA.QUESTIONS_PER_BLOCK) {
-          setLoadError('errors.generic');
-          return;
-        }
-        useTabuadaSemanalStore.getState().startBlock(blockNumber, blockQuestions);
-      } catch (e) {
-        setLoadError((e as Error).message);
-      }
-    })();
-
+    void loadBlock();
     return () => { useTabuadaSemanalStore.getState().reset(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [child, blockNumber]);
+
+  // ─── Retry: mesmo bloco, tentar de novo (só dentro do próprio dia) ───────────
+  const handleRetry = useCallback(() => {
+    setResult(null);
+    setSubmitError(null);
+    setLoadError(null);
+    submittingRef.current = false;
+    void loadBlock();
+  }, [loadBlock]);
 
   // ─── Timer ───────────────────────────────────────────────────────────────────
   const handleTimerExpire = useCallback(() => {
@@ -309,6 +320,13 @@ export default function TabuadaBlockPlayScreen() {
     }
 
     const passed = result.blockPassed;
+    const maxed = result.correctCount === WEEKLY_TABUADA.QUESTIONS_PER_BLOCK;
+    const weeklyReward = Number(child?.tabuada_weekly_reward ?? 0);
+    const blockValue = weeklyReward > 0
+      ? (weeklyReward / WEEKLY_TABUADA.DAYS_TO_COMPLETE_WEEK) / WEEKLY_TABUADA.BLOCKS_PER_DAY
+      : 0;
+    const earned = (result.correctCount / WEEKLY_TABUADA.QUESTIONS_PER_BLOCK) * blockValue;
+
     return (
       <SafeAreaView style={[gs.resultRoot, { backgroundColor: passed ? '#ECFDF5' : '#FFFBEB' }]}>
         <View style={gs.resultBody}>
@@ -321,6 +339,21 @@ export default function TabuadaBlockPlayScreen() {
           <Text variant="body" color={colors.text.secondary} align="center">
             {t('tabuadaSemanal.blockScore', { correct: result.correctCount, total: WEEKLY_TABUADA.QUESTIONS_PER_BLOCK })}
           </Text>
+
+          {blockValue > 0 && (
+            <View style={gs.earnedBanner}>
+              <Ionicons name="cash-outline" size={20} color="#B8860B" />
+              <Text variant="label" style={{ flex: 1 }}>
+                {t('tabuadaSemanal.blockEarnedResult', { earned: `€${earned.toFixed(2)}`, total: `€${blockValue.toFixed(2)}` })}
+              </Text>
+            </View>
+          )}
+
+          {!maxed && (
+            <Text variant="bodySmall" color={colors.text.secondary} align="center">
+              {t('tabuadaSemanal.blockPassedRetryHint')}
+            </Text>
+          )}
 
           {result.dayCompleted && (
             <View style={gs.dayCompleteBanner}>
@@ -350,12 +383,20 @@ export default function TabuadaBlockPlayScreen() {
           )}
         </View>
 
-        <Pressable
-          style={gs.continueBtn}
-          onPress={() => router.replace('/(app)/tabuada-semanal')}
-        >
-          <Text variant="button" color="#16A34A">{t('common.continue')}</Text>
-        </Pressable>
+        <View style={{ gap: space.sm }}>
+          {!maxed && (
+            <Pressable style={gs.retryBtn} onPress={handleRetry}>
+              <Ionicons name="refresh" size={18} color="#fff" />
+              <Text variant="button" color={colors.text.inverse}>{t('tabuadaSemanal.retryBlockCta')}</Text>
+            </Pressable>
+          )}
+          <Pressable
+            style={gs.continueBtn}
+            onPress={() => router.replace('/(app)/tabuada-semanal')}
+          >
+            <Text variant="button" color="#16A34A">{t('common.continue')}</Text>
+          </Pressable>
+        </View>
       </SafeAreaView>
     );
   }
@@ -459,5 +500,7 @@ const gs = StyleSheet.create({
   dayCompleteBanner: { flexDirection: 'row', alignItems: 'center', gap: space.xs, backgroundColor: '#FEF3C7', borderRadius: radius.full, paddingHorizontal: space.md, paddingVertical: space.sm },
   almostDoneBanner: { flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: '#16A34A', borderRadius: radius.xl, padding: space.md, width: '100%' },
   medalBanner: { flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: colors.trophy.gold, borderRadius: radius.xl, padding: space.md, width: '100%' },
+  earnedBanner: { flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: '#fff', borderRadius: radius.xl, padding: space.md, width: '100%' },
   continueBtn: { height: 58, borderRadius: 9999, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  retryBtn: { height: 58, borderRadius: 9999, backgroundColor: '#2B52E5', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm },
 });

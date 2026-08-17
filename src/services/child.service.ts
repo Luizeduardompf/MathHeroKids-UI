@@ -26,6 +26,8 @@ export interface UpdateChildInput {
   mix_operations?: boolean;
   whatsapp_phone?: string | null;
   whatsapp_phone_ddi?: string;
+  tabuada_enabled?: boolean;
+  tabuada_use_general_settings?: boolean;
   tabuada_weekly_reward?: number;
 }
 
