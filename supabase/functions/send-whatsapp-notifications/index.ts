@@ -31,6 +31,8 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getEvolutionConfig, buildWhatsAppNumber, sendWhatsAppText, getLocalNow, timeMatchesHour } from '../_shared/whatsapp.ts';
 import { mondayOfWeek, weeklySummaryEarnedCents, centsToEuroLabel } from '../_shared/tabuada.ts';
+import { sendOpsAlert } from '../_shared/opsAlert.ts';
+import { getOpsAlertSettings } from '../_shared/opsAlertSettings.ts';
 
 const TIMEZONE = Deno.env.get('NOTIFICATIONS_TIMEZONE') ?? 'Europe/Lisbon';
 const TABUADA_WEEKLY_SUMMARY_WEEKDAY = 0; // domingo
@@ -386,6 +388,13 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Camada 3 do sistema de ops alerts (ver _shared/opsAlert.ts): mede o RESULTADO REAL
+    // dos envios deste tick, não o que a Evolution API diz sobre si mesma — apanha o "zombie
+    // state" (connectionState/webhook dizem 'open', mas /message/sendText falha sempre com
+    // "Connection Closed") que as camadas 1 (railway-health-check) e 2 (evolution-webhook)
+    // não veem, porque nenhuma delas depende do resultado de um envio real.
+    await checkSendFailureHealth(supabaseAdmin, summary);
+
     return new Response(JSON.stringify({ ok: true, ...summary }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (err) {
@@ -393,6 +402,64 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ ok: false, error: 'INTERNAL_ERROR', message: (err as Error).message, ...summary }), { status: 500, headers: corsHeaders });
   }
 });
+
+function nowUtcLabel(): string {
+  return `${new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC`;
+}
+
+/**
+ * Camada 3 — ver comentário no ponto de chamada. "unhealthy" = este tick teve pelo menos
+ * uma tentativa de envio real E todas falharam; só alerta na transição saudável→doente (e
+ * o inverso na recuperação), nunca a cada tick, via whatsapp_send_health_state.
+ */
+// deno-lint-ignore no-explicit-any
+async function checkSendFailureHealth(supabaseAdmin: any, summary: { parentSent: number; childSent: number; skipped: number; errors: number }) {
+  const attempted = summary.parentSent + summary.childSent + summary.errors;
+  if (attempted === 0) return; // nada foi realmente tentado neste tick — sem sinal
+
+  const allFailed = summary.parentSent + summary.childSent === 0;
+
+  const { data: stateRow } = await supabaseAdmin
+    .from('whatsapp_send_health_state')
+    .select('is_healthy')
+    .eq('id', true)
+    .maybeSingle();
+  const wasHealthy = stateRow?.is_healthy ?? true;
+  const isHealthy = !allFailed;
+  if (wasHealthy === isHealthy) return;
+
+  const settings = await getOpsAlertSettings(supabaseAdmin);
+  if (settings?.send_failure_alert_enabled) {
+    const from = settings.from_email ? { email: settings.from_email, name: settings.from_name } : undefined;
+    if (!isHealthy) {
+      await sendOpsAlert(
+        supabaseAdmin,
+        settings.email,
+        '🔴 MathHeroKids: envios de WhatsApp a falhar de verdade',
+        `Todas as ${summary.errors} tentativas de envio deste tick (${nowUtcLabel()}) falharam, mesmo a ` +
+        `Evolution API reportando a instância como ligada. Isto é o "zombie state" conhecido de sessões ` +
+        `Baileys auto-hospedadas: o estado em cache não reflete a sessão real do WhatsApp.\n\n` +
+        `Reconecte escaneando o QR code em Developer → Integração WhatsApp no app — pode ser preciso ` +
+        `"Reset" primeiro, já que o ecrã de status também confia nesse mesmo estado em cache e pode não ` +
+        `oferecer um QR novo sozinho.`,
+        from,
+      );
+    } else {
+      await sendOpsAlert(
+        supabaseAdmin,
+        settings.email,
+        '✅ MathHeroKids: envios de WhatsApp voltaram a funcionar',
+        `Pelo menos um envio deste tick (${nowUtcLabel()}) foi bem sucedido depois de um período a falhar.`,
+        from,
+      );
+    }
+  }
+
+  await supabaseAdmin
+    .from('whatsapp_send_health_state')
+    .update({ is_healthy: isHealthy, last_checked_at: new Date().toISOString() })
+    .eq('id', true);
+}
 
 async function trySend(
   supabaseAdmin: any,

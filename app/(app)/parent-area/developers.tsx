@@ -25,6 +25,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { Card, Text, Input, Button } from '@/components/ui';
 import { appConfigService } from '@/services/app-config.service';
+import { opsAlertSettingsService, type OpsAlertSettingsUpdate } from '@/services/ops-alert-settings.service';
 import { colors, fontFamily, space } from '@/theme';
 
 const DEVELOPERS_PASSWORD = '120380';
@@ -109,6 +110,115 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   );
 }
 
+// ─── Alertas de Sistema (email) ─────────────────────────────────────────────────
+
+function ToggleRow({ label, hint, value, onToggle }: {
+  label: string; hint: string; value: boolean; onToggle: () => void;
+}) {
+  return (
+    <Pressable style={s.toggleRow} onPress={onToggle}>
+      <View style={{ flex: 1 }}>
+        <Text variant="label">{label}</Text>
+        <Text variant="caption" color={colors.text.secondary}>{hint}</Text>
+      </View>
+      <View style={[s.toggle, value && s.toggleOn]}>
+        <View style={[s.toggleThumb, value && s.toggleThumbOn]} />
+      </View>
+    </Pressable>
+  );
+}
+
+function OpsAlertsSection() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['ops-alert-settings'],
+    queryFn: () => opsAlertSettingsService.getOpsAlertSettings(),
+  });
+
+  const [email, setEmail] = useState<string | null>(null);
+  const [pendingToggles, setPendingToggles] = useState<Partial<Record<
+    'whatsapp_alert_enabled' | 'railway_alert_enabled' | 'send_failure_alert_enabled', boolean
+  >>>({});
+
+  const emailValue = email ?? data?.email ?? '';
+  const whatsappEnabled = pendingToggles.whatsapp_alert_enabled ?? data?.whatsapp_alert_enabled ?? true;
+  const railwayEnabled = pendingToggles.railway_alert_enabled ?? data?.railway_alert_enabled ?? true;
+  const sendFailureEnabled = pendingToggles.send_failure_alert_enabled ?? data?.send_failure_alert_enabled ?? true;
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const update: OpsAlertSettingsUpdate = { email: emailValue, ...pendingToggles };
+      await opsAlertSettingsService.updateOpsAlertSettings(update);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['ops-alert-settings'] });
+      setEmail(null);
+      setPendingToggles({});
+    },
+  });
+
+  if (isLoading) return null;
+  if (isError) {
+    return (
+      <>
+        <Text variant="h3" style={s.sectionTitle}>{t('parentArea.developers.opsAlertsSection')}</Text>
+        <Text color={colors.error}>{t('parentArea.developers.loadError')}</Text>
+      </>
+    );
+  }
+
+  const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue);
+
+  return (
+    <>
+      <Text variant="h3" style={s.sectionTitle}>{t('parentArea.developers.opsAlertsSection')}</Text>
+      <Card style={{ gap: space.md }}>
+        <Text variant="caption" color={colors.text.secondary}>{t('parentArea.developers.opsAlertsHint')}</Text>
+        <Input
+          label={t('parentArea.developers.opsAlertsEmailLabel')}
+          value={emailValue}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <ToggleRow
+          label={t('parentArea.developers.opsAlertsWhatsappLabel')}
+          hint={t('parentArea.developers.opsAlertsWhatsappHint')}
+          value={whatsappEnabled}
+          onToggle={() => setPendingToggles((p) => ({ ...p, whatsapp_alert_enabled: !whatsappEnabled }))}
+        />
+        <ToggleRow
+          label={t('parentArea.developers.opsAlertsRailwayLabel')}
+          hint={t('parentArea.developers.opsAlertsRailwayHint')}
+          value={railwayEnabled}
+          onToggle={() => setPendingToggles((p) => ({ ...p, railway_alert_enabled: !railwayEnabled }))}
+        />
+        <ToggleRow
+          label={t('parentArea.developers.opsAlertsSendFailureLabel')}
+          hint={t('parentArea.developers.opsAlertsSendFailureHint')}
+          value={sendFailureEnabled}
+          onToggle={() => setPendingToggles((p) => ({ ...p, send_failure_alert_enabled: !sendFailureEnabled }))}
+        />
+        {mutation.isError ? (
+          <Text variant="caption" color={colors.error}>{(mutation.error as Error).message}</Text>
+        ) : null}
+        {mutation.isSuccess ? (
+          <Text variant="caption" color={colors.success}>{t('parentArea.developers.saved')}</Text>
+        ) : null}
+        <Button
+          label={t('parentArea.developers.saveBtn')}
+          onPress={() => mutation.mutate()}
+          loading={mutation.isPending}
+          disabled={!isValid}
+          fullWidth
+        />
+      </Card>
+    </>
+  );
+}
+
 // ─── Settings panel ─────────────────────────────────────────────────────────────
 
 function DevelopersPanel() {
@@ -187,6 +297,8 @@ function DevelopersPanel() {
         <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
       </Pressable>
 
+      <OpsAlertsSection />
+
       <Text variant="h3" style={s.sectionTitle}>{t('parentArea.developers.retestSection')}</Text>
       <Card style={{ gap: space.md }}>
         <Input
@@ -243,4 +355,18 @@ const s = StyleSheet.create({
     backgroundColor: '#fff', borderRadius: 20, padding: space.md,
     borderWidth: 1, borderColor: colors.border.default,
   },
+
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  toggle: {
+    width: 48, height: 28, borderRadius: 14,
+    backgroundColor: colors.border.default,
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  toggleOn: { backgroundColor: colors.primary },
+  toggleThumb: {
+    width: 22, height: 22, borderRadius: 11,
+    backgroundColor: '#fff',
+  },
+  toggleThumbOn: { alignSelf: 'flex-end' },
 });

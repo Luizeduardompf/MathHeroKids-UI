@@ -640,7 +640,16 @@
       "whatsappTestDefaultMessage": "Mensaje de prueba de Math Hero Kids 🚀",
       "whatsappTestSendBtn": "Enviar prueba",
       "whatsappTestSent": "✓ ¡Mensaje enviado!",
-      "whatsappTestFailed": "No se pudo enviar. Verifica el número y la conexión."
+      "whatsappTestFailed": "No se pudo enviar. Verifica el número y la conexión.",
+      "opsAlertsSection": "Alertas del Sistema",
+      "opsAlertsHint": "Email enviado cuando falla la infraestructura de WhatsApp — servidor caído, sesión desconectada, o envíos reales fallando aunque la conexión parezca buena.",
+      "opsAlertsEmailLabel": "Email de destino",
+      "opsAlertsWhatsappLabel": "WhatsApp desconectado",
+      "opsAlertsWhatsappHint": "Avisa cuando la sesión de WhatsApp cae o se reconecta (evento de la Evolution API).",
+      "opsAlertsRailwayLabel": "Servidor caído",
+      "opsAlertsRailwayHint": "Avisa cuando el servidor de la Evolution API en Railway deja de responder.",
+      "opsAlertsSendFailureLabel": "Envíos fallando de verdad",
+      "opsAlertsSendFailureHint": "Avisa cuando los envíos reales fallan aunque el estado diga 'conectado' — detecta el caso en que el estado miente."
     },
     "nameLabel": "Nombre del responsable",
     "namePlaceholder": "Tu nombre completo",

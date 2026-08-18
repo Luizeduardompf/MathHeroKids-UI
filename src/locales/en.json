@@ -708,7 +708,16 @@
       "whatsappTestDefaultMessage": "Test message from Math Hero Kids 🚀",
       "whatsappTestSendBtn": "Send test",
       "whatsappTestSent": "✓ Message sent!",
-      "whatsappTestFailed": "Could not send. Check the number and the connection."
+      "whatsappTestFailed": "Could not send. Check the number and the connection.",
+      "opsAlertsSection": "System Alerts",
+      "opsAlertsHint": "Email sent when the WhatsApp infrastructure fails — server down, session disconnected, or real sends failing even though the connection looks fine.",
+      "opsAlertsEmailLabel": "Destination email",
+      "opsAlertsWhatsappLabel": "WhatsApp disconnected",
+      "opsAlertsWhatsappHint": "Alerts when the WhatsApp session drops or reconnects (Evolution API event).",
+      "opsAlertsRailwayLabel": "Server down",
+      "opsAlertsRailwayHint": "Alerts when the Evolution API server on Railway stops responding.",
+      "opsAlertsSendFailureLabel": "Sends really failing",
+      "opsAlertsSendFailureHint": "Alerts when real sends fail even though the status says 'connected' — catches the case where the status is lying."
     },
     "child": {
       "newTitle": "New child",
