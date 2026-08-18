@@ -971,6 +971,17 @@
       "subtitleDay": "Fizeste os 5 blocos + o desafio de hoje!",
       "subtitleMedal": "7 dias seguidos — a mesada da semana é toda tua!",
       "parentNotified": "O papá vai receber uma mensagem a dizer que completaste o dia de hoje — ele vai ficar super feliz! 💌"
+    },
+    "reinforcement": {
+      "introTitle": "Vamos reforçar!",
+      "introSubtitle": "10 questões rápidas para fixar este fato de cor.",
+      "startCta": "Começar",
+      "stepProgress": "Etapa {{current}} de {{total}}",
+      "correctFeedbackTitle": "Certo!",
+      "wrongFeedbackTitle": "A resposta certa é {{answer}}",
+      "summaryTitle": "Reforço completo!",
+      "summaryScore": "Acertaste {{correct}} de {{total}}",
+      "summaryCta": "Voltar ao desafio"
     }
   },
   "rewards": {

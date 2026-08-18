@@ -164,7 +164,7 @@ const ab = StyleSheet.create({
 
 // ─── Entrance animation wrapper ───────────────────────────────────────────────
 
-function EntranceView({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
+export function EntranceView({ children, style }: { children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(24);
 
@@ -190,7 +190,7 @@ function EntranceView({ children, style }: { children: React.ReactNode; style?: 
 // Anel externo suave + círculo interno sólido + ícone
 // Espelha o padrão do zip: outer bg-color/15, inner bg-color solid
 
-function StatusIcon({ name, outerBg, innerBg, iconColor = '#fff', outer = 112, inner = 88, icon = 44 }: {
+export function StatusIcon({ name, outerBg, innerBg, iconColor = '#fff', outer = 112, inner = 88, icon = 44 }: {
   name: string; outerBg: string; innerBg: string;
   iconColor?: string; outer?: number; inner?: number; icon?: number;
 }) {

@@ -966,6 +966,17 @@
       "subtitleDay": "You finished all 5 blocks plus today's challenge!",
       "subtitleMedal": "7 days in a row — this week's allowance is all yours!",
       "parentNotified": "Dad's going to get a message that you finished today — he'll be so happy! 💌"
+    },
+    "reinforcement": {
+      "introTitle": "Let's reinforce this!",
+      "introSubtitle": "10 quick questions to lock this fact in.",
+      "startCta": "Start",
+      "stepProgress": "Step {{current}} of {{total}}",
+      "correctFeedbackTitle": "Correct!",
+      "wrongFeedbackTitle": "The right answer is {{answer}}",
+      "summaryTitle": "Reinforcement complete!",
+      "summaryScore": "You got {{correct}} of {{total}} right",
+      "summaryCta": "Back to the challenge"
     }
   },
   "rewards": {

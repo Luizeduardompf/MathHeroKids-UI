@@ -33,6 +33,7 @@ import { playSound } from '@/services/sound.service';
 import { Text } from '@/components/ui';
 import { colors, fontFamily, radius, shadows, space } from '@/theme';
 import { WrongAnswerScreen } from '@/components/challenge/StatusScreens';
+import { ReinforcementDrill } from '@/components/challenge/ReinforcementDrill';
 import { TabuadaDayCompleteModal } from '@/components/challenge/TabuadaDayCompleteModal';
 import { useProfileStore, selectActiveChild } from '@/stores/profile.store';
 import { useAuthStore, selectParentId } from '@/stores/auth.store';
@@ -218,6 +219,7 @@ export default function TabuadaBlockPlayScreen() {
   const [result, setResult] = useState<SubmitTabuadaBlockResponse | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [dayCompleteDismissed, setDayCompleteDismissed] = useState(false);
+  const [reinforcing, setReinforcing] = useState(false);
   const initedRef = useRef(false);
   const submittingRef = useRef(false);
 
@@ -259,6 +261,7 @@ export default function TabuadaBlockPlayScreen() {
     setResult(null);
     setSubmitError(null);
     setLoadError(null);
+    setReinforcing(false);
     submittingRef.current = false;
     void loadBlock();
   }, [loadBlock]);
@@ -280,6 +283,7 @@ export default function TabuadaBlockPlayScreen() {
     if (phase === 'playing') {
       resetTimer();
       setInputDigits([]);
+      setReinforcing(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, phase]);
@@ -357,6 +361,22 @@ export default function TabuadaBlockPlayScreen() {
   // ─── Wrong / timeout ──────────────────────────────────────────────────────────
   if (phase === 'wrong' || phase === 'timeout') {
     const q = lastAnsweredQuestion;
+
+    if (reinforcing && q) {
+      return (
+        <ReinforcementDrill
+          operandA={q.operand_a}
+          operandB={q.operand_b}
+          correctAnswer={q.correct_answer}
+          operation={q.operation ?? MODULE_ID.MULTIPLICATION}
+          onDone={() => {
+            setReinforcing(false);
+            useTabuadaSemanalStore.getState().advanceAfterWrong();
+          }}
+        />
+      );
+    }
+
     return (
       <WrongAnswerScreen
         operandA={q?.operand_a ?? 0}
@@ -364,7 +384,7 @@ export default function TabuadaBlockPlayScreen() {
         correctAnswer={q?.correct_answer ?? 0}
         userAnswer={lastUserAnswer}
         operation={q?.operation}
-        onContinue={() => useTabuadaSemanalStore.getState().advanceAfterWrong()}
+        onContinue={() => setReinforcing(true)}
       />
     );
   }

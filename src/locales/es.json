@@ -303,6 +303,17 @@
       "subtitleDay": "¡Hiciste los 5 bloques más el reto de hoy!",
       "subtitleMedal": "7 días seguidos — ¡la paga de esta semana es toda tuya!",
       "parentNotified": "Papá va a recibir un mensaje diciendo que completaste hoy — ¡se va a poner muy feliz! 💌"
+    },
+    "reinforcement": {
+      "introTitle": "¡Vamos a reforzar!",
+      "introSubtitle": "10 preguntas rápidas para fijar este dato de memoria.",
+      "startCta": "Empezar",
+      "stepProgress": "Paso {{current}} de {{total}}",
+      "correctFeedbackTitle": "¡Correcto!",
+      "wrongFeedbackTitle": "La respuesta correcta es {{answer}}",
+      "summaryTitle": "¡Refuerzo completo!",
+      "summaryScore": "Acertaste {{correct}} de {{total}}",
+      "summaryCta": "Volver al reto"
     }
   },
   "rewards": {

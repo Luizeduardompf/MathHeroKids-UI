@@ -206,6 +206,17 @@
       "subtitleDay": "Tu as fait les 5 blocs plus le défi d'aujourd'hui !",
       "subtitleMedal": "7 jours d'affilée — l'argent de poche de la semaine est à toi !",
       "parentNotified": "Papa va recevoir un message disant que tu as terminé aujourd'hui — il va être super content ! 💌"
+    },
+    "reinforcement": {
+      "introTitle": "Renforçons ça !",
+      "introSubtitle": "10 questions rapides pour bien fixer ce fait.",
+      "startCta": "Commencer",
+      "stepProgress": "Étape {{current}} sur {{total}}",
+      "correctFeedbackTitle": "Correct !",
+      "wrongFeedbackTitle": "La bonne réponse est {{answer}}",
+      "summaryTitle": "Renforcement terminé !",
+      "summaryScore": "Tu as {{correct}} bonnes réponses sur {{total}}",
+      "summaryCta": "Retour au défi"
     }
   },
   "rewards": {
