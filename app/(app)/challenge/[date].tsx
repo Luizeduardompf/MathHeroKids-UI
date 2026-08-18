@@ -892,14 +892,6 @@ export default function ChallengeScreen() {
     });
   }, []);
 
-  useEffect(() => {
-    if (inputDigits.length === 0) return;
-    if (inputDigits.length === 3) { handleSubmit(); return; }
-    const q = selectCurrentQuestion(useChallengeStore.getState());
-    if (q && parseInt(inputDigits.join(''), 10) === q.correct_answer) handleSubmit();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inputDigits]);
-
   // ─── Complete ────────────────────────────────────────────────────────────
 
   // Só esconde a animação do troféu quando ela própria já correu os 3s E a

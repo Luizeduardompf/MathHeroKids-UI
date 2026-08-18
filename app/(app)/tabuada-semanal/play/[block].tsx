@@ -332,13 +332,6 @@ export default function TabuadaBlockPlayScreen() {
       return [];
     });
   }, []);
-  useEffect(() => {
-    if (inputDigits.length === 0) return;
-    if (inputDigits.length === 3) { handleSubmit(); return; }
-    const q = selectCurrentQuestion(useTabuadaSemanalStore.getState());
-    if (q && parseInt(inputDigits.join(''), 10) === q.correct_answer) handleSubmit();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inputDigits]);
 
   // ─── Loading / error de arranque ─────────────────────────────────────────────
   if (!child || phase === 'idle') {
