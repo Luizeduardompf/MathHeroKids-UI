@@ -15,6 +15,7 @@
  *   whatsapp_alert_enabled?: boolean;
  *   railway_alert_enabled?: boolean;
  *   send_failure_alert_enabled?: boolean;
+ *   webhook_alert_enabled?: boolean;
  * }
  *
  * Response: { ok: boolean, error?: string, message?: string }
@@ -35,6 +36,7 @@ interface Body {
   whatsapp_alert_enabled?: boolean;
   railway_alert_enabled?: boolean;
   send_failure_alert_enabled?: boolean;
+  webhook_alert_enabled?: boolean;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -78,7 +80,7 @@ Deno.serve(async (req: Request) => {
       if (typeof body.from_name !== 'string' || !body.from_name.trim()) return json({ ok: false, error: 'INVALID_FROM_NAME' }, 400);
       update.from_name = body.from_name.trim();
     }
-    for (const key of ['whatsapp_alert_enabled', 'railway_alert_enabled', 'send_failure_alert_enabled'] as const) {
+    for (const key of ['whatsapp_alert_enabled', 'railway_alert_enabled', 'send_failure_alert_enabled', 'webhook_alert_enabled'] as const) {
       if (body[key] !== undefined) {
         if (typeof body[key] !== 'boolean') return json({ ok: false, error: `INVALID_${key.toUpperCase()}` }, 400);
         update[key] = body[key];

@@ -12,12 +12,13 @@ export interface OpsAlertSettings {
   whatsapp_alert_enabled: boolean;
   railway_alert_enabled: boolean;
   send_failure_alert_enabled: boolean;
+  webhook_alert_enabled: boolean;
 }
 
 export async function getOpsAlertSettings(supabaseAdmin: SupabaseLike): Promise<OpsAlertSettings | null> {
   const { data, error } = await supabaseAdmin
     .from('ops_alert_settings')
-    .select('email, from_email, from_name, whatsapp_alert_enabled, railway_alert_enabled, send_failure_alert_enabled')
+    .select('email, from_email, from_name, whatsapp_alert_enabled, railway_alert_enabled, send_failure_alert_enabled, webhook_alert_enabled')
     .eq('id', true)
     .maybeSingle();
   if (error) {

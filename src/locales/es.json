@@ -649,7 +649,9 @@
       "opsAlertsRailwayLabel": "Servidor caído",
       "opsAlertsRailwayHint": "Avisa cuando el servidor de la Evolution API en Railway deja de responder.",
       "opsAlertsSendFailureLabel": "Envíos fallando de verdad",
-      "opsAlertsSendFailureHint": "Avisa cuando los envíos reales fallan aunque el estado diga 'conectado' — detecta el caso en que el estado miente."
+      "opsAlertsSendFailureHint": "Avisa cuando los envíos reales fallan aunque el estado diga 'conectado' — detecta el caso en que el estado miente.",
+      "opsAlertsWebhookLabel": "Recepción de eventos fallando",
+      "opsAlertsWebhookHint": "Avisa si nuestro receptor de eventos de la Evolution API deja de aceptar peticiones — sin esto, la alerta de 'WhatsApp desconectado' de arriba queda ciega."
     },
     "nameLabel": "Nombre del responsable",
     "namePlaceholder": "Tu nombre completo",

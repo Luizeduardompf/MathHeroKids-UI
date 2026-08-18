@@ -7,6 +7,7 @@ export interface OpsAlertSettingsValues {
   whatsapp_alert_enabled: boolean;
   railway_alert_enabled: boolean;
   send_failure_alert_enabled: boolean;
+  webhook_alert_enabled: boolean;
 }
 
 export type OpsAlertSettingsUpdate = Partial<OpsAlertSettingsValues>;
@@ -16,7 +17,7 @@ export const opsAlertSettingsService = {
   async getOpsAlertSettings(): Promise<OpsAlertSettingsValues> {
     const { data, error } = await supabase
       .from('ops_alert_settings')
-      .select('email, from_email, from_name, whatsapp_alert_enabled, railway_alert_enabled, send_failure_alert_enabled')
+      .select('email, from_email, from_name, whatsapp_alert_enabled, railway_alert_enabled, send_failure_alert_enabled, webhook_alert_enabled')
       .eq('id', true)
       .single();
 

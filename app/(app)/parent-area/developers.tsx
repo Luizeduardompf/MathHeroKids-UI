@@ -139,13 +139,14 @@ function OpsAlertsSection() {
 
   const [email, setEmail] = useState<string | null>(null);
   const [pendingToggles, setPendingToggles] = useState<Partial<Record<
-    'whatsapp_alert_enabled' | 'railway_alert_enabled' | 'send_failure_alert_enabled', boolean
+    'whatsapp_alert_enabled' | 'railway_alert_enabled' | 'send_failure_alert_enabled' | 'webhook_alert_enabled', boolean
   >>>({});
 
   const emailValue = email ?? data?.email ?? '';
   const whatsappEnabled = pendingToggles.whatsapp_alert_enabled ?? data?.whatsapp_alert_enabled ?? true;
   const railwayEnabled = pendingToggles.railway_alert_enabled ?? data?.railway_alert_enabled ?? true;
   const sendFailureEnabled = pendingToggles.send_failure_alert_enabled ?? data?.send_failure_alert_enabled ?? true;
+  const webhookEnabled = pendingToggles.webhook_alert_enabled ?? data?.webhook_alert_enabled ?? true;
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -200,6 +201,12 @@ function OpsAlertsSection() {
           hint={t('parentArea.developers.opsAlertsSendFailureHint')}
           value={sendFailureEnabled}
           onToggle={() => setPendingToggles((p) => ({ ...p, send_failure_alert_enabled: !sendFailureEnabled }))}
+        />
+        <ToggleRow
+          label={t('parentArea.developers.opsAlertsWebhookLabel')}
+          hint={t('parentArea.developers.opsAlertsWebhookHint')}
+          value={webhookEnabled}
+          onToggle={() => setPendingToggles((p) => ({ ...p, webhook_alert_enabled: !webhookEnabled }))}
         />
         {mutation.isError ? (
           <Text variant="caption" color={colors.error}>{(mutation.error as Error).message}</Text>

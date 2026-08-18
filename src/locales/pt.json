@@ -722,7 +722,9 @@
       "opsAlertsRailwayLabel": "Servidor fora do ar",
       "opsAlertsRailwayHint": "Avisa quando o servidor da Evolution API no Railway deixa de responder.",
       "opsAlertsSendFailureLabel": "Envios a falhar de verdade",
-      "opsAlertsSendFailureHint": "Avisa quando os envios reais falham mesmo com o estado a dizer 'ligado' — apanha o caso em que o status mente."
+      "opsAlertsSendFailureHint": "Avisa quando os envios reais falham mesmo com o estado a dizer 'ligado' — apanha o caso em que o status mente.",
+      "opsAlertsWebhookLabel": "Receção de eventos a falhar",
+      "opsAlertsWebhookHint": "Avisa se o nosso recetor de eventos da Evolution API deixar de aceitar pedidos — sem isto, o aviso de 'WhatsApp desconectado' acima fica cego."
     },
     "child": {
       "newTitle": "Nova criança",

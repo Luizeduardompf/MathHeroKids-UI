@@ -717,7 +717,9 @@
       "opsAlertsRailwayLabel": "Server down",
       "opsAlertsRailwayHint": "Alerts when the Evolution API server on Railway stops responding.",
       "opsAlertsSendFailureLabel": "Sends really failing",
-      "opsAlertsSendFailureHint": "Alerts when real sends fail even though the status says 'connected' — catches the case where the status is lying."
+      "opsAlertsSendFailureHint": "Alerts when real sends fail even though the status says 'connected' — catches the case where the status is lying.",
+      "opsAlertsWebhookLabel": "Event receiver failing",
+      "opsAlertsWebhookHint": "Alerts if our Evolution API event receiver stops accepting requests — without this, the 'WhatsApp disconnected' alert above goes blind."
     },
     "child": {
       "newTitle": "New child",

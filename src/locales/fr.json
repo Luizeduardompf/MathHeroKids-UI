@@ -621,7 +621,9 @@
       "opsAlertsRailwayLabel": "Serveur hors service",
       "opsAlertsRailwayHint": "Alerte quand le serveur Evolution API sur Railway cesse de répondre.",
       "opsAlertsSendFailureLabel": "Envois qui échouent vraiment",
-      "opsAlertsSendFailureHint": "Alerte quand les envois réels échouent même si le statut dit 'connecté' — détecte le cas où le statut ment."
+      "opsAlertsSendFailureHint": "Alerte quand les envois réels échouent même si le statut dit 'connecté' — détecte le cas où le statut ment.",
+      "opsAlertsWebhookLabel": "Réception d'événements en échec",
+      "opsAlertsWebhookHint": "Alerte si notre récepteur d'événements de l'Evolution API cesse d'accepter les requêtes — sans ça, l'alerte 'WhatsApp déconnecté' ci-dessus devient aveugle."
     },
     "nameLabel": "Nom du responsable",
     "namePlaceholder": "Votre nom complet",
