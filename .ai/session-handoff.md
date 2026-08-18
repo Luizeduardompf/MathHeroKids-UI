@@ -4,10 +4,78 @@
 
 ---
 
-## Em curso — Integração WhatsApp (Evolution API) — 2026-07-18/19
+## Em curso — Bug da Tabuada Semanal + sistema de ops alerts (email) + 2 bugs reais de infra WhatsApp — 2026-08-18
 
-**Estado: LIVRE.** Backend + UI + infra Railway completos, commitados/pushados e testados
-ponta-a-ponta. Só falta escanear o QR (dentro da própria app) e testar por toque na UI.
+**Estado: LIVRE.** 3 commits pushados (`1c01473`, `dafa151`, `2f84686`). WhatsApp confirmado a
+funcionar ponta-a-ponta (mensagem de teste real recebida no telemóvel do user).
+
+**1. Bug real corrigido — payload "legacy" da Tabuada Semanal sem campo `operation`**
+(`1c01473`): o fix de `operation` de mais cedo no mesmo dia (`8d3066b`) nunca tocou nos dias
+já persistidos antes dele — `start_tabuada_day` só regenerava o payload do dia se nenhum
+bloco tivesse tentativas ainda. Um dia iniciado antes do deploy ficava preso a servir o
+payload antigo (sem `operation`) pelo resto do dia — `correct_answer` caía em `undefined`,
+respostas certas eram recusadas, "0" aparecia como resposta certa. Fix: deteta payload
+legacy (alguma questão sem `operation`) e força regeneração mesmo com `attempts>0`, desde
+que o dia não esteja `completed_at`. Confirmado via query directa ao DB + teste end-to-end
+contra a EF redeployada.
+
+**2. Feature nova — sistema de alertas de operação por email** (`dafa151` + `2f84686`),
+portado de `Luka/Luka` (`_shared/opsAlert.ts`/`smtpClient.ts`/`opsAlertSettings.ts`) com uma
+**4ª camada que o Luka não tem**:
+- Camada 1 — `railway-health-check` (cron 5 min): servidor Evolution API no Railway
+  inacessível.
+- Camada 2 — `evolution-webhook`: `connection.update` real (close/open).
+- Camada 3 — `send-whatsapp-notifications`: envios reais a falhar mesmo com o estado a
+  dizer "open" (zombie state) — mede o resultado real via `whatsapp_notification_log`, não o
+  que a Evolution diz de si mesma. Foi a que apanharia o bug do dia se tivesse havido uma
+  tentativa de envio na janela.
+- Camada 4 (nova, própria do MathHeroKids) — `railway-health-check` ganha um 2º check:
+  OPTIONS ao próprio `evolution-webhook`, fecha o ponto cego de a camada 2 ficar cega sem
+  avisar ninguém se o endpoint em si estiver a rejeitar tudo (foi exactamente o que
+  aconteceu — ver bug 4 abaixo).
+- Email via relay SMTP do iCloud — credenciais **próprias** do Vault deste projecto (nunca
+  partilhadas com o Vault do Luka, mesmo sendo a mesma conta de email por trás; migradas via
+  função Edge temporária no projecto Luka, chamada uma vez e apagada logo a seguir).
+- UI nova: Developer > Alertas de Sistema (email + 4 toggles).
+- Testado end-to-end várias vezes (`simulateDown`/`simulateWebhookDown`) — todos os pares de
+  email (queda + recuperação) confirmados recebidos pelo user.
+
+**3. Bug real de infra encontrado e corrigido — sessão WhatsApp genuinamente presa no
+Railway**: `delete`/`logout`/`restart` via API da Evolution API todos falhavam
+(`Connection Closed`/400) na instância `mathhero-main`. O botão "Reiniciar ligação" do
+Developer não fazia nada visível porque o `evolution-dev` EF não verifica o status das
+chamadas DELETE/create — falha silenciosa, instância nunca era realmente recriada (mesmo
+`id`/`createdAt` de 19/07 confirmados antes e depois de clicar). Fix real: `railway restart
+--service evolution-api` no projecto Railway isolado `mathhero-whatsapp` (confirmado projeto
+`a0bb1f57-d4ad-4b28-8e01-7f7b7e7ee84a`, isolado do `luka-whatsapp`) — reconectou o socket
+Baileys de verdade, confirmado por um envio real a devolver `status:PENDING` em vez de
+"Connection Closed".
+
+**4. Bug real de infra encontrado e corrigido — `evolution-webhook` com `verify_jwt=true`**:
+introduzido por mim na mesma sessão, ao fazer `supabase functions deploy evolution-webhook
+--use-api` (para a feature de ops alerts) **sem** `--no-verify-jwt` — repôs o default `true`
+numa função que precisa ser pública (recebe chamadas da Evolution API, que não manda JWT
+nenhum). Resultado: toda entrega de webhook rejeitada com 401 desde 8/8 (confirmado nos
+logs do Railway: "Erro não recuperável (401)... Cancelando retentativas") — nenhum evento
+`connection.update`/`messages.upsert` chegava a `whatsapp_events` há 10 dias, e foi a causa
+directa de as duas filhas do user não terem gerado nenhuma notificação ao pai ao completarem
+a Tabuada Semanal. Fix: redeploy com `--no-verify-jwt`, confirmado (`verify_jwt: false` na
+listagem da API, evento sintético gravado com sucesso).
+
+**⚠️ Lição para o futuro — sempre que redeployar uma EF pública** (`evolution-webhook`, e
+qualquer outra sem verificação de JWT própria no código): usar sempre
+`supabase functions deploy <nome> --use-api --no-verify-jwt`. Esquecer a flag não dá erro
+nenhum no deploy — falha silenciosamente 10 dias depois, sem ninguém notar até um user
+reportar "não recebi a notificação". A camada 4 nova (acima) existe precisamente para
+apanhar isto mais cedo da próxima vez.
+
+---
+
+## Em curso (histórico) — Integração WhatsApp (Evolution API) — 2026-07-18/19
+
+**Estado: LIVRE** (na altura — emparelhamento real do QR só aconteceu na sessão de hoje,
+2026-08-18, ver secção acima). Backend + UI + infra Railway completos, commitados/pushados e
+testados ponta-a-ponta nesta sessão.
 
 Ver `docs/WHATSAPP_INTEGRATION_ROADMAP.md` para o desenho completo e estado fase-a-fase.
 Resumo: schema (migrations 018/019) + 4 Edge Functions + cron pg_cron aplicados/deployados no
@@ -32,8 +100,10 @@ ver "Sessão 16" abaixo). O lado Supabase sobreviveu (é remoto); os ficheiros l
 ser reescritos. A partir desta sessão, cada bloco de trabalho foi commitado e pushado
 imediatamente ao ficar pronto — sem perdas na segunda metade da sessão.
 
-**Pendente para a próxima sessão (precisa do utilizador):**
-1. Emparelhar QR dentro da app (Developer > Integração WhatsApp, PIN 120380) com o número real.
+**Pendente na altura (resolvido na sessão de 2026-08-18, ver secção "Em curso" acima):**
+1. ~~Emparelhar QR dentro da app~~ — a instância acabou emparelhada nalgum momento entre esta
+   sessão e 2026-08-18, mas com uma sessão que ficou genuinamente presa no Railway (delete/
+   logout/restart via API todos falhavam); resolvido com restart do contentor.
 2. Testar por toque na UI — não foi possível nesta sessão (acesso ao Simulator foi recusado
    pelo utilizador; só verificação via type-check + bundle Metro + screenshot estático).
 

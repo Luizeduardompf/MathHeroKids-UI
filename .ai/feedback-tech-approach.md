@@ -355,3 +355,32 @@ opções ao user: deixar como está ("mais prática = mais crédito") ou dedupli
 de chamar `updateMastery` em `complete_challenge.ts` (sem tocar em `mastery.ts`). **User confirmou:
 deixar como está.** Não mexer nisto sem re-abrir a conversa — é uma escolha deliberada, não uma
 lacuna esquecida.
+
+---
+
+**Ao redeployar qualquer Edge Function pública (sem verificação de JWT própria no código, ex.
+`evolution-webhook`): usar sempre `supabase functions deploy <nome> --use-api --no-verify-jwt`.**
+Esquecer a flag repõe o default `verify_jwt: true` **mesmo que a função já estivesse a correr como
+pública** — não dá erro nenhum no momento do deploy, falha silenciosamente a partir daí (a Evolution
+API, ou qualquer chamador externo sem JWT do Supabase, passa a levar 401 sem log nenhum do lado do
+cliente que o dispara). Foi exactamente o que aconteceu em 2026-08-18: um redeploy de
+`evolution-webhook` sem a flag (para a feature de ops alerts) deixou a entrega de webhooks morta
+por horas até um teste manual apanhar o 401 nos logs do Railway. **Sempre que tocar em código de uma
+EF pública, confirmar `verify_jwt: false` na listagem (`supabase functions list`) depois do deploy —
+não confiar só no comentário do ficheiro.** A camada 4 do sistema de ops alerts
+(`railway-health-check` fazendo OPTIONS ao próprio `evolution-webhook`) existe precisamente para
+apanhar isto mais cedo se voltar a acontecer.
+
+---
+
+**O status "open"/"connected" da Evolution API não é fiável — pode ser um "zombie state".**
+`/instance/connectionState` e `/instance/fetchInstances` podem continuar a devolver `state: "open"`
+mesmo com a sessão do WhatsApp genuinamente morta (envios reais falham com "Connection Closed").
+Nem `/instance/delete`, `/instance/logout` nem `/instance/connect` conseguem desbloquear isto de
+forma fiável quando acontece (todos dependem do mesmo estado interno corrompido) — confirmado em
+2026-08-18. O único fix que funcionou foi `railway restart --service evolution-api` (reinicia o
+processo Node do zero, força reconexão real do socket Baileys). **Nunca confiar em "state: open" da
+Evolution API como prova de que os envios vão funcionar** — só um envio real de teste confirma.
+`evolution-dev`'s `resetInstance` (delete+create+connect) também não verifica o resultado das
+chamadas — pode falhar silenciosamente (confirmado: `/instance/delete` devolveu 400 e o botão
+"Reiniciar ligação" não fez nada visível na app).
