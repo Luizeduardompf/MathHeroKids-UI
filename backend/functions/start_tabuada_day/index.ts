@@ -14,7 +14,11 @@
  *   tabuada_use_general_settings=false (default) — SEMPRE a tabuada fixa 1-10 × 1-10 (100
  *     factos de multiplicação), independente do multiplication_max do desafio normal.
  *   tabuada_use_general_settings=true — usa enabled_operations + multiplication_max da
- *     criança (as "regras gerais"), tal como o desafio diário normal.
+ *     criança (as "regras gerais"), tal como o desafio diário normal. Isto inclui
+ *     `mix_operations`: se >1 operação activa e mix_operations=false, o dia usa só UMA
+ *     operação (não há module_id neste endpoint — a escolha é determinística, seed
+ *     `child_id:day_date`, estável enquanto o dia não for regenerado). Se mix_operations=true,
+ *     mistura todas as activas no mesmo pool, tal como start_challenge com module_id='mixed'.
  * Em ambos os casos, buildDayPayload nunca repete um facto dentro dos 5 blocos do dia.
  * Se o pai mudar esta flag (ou multiplication_max/enabled_operations) a meio do dia mas a
  * criança ainda não tiver respondido nada (attempts=0 em todos os blocos), o dia é
@@ -32,7 +36,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
-import { buildDayPayload, initialBlocksState, toLocalDate } from '../_shared/tabuada.ts';
+import { buildDayPayload, initialBlocksState, mulberry32, seedFromString, toLocalDate } from '../_shared/tabuada.ts';
 import type { BlockState, TabuadaFact, TabuadaOperation, TabuadaQuestion } from '../_shared/tabuada.ts';
 
 type Operation = TabuadaOperation;
@@ -53,7 +57,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: childRow, error: childErr } = await supabase
       .from('child_profiles')
-      .select('timezone, tabuada_enabled, tabuada_use_general_settings, multiplication_max, enabled_operations')
+      .select('timezone, tabuada_enabled, tabuada_use_general_settings, multiplication_max, enabled_operations, mix_operations')
       .eq('id', child_id)
       .maybeSingle();
 
@@ -107,18 +111,30 @@ Deno.serve(async (req: Request) => {
 
     let pool: TabuadaFact[];
     if (childRow.tabuada_use_general_settings) {
-      // Regras gerais do desafio normal: operações activas + multiplication_max.
+      // Regras gerais do desafio normal: operações activas + multiplication_max + mix_operations.
       const enabledOperations: Operation[] = (childRow.enabled_operations?.length
         ? childRow.enabled_operations
         : ['multiplication']) as Operation[];
       const max = childRow.multiplication_max ?? 10;
+
+      // Mesma decisão do start_challenge: mix_operations=true mistura tudo; false com só 1
+      // activa usa essa; false com >1 activas escolhe UMA só. Sem module_id aqui (este
+      // endpoint não recebe escolha do cliente), a escolha é determinística por
+      // child_id:day_date — estável enquanto o dia não for regenerado (ver dayUntouched acima).
+      let sessionOperations: Operation[];
+      if (childRow.mix_operations || enabledOperations.length === 1) {
+        sessionOperations = enabledOperations;
+      } else {
+        const rng = mulberry32(seedFromString(`${child_id}:${today}:op-pick`));
+        sessionOperations = [enabledOperations[Math.floor(rng() * enabledOperations.length)]!];
+      }
 
       // multiplication_max só faz sentido para multiplicação — as outras operações usam
       // sempre o catálogo seedado inteiro (sem conceito de "máximo" configurável).
       const { data: allOpFacts, error: opFactsErr } = await supabase
         .from('arithmetic_facts')
         .select('id, operand_a, operand_b, answer, operation')
-        .in('operation', enabledOperations);
+        .in('operation', sessionOperations);
       if (opFactsErr) {
         return jsonError(500, 'FACTS_FETCH_FAILED', opFactsErr.message);
       }
